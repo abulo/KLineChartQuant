@@ -17,7 +17,7 @@ export function createExtremaMarkersRendererPlugin(): RendererPlugin {
         priority: RENDERER_PRIORITY.OVERLAY,
 
         draw(context: RenderContext) {
-            const { ctx, pane, data, range, scrollLeft, kWidth, dpr, paneWidth, kLinePositions } = context
+            const { ctx, pane, data, range, scrollLeft, dpr, paneWidth, kLineCenters } = context
             const klineData = data as KLineData[]
             if (!klineData.length) return
             if (pane.role !== 'price') return
@@ -46,11 +46,11 @@ export function createExtremaMarkersRendererPlugin(): RendererPlugin {
 
             if (!Number.isFinite(max) || !Number.isFinite(min)) return
 
-            // 使用统一的 kLinePositions 计算 K 线中心 X 坐标
+            // 使用统一的 kLineCenters 作为 K 线中心 X 坐标
             const getCenterX = (i: number) => {
                 const localIdx = i - range.start
-                if (localIdx < 0 || localIdx >= kLinePositions.length) return 0
-                return kLinePositions[localIdx]! + kWidth / 2
+                if (localIdx < 0 || localIdx >= kLineCenters.length) return 0
+                return kLineCenters[localIdx]!
             }
 
             ctx.save()

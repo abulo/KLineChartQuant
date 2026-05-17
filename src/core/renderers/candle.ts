@@ -103,7 +103,9 @@ export function createCandleRenderer(): RendererPlugin {
                     const isRising = relation === VolumePriceRelation.RISE_WITH_VOLUME ||
                         relation === VolumePriceRelation.RISE_WITHOUT_VOLUME
                     const markerY = isRising ? alignedHighY - 15 : alignedLowY + 15
-                    const markerX = aligned.bodyRect.x + aligned.bodyRect.width / 2
+                    // 使用传下来的 kLineCenters（已物理像素对齐的影线中心）
+                    const posIndex = i - range.start
+                    const markerX = context.kLineCenters[posIndex]!
 
                     drawVolumePriceMarker(ctx, markerX, markerY, relation!, i, kWidth, 4, markerManager as MarkerManager, dpr)
                 }

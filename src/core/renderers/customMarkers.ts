@@ -3,6 +3,7 @@ import { RENDERER_PRIORITY, GLOBAL_PANE_ID } from '@/plugin'
 import type { KLineData } from '@/types/price'
 import type { CustomMarkerEntity, CustomMarkerShape } from '@/core/marker/registry'
 import { drawShape, drawLabel, hitTestShape } from '@/semantic/drawShape'
+import { roundToPhysicalPixel } from '@/core/draw/pixelAlign'
 
 /** 默认标记尺寸（相对于 K 线宽度的缩放因子） */
 const DEFAULT_SIZE_SCALE = 1.2
@@ -40,7 +41,7 @@ export function createCustomMarkersRenderer(): RendererPlugin {
         priority: RENDERER_PRIORITY.OVERLAY,
 
         draw(context: RenderContext): void {
-            const { ctx, pane, data, range, scrollLeft, kWidth, kLinePositions, markerManager } = context
+            const { ctx, pane, data, range, scrollLeft, kWidth, kLineCenters, dpr, markerManager } = context
             if (!markerManager) return
 
             const customMarkers = markerManager.getCustomMarkers() as CustomMarkerEntity[]
@@ -63,10 +64,9 @@ export function createCustomMarkersRenderer(): RendererPlugin {
 
                 // 3. 计算像素坐标
                 const posIndex = kIndex - range.start
-                if (posIndex < 0 || posIndex >= kLinePositions.length) continue
+                if (posIndex < 0 || posIndex >= kLineCenters.length) continue
 
-                const kLeftX = kLinePositions[posIndex]!
-                const pixelX = kLeftX + kWidth / 2
+                const pixelX = kLineCenters[posIndex]!
 
                 const kData = klineData[kIndex]!
                 const userSize = marker.style?.size
@@ -96,15 +96,22 @@ export function createCustomMarkersRenderer(): RendererPlugin {
                 const finalX = pixelX + (marker.offset?.x ?? 0)
                 const finalY = pixelY
 
-                // 7. 绘制形状和标签
-                drawShape(ctx, marker.shape, finalX, finalY, actualSize, marker.style || {})
+                // 7. 物理像素对齐
+                // X: kLineCenters 已对齐，直接使用；Y: priceToY 是浮点数，需要对齐
+                const alignedX = finalX
+                const alignedY = finalY
+                // 确保 size*2*dpr 为偶数，使 size/2 在物理像素上为整数
+                const alignedSize = Math.round(actualSize * dpr / 2) * 2 / dpr
+
+                // 8. 绘制形状和标签（使用对齐后的坐标和尺寸）
+                drawShape(ctx, marker.shape, alignedX, alignedY, alignedSize, marker.style || {})
                 if (marker.label) {
                     // 标签位置：标记在K线上方 → 文字在标记上方；标记在K线下方 → 文字在标记下方
-                    drawLabel(ctx, marker.label, finalX, finalY, actualSize, marker.style || {}, isAboveKLine)
+                    drawLabel(ctx, marker.label, alignedX, alignedY, alignedSize, marker.style || {}, isAboveKLine)
                 }
 
-                // 8. 记录位置和实际大小用于 hitTest
-                markerManager.setCustomMarkerPosition(marker.id, finalX - scrollLeft, finalY, actualSize, marker.shape)
+                // 9. 记录位置和实际大小用于 hitTest（使用对齐后的值）
+                markerManager.setCustomMarkerPosition(marker.id, alignedX - scrollLeft, alignedY, alignedSize, marker.shape)
             }
 
             ctx.restore()

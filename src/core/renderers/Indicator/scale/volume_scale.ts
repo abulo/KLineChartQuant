@@ -20,7 +20,7 @@ export function createVolumeScaleRendererPlugin(options: {
         decimals: 2,
         yPaddingPx: options.yPaddingPx,
         getCrosshair: options.getCrosshair,
-        formatTickLabel: (value) => (value / YI).toFixed(2),
-        formatCrosshairLabel: (value) => `${(value / YI).toFixed(2)}亿`,
+        formatTickLabel: (value) => `${(value / YI).toFixed(2)}B`,
+        formatCrosshairLabel: (value) => `${(value / YI).toFixed(2)}B`,
     })
 }
