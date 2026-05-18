@@ -4,7 +4,7 @@ import type { KLineData } from '@/types/price'
 import { createHorizontalLineRect, createVerticalLineRect } from '@/core/draw/pixelAlign'
 import { findMonthBoundaries } from '@/utils/dateFormat'
 import { GRID_COLORS } from '@/core/theme/colors'
-import { calculateTickCount } from '@/core/utils/tickCount'
+import { calculateTickPositions } from '@/core/utils/tickPosition'
 
 /**
  * 创建网格线渲染器插件
@@ -25,8 +25,6 @@ export function createGridLinesRendererPlugin(): RendererPlugin {
             const klineData = data as KLineData[]
             if (!klineData.length) return
 
-            const tickCount = calculateTickCount(pane.height)
-
             ctx.save()
             ctx.fillStyle = GRID_COLORS.HORIZONTAL
             ctx.translate(-scrollLeft, 0)
@@ -37,14 +35,14 @@ export function createGridLinesRendererPlugin(): RendererPlugin {
             const pt = pane.yAxis.getPaddingTop()
             const pb = pane.yAxis.getPaddingBottom()
 
-            const yStart = pt
-            const yEnd = Math.max(pt, pane.height - pb)
-            const viewH = Math.max(0, yEnd - yStart)
+            const positions = calculateTickPositions({
+                height: pane.height,
+                paddingTop: pt,
+                paddingBottom: pb,
+                isMain: pane.role === 'price',
+            })
 
-            for (let i = 0; i < tickCount; i++) {
-                const t = tickCount <= 1 ? 0 : i / (tickCount - 1)
-                const y = Math.round(yStart + t * viewH)
-
+            for (const { y } of positions) {
                 const h = createHorizontalLineRect(startX, endX, y, dpr)
                 if (h) ctx.fillRect(h.x, h.y, h.width, h.height)
             }

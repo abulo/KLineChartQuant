@@ -196,6 +196,8 @@ export interface YAxisLabel {
   price: number
   /** 标签在轴上的Y坐标（世界坐标，相对pane） */
   y: number
+  /** 标签类型，用于区分不同渲染外观 */
+  type?: 'lastPrice' | 'extrema' | 'anchor' | string
   /** 标签样式覆盖 */
   style?: {
     bgColor?: string
@@ -412,6 +414,7 @@ export const GLOBAL_PANE_ID = Symbol('global-pane')
 
 /** 优先级推荐范围 */
 export const RENDERER_PRIORITY = {
+  LAST_PRICE_LABEL: -25, // 最新价格 label 注册（必须在 SYSTEM_YAXIS 之前）
   SYSTEM_YAXIS: -20, // Y轴（系统级）
   SYSTEM_XAXIS: -20, // X轴（系统级）
   BACKGROUND: 0, // 背景层

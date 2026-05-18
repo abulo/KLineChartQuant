@@ -13,18 +13,38 @@ export function createLastPriceLineRendererPlugin(): RendererPlugin {
         description: '最新价虚线渲染器',
         debugName: '最新价线',
         paneId: 'main',
-        priority: RENDERER_PRIORITY.FOREGROUND,
+        priority: RENDERER_PRIORITY.LAST_PRICE_LABEL,
 
         draw(context: RenderContext) {
-            const { ctx, pane, data, scrollLeft, kWidth, dpr, kLinePositions, paneWidth } = context
+            const { ctx, pane, data, scrollLeft, dpr, kLinePositions, paneWidth } = context
             const klineData = data as KLineData[]
             const last = klineData[klineData.length - 1]
             if (!last) return
 
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
+            // 检查价格是否在可视范围内
+            const displayRange = pane.yAxis.getDisplayRange(pane.priceRange)
+            if (last.close < displayRange.minPrice || last.close > displayRange.maxPrice) {
+                return
+            }
 
             const y = Math.round(pane.yAxis.priceToY(last.close))
+
+            // 注册 label 到 yAxisLabels
+            if (!context.yAxisLabels) context.yAxisLabels = []
+            context.yAxisLabels.push({
+                dataIndex: klineData.length - 1,
+                price: last.close,
+                y,
+                type: 'lastPrice',
+                style: {
+                    bgColor: 'rgba(255, 247, 248, 0.98)',
+                    borderColor: PRICE_COLORS.LAST_PRICE,
+                    textColor: PRICE_COLORS.LAST_PRICE,
+                }
+            })
+
+            ctx.save()
+            ctx.translate(-scrollLeft, 0)
 
             // 使用统一的 kLinePositions 计算绘制范围
             const startX = kLinePositions[0] ?? 0

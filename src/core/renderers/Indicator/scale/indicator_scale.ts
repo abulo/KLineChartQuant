@@ -3,7 +3,7 @@ import { RENDERER_PRIORITY } from '@/plugin'
 import { createIndicatorStateKey } from '@/plugin/stateKeys'
 import { TEXT_COLORS } from '@/core/theme/colors'
 import { FONT_FAMILY } from '@/core/theme/fonts'
-import { calculateTickCount } from '@/core/utils/tickCount'
+import { calculateValueTickPositions } from '@/core/utils/tickPosition'
 import { drawCrosshairPriceLabel } from '@/utils/kLineDraw/axis'
 import { roundToPhysicalPixel, alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 
@@ -55,8 +55,6 @@ export function drawScaleTicks(options: DrawScaleTicksOptions): void {
         formatLabel,
     } = options
 
-    const valueRange = valueMax - valueMin || 1
-
     ctx.save()
     ctx.clearRect(0, 0, axisWidth, height)
 
@@ -65,20 +63,18 @@ export function drawScaleTicks(options: DrawScaleTicksOptions): void {
     ctx.textAlign = 'center'
 
     const centerX = axisWidth / 2
-    const yStart = paddingTop
-    const yEnd = Math.max(paddingTop, height - paddingBottom)
-    const viewH = Math.max(0, yEnd - yStart)
 
-    const ticks = calculateTickCount(height, isMain)
-    const step = valueRange / Math.max(1, ticks - 1)
+    const positions = calculateValueTickPositions({
+        height,
+        paddingTop,
+        paddingBottom,
+        isMain,
+        hideEdgeTicks,
+        valueMin,
+        valueMax,
+    })
 
-    for (let i = 0; i < ticks; i++) {
-        if (hideEdgeTicks && (i === 0 || i === ticks - 1)) continue
-
-        const value = valueMax - step * i
-        const t = ticks <= 1 ? 0 : i / (ticks - 1)
-        const y = yStart + t * viewH
-
+    for (const { y, value } of positions) {
         ctx.fillStyle = TEXT_COLORS.SECONDARY
         ctx.fillText(
             formatLabel ? formatLabel(value) : value.toFixed(decimals),

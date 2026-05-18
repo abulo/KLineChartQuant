@@ -59,9 +59,10 @@ export function createYAxisRendererPlugin(options: {
         }
       }
 
-      // 绘制来自 yAxisLabels 的标签（极值点、绘图锚点等）
+      // 绘制来自 yAxisLabels 的标签（最新价格、极值点、绘图锚点等）
       if (context.yAxisLabels && pane.role === 'price') {
         for (const label of context.yAxisLabels) {
+          const isLastPrice = label.type === 'lastPrice'
           drawAxisPriceLabel(targetCtx, {
             x: 0,
             y: pane.top,
@@ -73,31 +74,9 @@ export function createYAxisRendererPlugin(options: {
             bgColor: label.style?.bgColor ?? 'rgba(0, 0, 0, 0.8)',
             borderColor: label.style?.borderColor,
             textColor: label.style?.textColor ?? '#ffffff',
-            fontSize: 12,
+            fontSize: isLastPrice ? 12 : 11,
           })
         }
-      }
-
-      const klineData = data as KLineData[]
-      const last = pane.id === 'main' ? klineData[klineData.length - 1] : null
-      if (last) {
-        const lastPriceY = pane.yAxis.priceToY(last.close)
-        drawCrosshairPriceLabel(targetCtx, {
-          x: 0,
-          y: pane.top,
-          width: axisWidth,
-          height: pane.height,
-          crosshairY: lastPriceY + pane.top,
-          priceRange: displayRange,
-          yPaddingPx: options.yPaddingPx,
-          dpr,
-          bgColor: 'rgba(255, 247, 248, 0.98)',
-          borderColor: PRICE_COLORS.LAST_PRICE,
-          textColor: PRICE_COLORS.LAST_PRICE,
-          fontSize: 12,
-          priceOffset: 0,
-          price: last.close,
-        })
       }
 
       const crosshair = options.getCrosshair?.()
