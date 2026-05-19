@@ -140,26 +140,43 @@
 
             <!-- 体部 -->
             <div class="settings-body">
-              <div class="settings-item">
-                <label class="settings-label">
-                  <span>显示量价关系标记</span>
-                  <input
-                    type="checkbox"
-                    class="settings-checkbox"
-                    v-model="settings.showVolumePriceMarkers"
-                  />
-                </label>
-              </div>
-              <div class="settings-item">
-                <label class="settings-label">
-                  <span>对数价格轴</span>
-                  <input
-                    type="checkbox"
-                    class="settings-checkbox"
-                    v-model="settings.logarithmicScale"
-                  />
-                </label>
-              </div>
+              <!-- 主图设置 -->
+              <template v-if="mainSettings.length > 0">
+                <div class="settings-section-divider">
+                  <span class="settings-section-label">主图设置</span>
+                </div>
+                <template v-for="item in mainSettings" :key="item.key">
+                  <div class="settings-item">
+                    <label class="settings-label">
+                      <span>{{ item.label }}</span>
+                      <input
+                        type="checkbox"
+                        class="settings-checkbox"
+                        v-model="settings[item.key]"
+                      />
+                    </label>
+                  </div>
+                </template>
+              </template>
+
+              <!-- 实验性设置 -->
+              <template v-if="experimentalSettings.length > 0">
+                <div class="settings-section-divider">
+                  <span class="settings-section-label">实验性 / 临时</span>
+                </div>
+                <template v-for="item in experimentalSettings" :key="item.key">
+                  <div class="settings-item experimental">
+                    <label class="settings-label">
+                      <span>{{ item.label }}</span>
+                      <input
+                        type="checkbox"
+                        class="settings-checkbox"
+                        v-model="settings[item.key]"
+                      />
+                    </label>
+                  </div>
+                </template>
+              </template>
             </div>
 
             <!-- 底部 -->
@@ -189,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import IconTablerPointer from '~icons/tabler/pointer'
 import IconTablerChartLine from '~icons/tabler/chart-line'
 import IconTablerArrowUpRight from '~icons/tabler/arrow-up-right'
@@ -260,6 +277,10 @@ const primaryTools: ToolDef[] = [
 
 // ═══ 类型导出（供父组件使用）═══
 export type { SettingItem } from '../config/chartSettings'
+
+// 设置项分组
+const mainSettings = computed(() => DEFAULT_SETTINGS.filter((s) => s.group === 'main'))
+const experimentalSettings = computed(() => DEFAULT_SETTINGS.filter((s) => s.group === 'experimental'))
 
 const selectedToolId = ref('cursor')
 const openGroupId = ref<string | null>(null)
@@ -380,6 +401,8 @@ function handleClickOutside(e: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside, true)
+  // 挂载后立即通知父组件当前设置（包括从 localStorage 加载的）
+  emit('settingsChange', { ...appliedSettings.value })
 })
 
 onUnmounted(() => {
@@ -682,6 +705,31 @@ onUnmounted(() => {
   height: 16px;
   cursor: pointer;
   accent-color: #1a1a1a;
+}
+
+.settings-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.settings-section-divider::before,
+.settings-section-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid #e0e0e0;
+}
+
+.settings-section-label {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+}
+
+.settings-item.experimental {
+  border-color: #f0e0d0;
+  background: #fdf8f3;
 }
 
 .settings-footer {

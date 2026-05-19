@@ -323,6 +323,7 @@ export class Chart {
     /** 更新用户设置（触发重绘） */
     updateSettings(settings: Record<string, boolean>): void {
         this.settings = { ...settings }
+        this.interaction.updateSettings(settings)
 
         // 同步对数刻度设置到所有 pane
         const scaleType = settings.logarithmicScale ? 'log' : 'linear'

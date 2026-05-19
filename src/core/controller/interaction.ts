@@ -84,6 +84,8 @@ export class InteractionController {
     private useTooltipAnchorPositioning = false
     /** 统一交互状态变更回调 */
     private onInteractionChangeCallback?: (snapshot: InteractionSnapshot) => void
+    /** 用户设置 */
+    private settings: Record<string, boolean> = {}
 
     /** 当前 hover 的 marker ID */
     hoveredMarkerId: string | null = null
@@ -120,6 +122,11 @@ export class InteractionController {
     /** 设置捏合缩放回调 */
     setOnPinchZoom(callback: (delta: number, centerX: number) => void) {
         this.onPinchZoomCallback = callback
+    }
+
+    /** 更新用户设置 */
+    updateSettings(settings: Record<string, boolean>): void {
+        this.settings = { ...settings }
     }
 
     getInteractionSnapshot(): InteractionSnapshot {
@@ -352,7 +359,9 @@ export class InteractionController {
 
                 const deltaY = e.clientY - this.dragStartY
                 if (deltaY !== 0 && this.activePaneIdOnDrag === 'main') {
-                    this.chart.translatePrice(this.activePaneIdOnDrag, deltaY)
+                    if (!this.settings.disableMainPaneVerticalScroll) {
+                        this.chart.translatePrice(this.activePaneIdOnDrag, deltaY)
+                    }
                     this.dragStartY = e.clientY
                 }
             }
@@ -829,6 +838,7 @@ export class InteractionController {
         this.kLinePositions = null
         this.visibleRange = null
         this.kWidthPx = null
+        this.settings = {}
     }
 
     /** 获取十字线指向的 K 线索引 */
