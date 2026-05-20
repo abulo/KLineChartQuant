@@ -12,7 +12,7 @@ export interface WMSRRenderState extends BaseIndicatorState {
 }
 
 export const createWMSRStateKey = (paneId: string) =>
-    createIndicatorStateKey('wmsr', paneId) as const
+    createIndicatorStateKey('wmsr', paneId)
 
 export const EMPTY_WMSR_STATE: WMSRRenderState = {
     timestamp: 0,

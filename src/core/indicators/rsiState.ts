@@ -35,7 +35,7 @@ export interface RSIRenderState extends BaseIndicatorState {
  * 格式：indicator:rsi:{paneId}
  */
 export const createRSIStateKey = (paneId: string) =>
-    createIndicatorStateKey('rsi', paneId) as const
+    createIndicatorStateKey('rsi', paneId)
 
 /**
  * 空数据占位状态

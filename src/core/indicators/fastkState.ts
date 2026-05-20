@@ -12,7 +12,7 @@ export interface FASTKRenderState extends BaseIndicatorState {
 }
 
 export const createFASTKStateKey = (paneId: string) =>
-    createIndicatorStateKey('fastk', paneId) as const
+    createIndicatorStateKey('fastk', paneId)
 
 export const EMPTY_FASTK_STATE: FASTKRenderState = {
     timestamp: 0,

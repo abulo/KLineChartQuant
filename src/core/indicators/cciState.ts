@@ -12,7 +12,7 @@ export interface CCIRenderState extends BaseIndicatorState {
 }
 
 export const createCCIStateKey = (paneId: string) =>
-    createIndicatorStateKey('cci', paneId) as const
+    createIndicatorStateKey('cci', paneId)
 
 export const EMPTY_CCI_STATE: CCIRenderState = {
     timestamp: 0,

@@ -12,7 +12,7 @@ export interface MOMRenderState extends BaseIndicatorState {
 }
 
 export const createMOMStateKey = (paneId: string) =>
-    createIndicatorStateKey('mom', paneId) as const
+    createIndicatorStateKey('mom', paneId)
 
 export const EMPTY_MOM_STATE: MOMRenderState = {
     timestamp: 0,

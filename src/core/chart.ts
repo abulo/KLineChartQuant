@@ -682,7 +682,7 @@ export class Chart {
         this.applyPaneLayoutSpecs(this.opt.panes.filter((pane) => pane.id !== paneId))
     }
 
-    bindIndicatorToPane(paneId: string, indicatorId: SubIndicatorType, params?: Record<string, number>): void {
+    bindIndicatorToPane(paneId: string, indicatorId: SubIndicatorType, params?: Record<string, number | boolean>): void {
         const paneExists = this.opt.panes.some((pane) => pane.id === paneId)
         if (!paneExists) {
             this.upsertPane({ id: paneId, ratio: 1, visible: true, role: 'indicator' })
@@ -885,7 +885,7 @@ export class Chart {
      * @param params 指标参数
      * @returns 是否创建成功
      */
-    createSubPane(indicatorId: SubIndicatorType, params?: Record<string, number>): boolean {
+    createSubPane(indicatorId: SubIndicatorType, params?: Record<string, number | boolean>): boolean {
         const paneId = `${Chart.SUB_PANE_PREFIX}${indicatorId}`
         const rendererName = `${indicatorId.toLowerCase()}_${paneId}`
 

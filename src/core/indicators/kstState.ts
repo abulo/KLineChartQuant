@@ -21,7 +21,7 @@ export interface KSTRenderState extends BaseIndicatorState {
 }
 
 export const createKSTStateKey = (paneId: string) =>
-    createIndicatorStateKey('kst', paneId) as const
+    createIndicatorStateKey('kst', paneId)
 
 export const EMPTY_KST_STATE: KSTRenderState = {
     timestamp: 0,

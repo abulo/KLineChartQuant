@@ -9,13 +9,13 @@ import { createVolumeRendererPlugin } from '../subVolume'
 export { createMARendererPlugin, type MAFlags } from './ma'
 
 // BOLL 布林带
-export { createBOLLRendererPlugin, type BOLLConfig } from './boll'
+export { createBOLLRendererPlugin } from './boll'
 
 // EXPMA 指数平滑移动平均线
-export { createEXPMARendererPlugin, type EXPMAConfig } from './expma'
+export { createEXPMARendererPlugin } from './expma'
 
 // ENE 轨道线
-export { createENERendererPlugin, type ENEConfig } from './ene'
+export { createENERendererPlugin } from './ene'
 
 // 主图指标图例（统一管理 MA、BOLL 等）
 export { createMainIndicatorLegendRendererPlugin } from './mainIndicatorLegend'

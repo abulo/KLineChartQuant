@@ -660,10 +660,10 @@ describe('RSI State in scheduler', () => {
 
     const rsiKey = createRSIStateKey('sub_RSI')
     const setSharedState = mockHost.setSharedState as ReturnType<typeof vi.fn>
-    const rsiCall = setSharedState.mock.calls.find((call: [string, unknown, string]) => call[0] === rsiKey)
+    const rsiCall = setSharedState.mock.calls.find((call: unknown[]) => call[0] === rsiKey)
     expect(rsiCall).toBeDefined()
 
-    const rsiState = rsiCall[1] as RSIRenderState
+    const rsiState = rsiCall?.[1] as RSIRenderState
     expect(rsiState.series).toBeDefined()
     expect(rsiState.enabledPeriods).toEqual([6, 12, 24])
     expect(rsiState.params.period1).toBe(6)
@@ -679,8 +679,8 @@ describe('RSI State in scheduler', () => {
 
     const rsiKey = createRSIStateKey('sub_RSI')
     const setSharedState = mockHost.setSharedState as ReturnType<typeof vi.fn>
-    const rsiCall = setSharedState.mock.calls.find((call: [string, unknown, string]) => call[0] === rsiKey)
-    const rsiState = rsiCall[1] as RSIRenderState
+    const rsiCall = setSharedState.mock.calls.find((call: unknown[]) => call[0] === rsiKey)
+    const rsiState = rsiCall?.[1] as RSIRenderState
 
     // RSI(6): indices 0-5 should be undefined, index 6 should be valid
     expect(rsiState.series[6][0]).toBeUndefined()
@@ -695,8 +695,8 @@ describe('RSI State in scheduler', () => {
 
     const rsiKey = createRSIStateKey('sub_RSI')
     const setSharedState = mockHost.setSharedState as ReturnType<typeof vi.fn>
-    const rsiCall = setSharedState.mock.calls.find((call: [string, unknown, string]) => call[0] === rsiKey)
-    const rsiState = rsiCall[1] as RSIRenderState
+    const rsiCall = setSharedState.mock.calls.find((call: unknown[]) => call[0] === rsiKey)
+    const rsiState = rsiCall?.[1] as RSIRenderState
 
     expect(rsiState.params.showRSI1).toBe(true)
     expect(rsiState.params.showRSI2).toBe(false)
@@ -714,8 +714,8 @@ describe('RSI State in scheduler', () => {
 
     const rsiKey = createRSIStateKey('sub_RSI')
     const setSharedState = mockHost.setSharedState as ReturnType<typeof vi.fn>
-    const rsiCall = setSharedState.mock.calls.find((call: [string, unknown, string]) => call[0] === rsiKey)
-    const rsiState = rsiCall[1] as RSIRenderState
+    const rsiCall = setSharedState.mock.calls.find((call: unknown[]) => call[0] === rsiKey)
+    const rsiState = rsiCall?.[1] as RSIRenderState
 
     expect(rsiState.params.period1).toBe(10)
     expect(rsiState.params.period2).toBe(20)
@@ -728,7 +728,7 @@ describe('RSI State in scheduler', () => {
 
     // Get the MA state after first update
     const maStateBefore = (mockHost.setSharedState as ReturnType<typeof vi.fn>).mock.calls.find(
-      (call: [string, unknown, string]) => call[0] === MA_STATE_KEY
+      (call: unknown[]) => call[0] === MA_STATE_KEY
     )?.[1] as MARenderState
 
     // Update RSI config only
@@ -736,7 +736,7 @@ describe('RSI State in scheduler', () => {
 
     // Get the MA state after RSI config update
     const maStateAfter = (mockHost.setSharedState as ReturnType<typeof vi.fn>).mock.calls.find(
-      (call: [string, unknown, string]) => call[0] === MA_STATE_KEY
+      (call: unknown[]) => call[0] === MA_STATE_KEY
     )?.[1] as MARenderState
 
     // MA series should remain the same reference (not recalculated)
@@ -750,7 +750,7 @@ describe('RSI State in scheduler', () => {
 
     const expectedKey = createRSIStateKey('custom_RSI_pane')
     const setSharedState = mockHost.setSharedState as ReturnType<typeof vi.fn>
-    const rsiCall = setSharedState.mock.calls.find((call: [string, unknown, string]) => call[0] === expectedKey)
+    const rsiCall = setSharedState.mock.calls.find((call: unknown[]) => call[0] === expectedKey)
     expect(rsiCall).toBeDefined()
   })
 
@@ -759,8 +759,8 @@ describe('RSI State in scheduler', () => {
 
     const rsiKey = createRSIStateKey('sub_RSI')
     const setSharedState = mockHost.setSharedState as ReturnType<typeof vi.fn>
-    const rsiCall = setSharedState.mock.calls.find((call: [string, unknown, string]) => call[0] === rsiKey)
-    const rsiState = rsiCall[1] as RSIRenderState
+    const rsiCall = setSharedState.mock.calls.find((call: unknown[]) => call[0] === rsiKey)
+    const rsiState = rsiCall?.[1] as RSIRenderState
 
     expect(rsiState.visibleMin).toBe(Infinity)
     expect(rsiState.visibleMax).toBe(-Infinity)

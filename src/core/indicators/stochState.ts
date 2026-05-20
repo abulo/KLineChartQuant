@@ -13,7 +13,7 @@ export interface STOCHRenderState extends BaseIndicatorState {
 }
 
 export const createSTOCHStateKey = (paneId: string) =>
-    createIndicatorStateKey('stoch', paneId) as const
+    createIndicatorStateKey('stoch', paneId)
 
 export const EMPTY_STOCH_STATE: STOCHRenderState = {
     timestamp: 0,

@@ -486,11 +486,11 @@ const subPanes = ref<SubPaneSlot[]>([])
 
 // 副图指标元数据
 interface SubPaneIndicatorConfig {
-  defaultParams: Record<string, number>
+  defaultParams: Record<string, number | boolean>
   getTitleInfo: (
     data: any[],
     index: number | null,
-    params: Record<string, number>,
+    params: Record<string, number | boolean>,
   ) => TitleInfo | null
 }
 
@@ -506,9 +506,9 @@ const SUB_PANE_INDICATOR_CONFIGS: Record<SubIndicatorType, SubPaneIndicatorConfi
       return getMACDTitleInfo(
         data,
         index,
-        params.fastPeriod ?? 12,
-        params.slowPeriod ?? 26,
-        params.signalPeriod ?? 9,
+        (params.fastPeriod as number) ?? 12,
+        (params.slowPeriod as number) ?? 26,
+        (params.signalPeriod as number) ?? 9,
       )
     },
   },
@@ -518,9 +518,9 @@ const SUB_PANE_INDICATOR_CONFIGS: Record<SubIndicatorType, SubPaneIndicatorConfi
       if (index === null) return null
       return getRSITitleInfo(
         index,
-        params.period1 ?? 6,
-        params.period2 ?? 12,
-        params.period3 ?? 24,
+        (params.period1 as number) ?? 6,
+        (params.period2 as number) ?? 12,
+        (params.period3 as number) ?? 24,
         chartRef.value!.plugin,
         'sub_RSI',
       )
@@ -530,28 +530,28 @@ const SUB_PANE_INDICATOR_CONFIGS: Record<SubIndicatorType, SubPaneIndicatorConfi
     defaultParams: { period: 14, showCCI: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getCCITitleInfo(index, params.period ?? 14, chartRef.value!.plugin, 'sub_CCI')
+      return getCCITitleInfo(index, (params.period as number) ?? 14, chartRef.value!.plugin, 'sub_CCI')
     },
   },
   STOCH: {
     defaultParams: { n: 9, m: 3, showK: true, showD: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getSTOCHTitleInfo(index, params.n ?? 9, params.m ?? 3, chartRef.value!.plugin, 'sub_STOCH')
+      return getSTOCHTitleInfo(index, (params.n as number) ?? 9, (params.m as number) ?? 3, chartRef.value!.plugin, 'sub_STOCH')
     },
   },
   MOM: {
     defaultParams: { period: 10, showMOM: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getMOMTitleInfo(index, params.period ?? 10, chartRef.value!.plugin, 'sub_MOM')
+      return getMOMTitleInfo(index, (params.period as number) ?? 10, chartRef.value!.plugin, 'sub_MOM')
     },
   },
   WMSR: {
     defaultParams: { period: 14, showWMSR: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getWMSRTitleInfo(index, params.period ?? 14, chartRef.value!.plugin, 'sub_WMSR')
+      return getWMSRTitleInfo(index, (params.period as number) ?? 14, chartRef.value!.plugin, 'sub_WMSR')
     },
   },
   KST: {
@@ -560,11 +560,11 @@ const SUB_PANE_INDICATOR_CONFIGS: Record<SubIndicatorType, SubPaneIndicatorConfi
       if (index === null) return null
       return getKSTTitleInfo(
         index,
-        params.roc1 ?? 10,
-        params.roc2 ?? 15,
-        params.roc3 ?? 20,
-        params.roc4 ?? 30,
-        params.signalPeriod ?? 9,
+        (params.roc1 as number) ?? 10,
+        (params.roc2 as number) ?? 15,
+        (params.roc3 as number) ?? 20,
+        (params.roc4 as number) ?? 30,
+        (params.signalPeriod as number) ?? 9,
         chartRef.value!.plugin,
         'sub_KST',
       )
@@ -574,7 +574,7 @@ const SUB_PANE_INDICATOR_CONFIGS: Record<SubIndicatorType, SubPaneIndicatorConfi
     defaultParams: { period: 9, showFASTK: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getFASTKTitleInfo(index, params.period ?? 9, chartRef.value!.plugin, 'sub_FASTK')
+      return getFASTKTitleInfo(index, (params.period as number) ?? 9, chartRef.value!.plugin, 'sub_FASTK')
     },
   },
 }
@@ -601,14 +601,14 @@ function buildPaneLayoutIntent(): PaneSpec[] {
 }
 
 // 获取指标默认参数
-function getDefaultParams(indicatorId: SubIndicatorType): Record<string, number> {
+function getDefaultParams(indicatorId: SubIndicatorType): Record<string, number | boolean> {
   return { ...SUB_PANE_INDICATOR_CONFIGS[indicatorId].defaultParams }
 }
 
 // 添加副图（使用 Chart API）
 function addSubPane(
   indicatorId: SubIndicatorType = 'VOLUME',
-  params?: Record<string, number>,
+  params?: Record<string, number | boolean>,
 ): boolean {
   if (subPanes.value.length >= maxSubPanes) {
     return false
