@@ -48,18 +48,48 @@ export class PaneRenderer {
         const plotCanvas = this.dom.plotCanvas
         const yAxisCanvas = this.dom.yAxisCanvas
 
-        plotCanvas.width = Math.round(width * dpr)
-        plotCanvas.height = Math.round(height * dpr)
-        plotCanvas.style.width = `${plotCanvas.width / dpr}px`
-        plotCanvas.style.height = `${plotCanvas.height / dpr}px`
+        const plotWidth = Math.round(width * dpr)
+        if (plotCanvas.width !== plotWidth) {
+            plotCanvas.width = plotWidth
+        }
+
+        const plotHeight = Math.round(height * dpr)
+        if (plotCanvas.height !== plotHeight) {
+            plotCanvas.height = plotHeight
+        }
+
+        const plotCssWidth = `${plotWidth / dpr}px`
+        if (plotCanvas.style.width !== plotCssWidth) {
+            plotCanvas.style.width = plotCssWidth
+        }
+
+        const plotCssHeight = `${plotHeight / dpr}px`
+        if (plotCanvas.style.height !== plotCssHeight) {
+            plotCanvas.style.height = plotCssHeight
+        }
 
         const fallbackYAxisWidth = this.opt.rightAxisWidth + (this.opt.priceLabelWidth || 60)
         const parentClientWidth = yAxisCanvas.parentElement?.clientWidth ?? 0
         const canvasYAxisWidth = parentClientWidth > 0 ? parentClientWidth : fallbackYAxisWidth
-        yAxisCanvas.width = Math.round(canvasYAxisWidth * dpr)
-        yAxisCanvas.height = Math.round(height * dpr)
-        yAxisCanvas.style.width = `${yAxisCanvas.width / dpr}px`
-        yAxisCanvas.style.height = `${yAxisCanvas.height / dpr}px`
+        const yAxisWidth = Math.round(canvasYAxisWidth * dpr)
+        if (yAxisCanvas.width !== yAxisWidth) {
+            yAxisCanvas.width = yAxisWidth
+        }
+
+        const yAxisHeight = Math.round(height * dpr)
+        if (yAxisCanvas.height !== yAxisHeight) {
+            yAxisCanvas.height = yAxisHeight
+        }
+
+        const yAxisCssWidth = `${yAxisWidth / dpr}px`
+        if (yAxisCanvas.style.width !== yAxisCssWidth) {
+            yAxisCanvas.style.width = yAxisCssWidth
+        }
+
+        const yAxisCssHeight = `${yAxisHeight / dpr}px`
+        if (yAxisCanvas.style.height !== yAxisCssHeight) {
+            yAxisCanvas.style.height = yAxisCssHeight
+        }
     }
 
     /** 销毁 PaneRenderer 实例 */

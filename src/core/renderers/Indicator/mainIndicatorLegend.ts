@@ -6,6 +6,25 @@ import { BOLL_STATE_KEY, type BOLLRenderState } from '@/core/indicators/bollStat
 import { EXPMA_STATE_KEY, type EXPMARenderState } from '@/core/indicators/expmaState'
 import { ENE_STATE_KEY, type ENERenderState } from '@/core/indicators/eneState'
 import { MA_COLORS, BOLL_COLORS, EXPMA_COLORS, ENE_COLORS, PRICE_COLORS } from '@/core/theme/colors'
+import { getFont, setCanvasFont } from '@/core/theme/fonts'
+
+const textWidthCache = new Map<string, number>()
+const TEXT_WIDTH_CACHE_LIMIT = 512
+
+function measureTextWidth(ctx: CanvasRenderingContext2D, text: string): number {
+  const key = `${ctx.font}\n${text}`
+  const cached = textWidthCache.get(key)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const width = ctx.measureText(text).width
+  if (textWidthCache.size >= TEXT_WIDTH_CACHE_LIMIT) {
+    textWidthCache.clear()
+  }
+  textWidthCache.set(key, width)
+  return width
+}
 
 /** 指标行数据 */
 interface IndicatorRow {
@@ -49,17 +68,10 @@ export function createMainIndicatorLegendRendererPlugin(options: {
     priority: RENDERER_PRIORITY.FOREGROUND,
     enabled: true,
 
-    /**
-     * 安装时捕获 PluginHost 引用
-     */
     onInstall(host: PluginHost): void {
       pluginHost = host
     },
 
-    /**
-     * 声明使用的 StateStore 命名空间
-     * MA/BOLL/EXPMA/ENE 图例与各指标线渲染器共享同一状态
-     */
     getDeclaredNamespaces(): string[] {
       return [MA_STATE_KEY, BOLL_STATE_KEY, EXPMA_STATE_KEY, ENE_STATE_KEY]
     },
@@ -75,27 +87,20 @@ export function createMainIndicatorLegendRendererPlugin(options: {
       const gap = 10
 
       ctx.save()
-      ctx.font = `${fontSize}px Arial`
+      setCanvasFont(ctx, getFont(fontSize))
       ctx.textAlign = 'left'
 
-      // 使用十字线指向的 K 线索引，无十字线时使用最后一根
       const targetIndex = crosshairIndex ?? Math.min(range.end - 1, klineData.length - 1)
-
-      // 收集需要绘制的行
       const rows: Array<{ draw: (rowIndex: number) => void }> = []
 
-      // MA 行 - 从 StateStore 读取数据
       const maIndicator = config.indicators.MA
       if (maIndicator?.enabled) {
         rows.push({
           draw: (rowIndex: number) => {
             const items: Array<{ label: string; color: string; value?: number }> = []
-
-            // 从 StateStore 读取 MA 状态
             const state = pluginHost?.getSharedState<MARenderState>(MA_STATE_KEY)
 
             if (state && state.visibleMin <= state.visibleMax) {
-              // 按 enabledPeriods 顺序显示
               for (const period of state.enabledPeriods) {
                 const colorKey = `MA${period}` as keyof typeof MA_COLORS
                 const series = state.series[period]
@@ -115,26 +120,24 @@ export function createMainIndicatorLegendRendererPlugin(options: {
 
               ctx.fillStyle = PRICE_COLORS.NEUTRAL
               ctx.fillText('MA', x, y)
-              x += ctx.measureText('MA').width + gap
+              x += measureTextWidth(ctx, 'MA') + gap
 
               for (const it of items) {
                 const valText = typeof it.value === 'number' ? ` ${it.value.toFixed(2)}` : ''
                 const text = `${it.label}${valText}`
                 ctx.fillStyle = it.color
                 ctx.fillText(text, x, y)
-                x += ctx.measureText(text).width + gap
+                x += measureTextWidth(ctx, text) + gap
               }
             }
           }
         })
       }
 
-      // BOLL 行 - 从 StateStore 读取数据
       const bollIndicator = config.indicators.BOLL
       if (bollIndicator?.enabled) {
         rows.push({
           draw: (rowIndex: number) => {
-            // 从 StateStore 读取 BOLL 状态
             const bollState = pluginHost?.getSharedState<BOLLRenderState>(BOLL_STATE_KEY)
             const boll = bollState?.series[targetIndex]
             const period = bollState?.params.period ?? 20
@@ -142,33 +145,35 @@ export function createMainIndicatorLegendRendererPlugin(options: {
 
             let x = legendX
             const y = config.yPaddingPx / 2 + fontSize + rowIndex * lineHeight
+            const titleText = `BOLL(${period},${multiplier})`
 
             ctx.fillStyle = PRICE_COLORS.NEUTRAL
-            ctx.fillText(`BOLL(${period},${multiplier})`, x, y)
-            x += ctx.measureText(`BOLL(${period},${multiplier})`).width + gap
+            ctx.fillText(titleText, x, y)
+            x += measureTextWidth(ctx, titleText) + gap
 
             if (boll) {
+              const upperText = `上轨:${boll.upper.toFixed(2)}`
               ctx.fillStyle = BOLL_COLORS.UPPER
-              ctx.fillText(`上轨:${boll.upper.toFixed(2)}`, x, y)
-              x += ctx.measureText(`上轨:${boll.upper.toFixed(2)}`).width + gap
+              ctx.fillText(upperText, x, y)
+              x += measureTextWidth(ctx, upperText) + gap
 
+              const middleText = `中轨:${boll.middle.toFixed(2)}`
               ctx.fillStyle = BOLL_COLORS.MIDDLE
-              ctx.fillText(`中轨:${boll.middle.toFixed(2)}`, x, y)
-              x += ctx.measureText(`中轨:${boll.middle.toFixed(2)}`).width + gap
+              ctx.fillText(middleText, x, y)
+              x += measureTextWidth(ctx, middleText) + gap
 
+              const lowerText = `下轨:${boll.lower.toFixed(2)}`
               ctx.fillStyle = BOLL_COLORS.LOWER
-              ctx.fillText(`下轨:${boll.lower.toFixed(2)}`, x, y)
+              ctx.fillText(lowerText, x, y)
             }
           }
         })
       }
 
-      // EXPMA 行 - 从 StateStore 读取数据
       const expmaIndicator = config.indicators.EXPMA
       if (expmaIndicator?.enabled) {
         rows.push({
           draw: (rowIndex: number) => {
-            // 从 StateStore 读取 EXPMA 状态
             const expmaState = pluginHost?.getSharedState<EXPMARenderState>(EXPMA_STATE_KEY)
             const expma = expmaState?.series[targetIndex]
             const fastPeriod = expmaState?.params.fastPeriod ?? 12
@@ -176,29 +181,30 @@ export function createMainIndicatorLegendRendererPlugin(options: {
 
             let x = legendX
             const y = config.yPaddingPx / 2 + fontSize + rowIndex * lineHeight
+            const titleText = `EXPMA(${fastPeriod},${slowPeriod})`
 
             ctx.fillStyle = PRICE_COLORS.NEUTRAL
-            ctx.fillText(`EXPMA(${fastPeriod},${slowPeriod})`, x, y)
-            x += ctx.measureText(`EXPMA(${fastPeriod},${slowPeriod})`).width + gap
+            ctx.fillText(titleText, x, y)
+            x += measureTextWidth(ctx, titleText) + gap
 
             if (expma) {
+              const fastText = `快:${expma.fast.toFixed(2)}`
               ctx.fillStyle = EXPMA_COLORS.FAST
-              ctx.fillText(`快:${expma.fast.toFixed(2)}`, x, y)
-              x += ctx.measureText(`快:${expma.fast.toFixed(2)}`).width + gap
+              ctx.fillText(fastText, x, y)
+              x += measureTextWidth(ctx, fastText) + gap
 
+              const slowText = `慢:${expma.slow.toFixed(2)}`
               ctx.fillStyle = EXPMA_COLORS.SLOW
-              ctx.fillText(`慢:${expma.slow.toFixed(2)}`, x, y)
+              ctx.fillText(slowText, x, y)
             }
           }
         })
       }
 
-      // ENE 行 - 从 StateStore 读取数据
       const eneIndicator = config.indicators.ENE
       if (eneIndicator?.enabled) {
         rows.push({
           draw: (rowIndex: number) => {
-            // 从 StateStore 读取 ENE 状态
             const eneState = pluginHost?.getSharedState<ENERenderState>(ENE_STATE_KEY)
             const ene = eneState?.series[targetIndex]
             const period = eneState?.params.period ?? 10
@@ -206,30 +212,32 @@ export function createMainIndicatorLegendRendererPlugin(options: {
 
             let x = legendX
             const y = config.yPaddingPx / 2 + fontSize + rowIndex * lineHeight
+            const titleText = `ENE(${period},${deviation})`
 
             ctx.fillStyle = PRICE_COLORS.NEUTRAL
-            ctx.fillText(`ENE(${period},${deviation})`, x, y)
-            x += ctx.measureText(`ENE(${period},${deviation})`).width + gap
+            ctx.fillText(titleText, x, y)
+            x += measureTextWidth(ctx, titleText) + gap
 
             if (ene) {
+              const upperText = `上轨:${ene.upper.toFixed(2)}`
               ctx.fillStyle = ENE_COLORS.UPPER
-              ctx.fillText(`上轨:${ene.upper.toFixed(2)}`, x, y)
-              x += ctx.measureText(`上轨:${ene.upper.toFixed(2)}`).width + gap
+              ctx.fillText(upperText, x, y)
+              x += measureTextWidth(ctx, upperText) + gap
 
+              const middleText = `中轨:${ene.middle.toFixed(2)}`
               ctx.fillStyle = ENE_COLORS.MIDDLE
-              ctx.fillText(`中轨:${ene.middle.toFixed(2)}`, x, y)
-              x += ctx.measureText(`中轨:${ene.middle.toFixed(2)}`).width + gap
+              ctx.fillText(middleText, x, y)
+              x += measureTextWidth(ctx, middleText) + gap
 
+              const lowerText = `下轨:${ene.lower.toFixed(2)}`
               ctx.fillStyle = ENE_COLORS.LOWER
-              ctx.fillText(`下轨:${ene.lower.toFixed(2)}`, x, y)
+              ctx.fillText(lowerText, x, y)
             }
           }
         })
       }
 
-      // 按顺序绘制所有行
       rows.forEach((row, index) => row.draw(index))
-
       ctx.restore()
     },
 
@@ -245,7 +253,6 @@ export function createMainIndicatorLegendRendererPlugin(options: {
         config.yPaddingPx = newConfig.yPaddingPx
       }
       if (newConfig.indicators && typeof newConfig.indicators === 'object') {
-        // 合并而非替换，保留其他指标的配置
         for (const [id, row] of Object.entries(newConfig.indicators) as [string, IndicatorRow][]) {
           if (!config.indicators[id]) {
             config.indicators[id] = { enabled: false, params: {} }

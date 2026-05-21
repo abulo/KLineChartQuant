@@ -11,18 +11,6 @@
   "indicators": {
     "main": [
       {
-        "type": "MA",
-        "enabled": true,
-        "params": {
-          "periods": [
-            5,
-            10,
-            20,
-            60
-          ]
-        }
-      },
-      {
         "type": "BOLL",
         "enabled": true
       }

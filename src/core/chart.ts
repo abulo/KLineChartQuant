@@ -1093,17 +1093,22 @@ export class Chart {
 
     /** 请求下一帧重绘（RAF 合并） */
     scheduleDraw() {
-        if (this.raf != null) cancelAnimationFrame(this.raf)
-        this.raf = requestAnimationFrame(() => {
-            this.raf = null
-            this.draw()
-        })
+        // 使用 flag 模式：如果 RAF 已在调度中，不再重复调度
+        // 这比 cancelAnimationFrame + requestAnimationFrame 更高效，尤其在高刷新率显示器上
+        if (this.raf === null) {
+            this.raf = requestAnimationFrame(() => {
+                this.raf = null
+                this.draw()
+            })
+        }
     }
 
     /** 销毁图表实例 */
     async destroy() {
-        if (this.raf != null) cancelAnimationFrame(this.raf)
-        this.raf = null
+        if (this.raf !== null) {
+            cancelAnimationFrame(this.raf)
+            this.raf = null
+        }
 
         // 清理尺寸观察器
         this.resizeObserver?.disconnect()
@@ -1362,13 +1367,35 @@ export class Chart {
         // 对齐 scrollLeft，消除 translate 亚像素偏移
         const scrollLeft = Math.round(container.scrollLeft * dpr) / dpr
 
-        this.dom.canvasLayer.style.width = `${viewWidth}px`
-        this.dom.canvasLayer.style.height = `${viewHeight}px`
+        const canvasLayerWidth = `${viewWidth}px`
+        if (this.dom.canvasLayer.style.width !== canvasLayerWidth) {
+            this.dom.canvasLayer.style.width = canvasLayerWidth
+        }
 
-        this.dom.xAxisCanvas.width = Math.round(plotWidth * dpr)
-        this.dom.xAxisCanvas.height = Math.round(this.opt.bottomAxisHeight * dpr)
-        this.dom.xAxisCanvas.style.width = `${this.dom.xAxisCanvas.width / dpr}px`
-        this.dom.xAxisCanvas.style.height = `${this.dom.xAxisCanvas.height / dpr}px`
+        const canvasLayerHeight = `${viewHeight}px`
+        if (this.dom.canvasLayer.style.height !== canvasLayerHeight) {
+            this.dom.canvasLayer.style.height = canvasLayerHeight
+        }
+
+        const xAxisWidth = Math.round(plotWidth * dpr)
+        if (this.dom.xAxisCanvas.width !== xAxisWidth) {
+            this.dom.xAxisCanvas.width = xAxisWidth
+        }
+
+        const xAxisHeight = Math.round(this.opt.bottomAxisHeight * dpr)
+        if (this.dom.xAxisCanvas.height !== xAxisHeight) {
+            this.dom.xAxisCanvas.height = xAxisHeight
+        }
+
+        const xAxisCssWidth = `${xAxisWidth / dpr}px`
+        if (this.dom.xAxisCanvas.style.width !== xAxisCssWidth) {
+            this.dom.xAxisCanvas.style.width = xAxisCssWidth
+        }
+
+        const xAxisCssHeight = `${xAxisHeight / dpr}px`
+        if (this.dom.xAxisCanvas.style.height !== xAxisCssHeight) {
+            this.dom.xAxisCanvas.style.height = xAxisCssHeight
+        }
 
         const vp: Viewport = {
             viewWidth,

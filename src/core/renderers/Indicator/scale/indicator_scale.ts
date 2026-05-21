@@ -2,7 +2,7 @@ import type { RendererPluginWithHost, PluginHost, RenderContext, BaseIndicatorSt
 import { RENDERER_PRIORITY } from '@/plugin'
 import { createIndicatorStateKey } from '@/plugin/stateKeys'
 import { TEXT_COLORS } from '@/core/theme/colors'
-import { FONT_FAMILY } from '@/core/theme/fonts'
+import { getFont, setCanvasFont } from '@/core/theme/fonts'
 import { calculateValueTickPositions, type ScaleType } from '@/core/utils/tickPosition'
 import { drawCrosshairPriceLabel } from '@/utils/kLineDraw/axis'
 import { roundToPhysicalPixel, alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
@@ -61,9 +61,10 @@ export function drawScaleTicks(options: DrawScaleTicksOptions): void {
     ctx.save()
     ctx.clearRect(0, 0, axisWidth, height)
 
-    ctx.font = `12px ${FONT_FAMILY}`
+    setCanvasFont(ctx, getFont(12))
     ctx.textBaseline = 'middle'
     ctx.textAlign = 'center'
+    ctx.fillStyle = TEXT_COLORS.SECONDARY
 
     const centerX = axisWidth / 2
 
@@ -79,7 +80,6 @@ export function drawScaleTicks(options: DrawScaleTicksOptions): void {
     })
 
     for (const { y, value } of positions) {
-        ctx.fillStyle = TEXT_COLORS.SECONDARY
         ctx.fillText(
             formatLabel ? formatLabel(value) : value.toFixed(decimals),
             roundToPhysicalPixel(centerX, dpr),
@@ -125,7 +125,6 @@ export function createIndicatorScaleRendererPlugin(options: IndicatorScaleRender
             const state = pluginHost.getSharedState<IndicatorScaleRenderState>(stateKey)
             if (!state) return
 
-            // 优先使用 pane 的 scaleType，构造函数参数作为 fallback
             const effectiveScaleType: ScaleType = pane.yAxis.getScaleType() ?? scaleType
 
             const displayRange = pane.yAxis.getDisplayRange({

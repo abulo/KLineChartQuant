@@ -2,8 +2,26 @@ import type { RendererPlugin, RenderContext } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { KLineData } from '@/types/price'
 import { TEXT_COLORS, MACD_COLORS } from '@/core/theme/colors'
-import { FONT_FAMILY } from '@/core/theme/fonts'
+import { getFont, setCanvasFont } from '@/core/theme/fonts'
 import { calcMACDAtIndex } from './macd'
+
+const textWidthCache = new Map<string, number>()
+const TEXT_WIDTH_CACHE_LIMIT = 256
+
+function measureTextWidth(ctx: CanvasRenderingContext2D, text: string): number {
+    const key = `${ctx.font}\n${text}`
+    const cached = textWidthCache.get(key)
+    if (cached !== undefined) {
+        return cached
+    }
+
+    const width = ctx.measureText(text).width
+    if (textWidthCache.size >= TEXT_WIDTH_CACHE_LIMIT) {
+        textWidthCache.clear()
+    }
+    textWidthCache.set(key, width)
+    return width
+}
 
 export interface MACDLegendOptions {
     /** Y 轴内边距（与主图保持一致） */
@@ -17,7 +35,6 @@ export interface MACDLegendOptions {
 export function createMACDLegendRendererPlugin(options: MACDLegendOptions = {}): RendererPlugin {
     const yPaddingPx = options.yPaddingPx ?? 0
 
-    // 缓存配置（从 MACD 渲染器获取）
     let fastPeriod = 12
     let slowPeriod = 26
     let signalPeriod = 9
@@ -45,29 +62,25 @@ export function createMACDLegendRendererPlugin(options: MACDLegendOptions = {}):
             const y = yPaddingPx + fontSize
 
             ctx.save()
-            ctx.font = `${fontSize}px Arial`
+            setCanvasFont(ctx, getFont(fontSize))
             ctx.textAlign = 'left'
             ctx.textBaseline = 'top'
 
-            // 绘制参数显示
             const paramText = `MACD(${fastPeriod},${slowPeriod},${signalPeriod})`
             ctx.fillStyle = TEXT_COLORS.TERTIARY
             ctx.fillText(paramText, x, y)
-            x += ctx.measureText(paramText).width + gap
+            x += measureTextWidth(ctx, paramText) + gap
 
-            // 绘制 DIF
             const difText = `DIF:${macdValue.dif.toFixed(2)}`
             ctx.fillStyle = MACD_COLORS.DIF
             ctx.fillText(difText, x, y)
-            x += ctx.measureText(difText).width + gap
+            x += measureTextWidth(ctx, difText) + gap
 
-            // 绘制 DEA
             const deaText = `DEA:${macdValue.dea.toFixed(2)}`
             ctx.fillStyle = MACD_COLORS.DEA
             ctx.fillText(deaText, x, y)
-            x += ctx.measureText(deaText).width + gap
+            x += measureTextWidth(ctx, deaText) + gap
 
-            // 绘制 MACD
             const macdText = `MACD:${macdValue.macd.toFixed(2)}`
             ctx.fillStyle = macdValue.macd >= 0 ? MACD_COLORS.BAR_UP : MACD_COLORS.BAR_DOWN
             ctx.fillText(macdText, x, y)

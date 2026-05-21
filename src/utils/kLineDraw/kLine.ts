@@ -3,13 +3,11 @@ import type { KLineData } from '@/types/price'
 import { priceToY } from '../priceToY'
 import {
   roundToPhysicalPixel,
-  alignRect,
-  createVerticalLineRect,
   createHorizontalLineRect,
   createAlignedKLine,
 } from '@/core/draw/pixelAlign'
 import { PRICE_COLORS, TEXT_COLORS } from '@/core/theme/colors'
-import { FONT_FAMILY } from '@/core/theme/fonts'
+import { getFont, setCanvasFont } from '@/core/theme/fonts'
 
 export interface drawOption {
   kWidth: number
@@ -37,14 +35,12 @@ function drawPriceMarker(
   const lineLength = 30
   const dotRadius = 2
 
-  // 使用填充矩形绘制水平引导线
   const lineRect = createHorizontalLineRect(x, x + lineLength, y, dpr)
   if (lineRect) {
     ctx.fillStyle = TEXT_COLORS.WEAK
     ctx.fillRect(lineRect.x, lineRect.y, lineRect.width, lineRect.height)
   }
 
-  // 绘制线末小圆点
   const endX = roundToPhysicalPixel(x + lineLength, dpr)
   const alignedY = roundToPhysicalPixel(y, dpr)
   ctx.fillStyle = TEXT_COLORS.WEAK
@@ -52,8 +48,7 @@ function drawPriceMarker(
   ctx.arc(endX, alignedY, dotRadius, 0, Math.PI * 2)
   ctx.fill()
 
-  // 绘制价格文字
-  ctx.font = `12px ${FONT_FAMILY}`
+  setCanvasFont(ctx, getFont(12))
   ctx.textBaseline = 'middle'
   ctx.textAlign = 'left'
   ctx.fillStyle = TEXT_COLORS.PRIMARY
@@ -89,7 +84,6 @@ export function kLineDraw(
 
   const unit = option.kWidth + option.kGap
 
-  // 计算价格范围和极值索引
   let visibleMaxPrice: number
   let visibleMinPrice: number
   let maxPriceIndex = startIndex
@@ -133,40 +127,30 @@ export function kLineDraw(
     const e = data[i]
     if (!e) continue
 
-    // 计算逻辑像素 Y 坐标
     const highY = priceToY(e.high, visibleMaxPrice, visibleMinPrice, height, paddingTop, paddingBottom)
     const lowY = priceToY(e.low, visibleMaxPrice, visibleMinPrice, height, paddingTop, paddingBottom)
     const openY = priceToY(e.open, visibleMaxPrice, visibleMinPrice, height, paddingTop, paddingBottom)
     const closeY = priceToY(e.close, visibleMaxPrice, visibleMinPrice, height, paddingTop, paddingBottom)
 
-    // 计算逻辑像素 X 坐标
     const rectX = option.kGap + i * unit
     const rawRectY = Math.min(openY, closeY)
     const rawRectHeight = Math.max(Math.abs(openY - closeY), 1)
 
-    // ===== 使用新的统一对齐策略 =====
     const aligned = createAlignedKLine(rectX, rawRectY, option.kWidth, rawRectHeight, dpr)
 
     const trend: kLineTrend = getKLineTrend(e)
     const color = trend === 'up' ? PRICE_COLORS.UP : PRICE_COLORS.DOWN
 
-    // ===== 绘制实体 =====
     ctx.fillStyle = color
     ctx.fillRect(aligned.bodyRect.x, aligned.bodyRect.y, aligned.bodyRect.width, aligned.bodyRect.height)
 
-    // ===== 绘制影线 =====
-    // 实体边界
     const bodyTop = aligned.bodyRect.y
     const bodyBottom = aligned.bodyRect.y + aligned.bodyRect.height
-
-    // 用实际价格判断是否存在影线
     const bodyHigh = Math.max(e.open, e.close)
     const bodyLow = Math.min(e.open, e.close)
 
-    // 设置影线颜色
     ctx.fillStyle = color
 
-    // 绘制上影线（使用统一对齐后的影线位置）
     if (e.high > bodyHigh) {
       const wickTopY = Math.min(highY, bodyTop)
       const wickBottomY = Math.max(highY, bodyTop)
@@ -181,7 +165,6 @@ export function kLineDraw(
       )
     }
 
-    // 绘制下影线
     if (e.low < bodyLow) {
       const wickTopY = Math.min(lowY, bodyBottom)
       const wickBottomY = Math.max(lowY, bodyBottom)
@@ -196,13 +179,11 @@ export function kLineDraw(
       )
     }
 
-    // 绘制最高价标记（使用影线的物理位置）
     if (i === maxPriceIndex) {
       const markerX = aligned.physWickX / dpr
       drawPriceMarker(ctx, markerX, highY, visibleMaxPrice, dpr)
     }
 
-    // 绘制最低价标记
     if (i === minPriceIndex) {
       const markerX = aligned.physWickX / dpr
       drawPriceMarker(ctx, markerX, lowY, visibleMinPrice, dpr)

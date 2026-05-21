@@ -3,7 +3,25 @@ import { RENDERER_PRIORITY, GLOBAL_PANE_ID } from '@/plugin'
 import type { KLineData } from '@/types/price'
 import { roundToPhysicalPixel, alignToPhysicalPixelCenter, createHorizontalLineRect } from '@/core/draw/pixelAlign'
 import { TEXT_COLORS, PRICE_COLORS } from '@/core/theme/colors'
-import { FONT_FAMILY } from '@/core/theme/fonts'
+import { getFont, setCanvasFont } from '@/core/theme/fonts'
+
+const textWidthCache = new Map<string, number>()
+const TEXT_WIDTH_CACHE_LIMIT = 256
+
+function measureTextWidth(ctx: CanvasRenderingContext2D, text: string): number {
+    const key = `${ctx.font}\n${text}`
+    const cached = textWidthCache.get(key)
+    if (cached !== undefined) {
+        return cached
+    }
+
+    const width = ctx.measureText(text).width
+    if (textWidthCache.size >= TEXT_WIDTH_CACHE_LIMIT) {
+        textWidthCache.clear()
+    }
+    textWidthCache.set(key, width)
+    return width
+}
 
 /**
  * 创建可视区最高/最低价标注渲染器插件
@@ -47,17 +65,14 @@ export function createExtremaMarkersRendererPlugin(): RendererPlugin {
 
             if (!Number.isFinite(max) || !Number.isFinite(min)) return
 
-            // 使用统一的 kLineCenters 作为 K 线中心 X 坐标
             const getCenterX = (i: number) => {
                 const localIdx = i - range.start
                 if (localIdx < 0 || localIdx >= kLineCenters.length) return 0
                 return kLineCenters[localIdx]!
             }
 
-            // 注册Y轴标签（供轴渲染器绘制）
             if (!context.yAxisLabels) context.yAxisLabels = []
 
-            // 最高价标签
             context.yAxisLabels.push({
                 dataIndex: maxIndex,
                 price: max,
@@ -69,7 +84,6 @@ export function createExtremaMarkersRendererPlugin(): RendererPlugin {
                 }
             })
 
-            // 最低价标签
             context.yAxisLabels.push({
                 dataIndex: minIndex,
                 price: min,
@@ -98,10 +112,10 @@ function drawPriceMarker(ctx: CanvasRenderingContext2D, x: number, y: number, pr
     const padding = 4
     const lineLength = 30
     const dotRadius = 2
+    const font = getFont(12)
 
-    ctx.font = `12px ${FONT_FAMILY}`
-    const textMetrics = ctx.measureText(text)
-    const textWidth = textMetrics.width
+    setCanvasFont(ctx, font)
+    const textWidth = measureTextWidth(ctx, text)
 
     const visibleX = x - scrollLeft
     const rightEdge = visibleX + lineLength + padding + textWidth
@@ -123,7 +137,7 @@ function drawPriceMarker(ctx: CanvasRenderingContext2D, x: number, y: number, pr
     ctx.beginPath()
     ctx.arc(endX, alignedY, dotRadius, 0, Math.PI * 2)
     ctx.fill()
-    ctx.font = `12px ${FONT_FAMILY}`
+
     ctx.textBaseline = 'middle'
     ctx.fillStyle = PRICE_COLORS.NEUTRAL
 

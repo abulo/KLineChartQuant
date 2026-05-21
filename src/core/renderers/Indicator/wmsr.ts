@@ -44,9 +44,6 @@ export function createWMSRRendererPlugin(options: WMSRRendererOptions = {}): Ren
             const { valueMin, valueMax, params, series } = state
             const valueRange = valueMax - valueMin || 1
 
-            // 写回 valueMin/valueMax 供 scale 渲染器使用
-            pluginHost?.setSharedState<WMSRRenderState>(STATE_KEY, state, `wmsr_${paneId}`)
-
             const displayRange = pane.yAxis.getDisplayRange({ minPrice: valueMin, maxPrice: valueMax })
             const displayMin = displayRange.minPrice
             const displayMax = displayRange.maxPrice

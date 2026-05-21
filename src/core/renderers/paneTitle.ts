@@ -1,7 +1,25 @@
 import type { RendererPlugin, RenderContext } from '@/plugin'
-import { RENDERER_PRIORITY, GLOBAL_PANE_ID } from '@/plugin'
+import { RENDERER_PRIORITY } from '@/plugin'
 import { TEXT_COLORS } from '@/core/theme/colors'
-import { FONT_FAMILY } from '@/core/theme/fonts'
+import { getFont, setCanvasFont } from '@/core/theme/fonts'
+
+const textWidthCache = new Map<string, number>()
+const TEXT_WIDTH_CACHE_LIMIT = 256
+
+function measureTextWidth(ctx: CanvasRenderingContext2D, text: string): number {
+    const key = `${ctx.font}\n${text}`
+    const cached = textWidthCache.get(key)
+    if (cached !== undefined) {
+        return cached
+    }
+
+    const width = ctx.measureText(text).width
+    if (textWidthCache.size >= TEXT_WIDTH_CACHE_LIMIT) {
+        textWidthCache.clear()
+    }
+    textWidthCache.set(key, width)
+    return width
+}
 
 /**
  * 单个数值项
@@ -45,7 +63,6 @@ export interface PaneTitleOptions {
  * 在面板左上角显示标题，支持动态指标数值显示
  */
 export function createPaneTitleRendererPlugin(options: PaneTitleOptions): RendererPlugin {
-    // 可变配置，支持动态更新
     let currentOptions = { ...options }
 
     return {
@@ -66,49 +83,42 @@ export function createPaneTitleRendererPlugin(options: PaneTitleOptions): Render
             const gap = 8
 
             ctx.save()
-            ctx.font = `${fontSize}px Arial`
+            setCanvasFont(ctx, getFont(fontSize))
             ctx.textAlign = 'left'
             ctx.textBaseline = 'top'
 
-            // 获取动态标题信息
             const titleInfo = currentOptions.getTitleInfo?.()
 
             if (titleInfo) {
-                // 动态模式：显示指标名称、参数、数值
                 let currentX = x
 
-                // 绘制指标名称
                 ctx.fillStyle = TEXT_COLORS.PRIMARY
                 ctx.fillText(titleInfo.name, currentX, y)
-                currentX += ctx.measureText(titleInfo.name).width
+                currentX += measureTextWidth(ctx, titleInfo.name)
 
-                // 绘制参数
                 if (titleInfo.params && titleInfo.params.length > 0) {
                     const paramText = `(${titleInfo.params.join(',')})`
                     ctx.fillStyle = TEXT_COLORS.TERTIARY
                     ctx.fillText(paramText, currentX, y)
-                    currentX += ctx.measureText(paramText).width + gap
+                    currentX += measureTextWidth(ctx, paramText) + gap
                 } else {
                     currentX += gap
                 }
 
-                // 绘制数值项
                 if (titleInfo.values && titleInfo.values.length > 0) {
                     for (const item of titleInfo.values) {
                         const valueText = `${item.label} ${item.value.toFixed(3)}`
                         ctx.fillStyle = item.color
                         ctx.fillText(valueText, currentX, y)
-                        currentX += ctx.measureText(valueText).width + gap
+                        currentX += measureTextWidth(ctx, valueText) + gap
                     }
                 }
             } else {
-                // 静态模式：只显示标题
                 ctx.fillStyle = TEXT_COLORS.PRIMARY
                 ctx.fillText(currentOptions.title, x, y)
 
-                // 绘制描述
                 if (currentOptions.description) {
-                    const titleWidth = ctx.measureText(currentOptions.title).width
+                    const titleWidth = measureTextWidth(ctx, currentOptions.title)
                     ctx.fillStyle = TEXT_COLORS.WEAK
                     ctx.fillText(` - ${currentOptions.description}`, x + titleWidth, y)
                 }

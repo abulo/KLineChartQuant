@@ -260,6 +260,15 @@ export class IndicatorScheduler {
     private dirtyKstConfig = true
     private dirtyFastkConfig = true
 
+    // 各指标 state 脏标记（series 或极值重算时置位，控制 state 写入）
+    private dirtyRsiState = true
+    private dirtyCciState = true
+    private dirtyStochState = true
+    private dirtyMomState = true
+    private dirtyWmsrState = true
+    private dirtyKstState = true
+    private dirtyFastkState = true
+
     /**
      * 设置 PluginHost，用于读写 StateStore
      */
@@ -452,9 +461,7 @@ export class IndicatorScheduler {
         }
         if (!this.pluginHost) return
 
-        const shouldRecomputeExtremes = this.dirtyData || this.dirtyRange ||
-            this.dirtyBollConfig || this.dirtyExpmaConfig || this.dirtyEneConfig || this.dirtyRsiConfig ||
-            this.dirtyCciConfig || this.dirtyStochConfig || this.dirtyMomConfig || this.dirtyWmsrConfig || this.dirtyKstConfig || this.dirtyFastkConfig
+// 各指标独立的极值守卫条件，避免一脏全算
 
         // ===== 步骤1：重算各指标 series =====
 
@@ -588,7 +595,8 @@ export class IndicatorScheduler {
         // BOLL 极值（扫描 upper/middle/lower）
         let bollVisibleMin = Infinity
         let bollVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        const dirtyBollState = this.dirtyData || this.dirtyRange || this.dirtyBollConfig
+        if (dirtyBollState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedBollSeries.length; i++) {
                 const p = this.cachedBollSeries[i]
                 if (p) {
@@ -601,7 +609,8 @@ export class IndicatorScheduler {
         // EXPMA 极值（扫描 fast/slow）
         let expmaVisibleMin = Infinity
         let expmaVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        const dirtyExpmaState = this.dirtyData || this.dirtyRange || this.dirtyExpmaConfig
+        if (dirtyExpmaState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedExpmaSeries.length; i++) {
                 const p = this.cachedExpmaSeries[i]
                 if (p) {
@@ -614,7 +623,8 @@ export class IndicatorScheduler {
         // ENE 极值（扫描 upper/middle/lower）
         let eneVisibleMin = Infinity
         let eneVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        const dirtyEneState = this.dirtyData || this.dirtyRange || this.dirtyEneConfig
+        if (dirtyEneState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedEneSeries.length; i++) {
                 const p = this.cachedEneSeries[i]
                 if (p) {
@@ -627,7 +637,8 @@ export class IndicatorScheduler {
         // RSI 极值（扫描所有启用的周期）
         let rsiVisibleMin = Infinity
         let rsiVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        this.dirtyRsiState = this.dirtyData || this.dirtyRange || this.dirtyRsiConfig
+        if (this.dirtyRsiState) {
             for (const values of Object.values(this.cachedRsiSeries)) {
                 for (let i = this.visibleRange.start; i < this.visibleRange.end && i < values.length; i++) {
                     const v = values[i]
@@ -642,7 +653,8 @@ export class IndicatorScheduler {
         // CCI 极值
         let cciVisibleMin = Infinity
         let cciVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        this.dirtyCciState = this.dirtyData || this.dirtyRange || this.dirtyCciConfig
+        if (this.dirtyCciState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedCciSeries.length; i++) {
                 const v = this.cachedCciSeries[i]
                 if (v !== undefined) {
@@ -655,7 +667,8 @@ export class IndicatorScheduler {
         // STOCH 极值（扫描 k 和 d）
         let stochVisibleMin = Infinity
         let stochVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        this.dirtyStochState = this.dirtyData || this.dirtyRange || this.dirtyStochConfig
+        if (this.dirtyStochState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedStochSeries.length; i++) {
                 const p = this.cachedStochSeries[i]
                 if (p) {
@@ -668,7 +681,8 @@ export class IndicatorScheduler {
         // MOM 极值
         let momVisibleMin = Infinity
         let momVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        this.dirtyMomState = this.dirtyData || this.dirtyRange || this.dirtyMomConfig
+        if (this.dirtyMomState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedMomSeries.length; i++) {
                 const v = this.cachedMomSeries[i]
                 if (v !== undefined) {
@@ -681,7 +695,8 @@ export class IndicatorScheduler {
         // WMSR 极值
         let wmsrVisibleMin = Infinity
         let wmsrVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        this.dirtyWmsrState = this.dirtyData || this.dirtyRange || this.dirtyWmsrConfig
+        if (this.dirtyWmsrState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedWmsrSeries.length; i++) {
                 const v = this.cachedWmsrSeries[i]
                 if (v !== undefined) {
@@ -694,7 +709,8 @@ export class IndicatorScheduler {
         // KST 极值（扫描 kst 和 signal）
         let kstVisibleMin = Infinity
         let kstVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        this.dirtyKstState = this.dirtyData || this.dirtyRange || this.dirtyKstConfig
+        if (this.dirtyKstState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedKstSeries.length; i++) {
                 const p = this.cachedKstSeries[i]
                 if (p) {
@@ -707,7 +723,8 @@ export class IndicatorScheduler {
         // FASTK 极值
         let fastkVisibleMin = Infinity
         let fastkVisibleMax = -Infinity
-        if (shouldRecomputeExtremes) {
+        this.dirtyFastkState = this.dirtyData || this.dirtyRange || this.dirtyFastkConfig
+        if (this.dirtyFastkState) {
             for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedFastkSeries.length; i++) {
                 const v = this.cachedFastkSeries[i]
                 if (v !== undefined) {
@@ -719,148 +736,170 @@ export class IndicatorScheduler {
 
         // ===== 步骤3：构建状态并写入 StateStore =====
 
-        // MA State
-        const enabledPeriods = Object.keys(this.cachedSeries).map(Number)
-        const maState: MARenderState = {
-            timestamp: Date.now(),
-            series: { ...this.cachedSeries },
-            enabledPeriods,
-            visibleMin: maVisibleMin,
-            visibleMax: maVisibleMax,
+        // MA State（dirtyData 或 dirtyRange 时写入）
+        if (this.dirtyData || this.dirtyRange) {
+            const enabledPeriods = Object.keys(this.cachedSeries).map(Number)
+            const maState: MARenderState = {
+                timestamp: Date.now(),
+                series: this.cachedSeries,
+                enabledPeriods,
+                visibleMin: maVisibleMin,
+                visibleMax: maVisibleMax,
+            }
+            this.pluginHost.setSharedState<MARenderState>(MA_STATE_KEY, maState, 'ma_scheduler')
         }
-        this.pluginHost.setSharedState<MARenderState>(MA_STATE_KEY, maState, 'ma_scheduler')
 
         // BOLL State
-        const bollState: BOLLRenderState = {
-            timestamp: Date.now(),
-            series: this.cachedBollSeries,
-            params: { ...this.bollConfig },
-            visibleMin: bollVisibleMin,
-            visibleMax: bollVisibleMax,
+        if (dirtyBollState) {
+            const bollState: BOLLRenderState = {
+                timestamp: Date.now(),
+                series: this.cachedBollSeries,
+                params: this.bollConfig,
+                visibleMin: bollVisibleMin,
+                visibleMax: bollVisibleMax,
+            }
+            this.pluginHost.setSharedState<BOLLRenderState>(BOLL_STATE_KEY, bollState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<BOLLRenderState>(BOLL_STATE_KEY, bollState, 'indicator_scheduler')
 
         // EXPMA State
-        const expmaState: EXPMARenderState = {
-            timestamp: Date.now(),
-            series: this.cachedExpmaSeries,
-            params: { ...this.expmaConfig },
-            visibleMin: expmaVisibleMin,
-            visibleMax: expmaVisibleMax,
+        if (dirtyExpmaState) {
+            const expmaState: EXPMARenderState = {
+                timestamp: Date.now(),
+                series: this.cachedExpmaSeries,
+                params: this.expmaConfig,
+                visibleMin: expmaVisibleMin,
+                visibleMax: expmaVisibleMax,
+            }
+            this.pluginHost.setSharedState<EXPMARenderState>(EXPMA_STATE_KEY, expmaState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<EXPMARenderState>(EXPMA_STATE_KEY, expmaState, 'indicator_scheduler')
 
         // ENE State
-        const eneState: ENERenderState = {
-            timestamp: Date.now(),
-            series: this.cachedEneSeries,
-            params: { ...this.eneConfig },
-            visibleMin: eneVisibleMin,
-            visibleMax: eneVisibleMax,
+        if (dirtyEneState) {
+            const eneState: ENERenderState = {
+                timestamp: Date.now(),
+                series: this.cachedEneSeries,
+                params: this.eneConfig,
+                visibleMin: eneVisibleMin,
+                visibleMax: eneVisibleMax,
+            }
+            this.pluginHost.setSharedState<ENERenderState>(ENE_STATE_KEY, eneState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<ENERenderState>(ENE_STATE_KEY, eneState, 'indicator_scheduler')
 
-        // RSI State
-        const rsiStateKey = createRSIStateKey(this.rsiPaneId)
-        const rsiEnabledPeriods = Object.keys(this.cachedRsiSeries).map(Number)
-        const rsiState: RSIRenderState = {
-            timestamp: Date.now(),
-            series: { ...this.cachedRsiSeries },
-            enabledPeriods: rsiEnabledPeriods,
-            params: { ...this.rsiConfig },
-            valueMin: 0,
-            valueMax: 100,
-            visibleMin: rsiVisibleMin,
-            visibleMax: rsiVisibleMax,
+        // RSI State（仅 dirtyRsiState 时写入）
+        if (this.dirtyRsiState) {
+            const rsiStateKey = createRSIStateKey(this.rsiPaneId)
+            const rsiEnabledPeriods = Object.keys(this.cachedRsiSeries).map(Number)
+            const rsiState: RSIRenderState = {
+                timestamp: Date.now(),
+                series: this.cachedRsiSeries,
+                enabledPeriods: rsiEnabledPeriods,
+                params: this.rsiConfig,
+                valueMin: 0,
+                valueMax: 100,
+                visibleMin: rsiVisibleMin,
+                visibleMax: rsiVisibleMax,
+            }
+            this.pluginHost.setSharedState<RSIRenderState>(rsiStateKey, rsiState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<RSIRenderState>(rsiStateKey, rsiState, 'indicator_scheduler')
 
-        // CCI State
-        const cciStateKey = createCCIStateKey(this.cciPaneId)
-        const cciValueMin = Math.min(cciVisibleMin, -150)
-        const cciValueMax = Math.max(cciVisibleMax, 150)
-        const cciState: CCIRenderState = {
-            timestamp: Date.now(),
-            series: this.cachedCciSeries,
-            params: { ...this.cciConfig },
-            valueMin: cciValueMin,
-            valueMax: cciValueMax,
-            visibleMin: cciVisibleMin,
-            visibleMax: cciVisibleMax,
+        // CCI State（仅 dirtyCciState 时写入）
+        if (this.dirtyCciState) {
+            const cciStateKey = createCCIStateKey(this.cciPaneId)
+            const cciValueMin = Math.min(cciVisibleMin, -150)
+            const cciValueMax = Math.max(cciVisibleMax, 150)
+            const cciState: CCIRenderState = {
+                timestamp: Date.now(),
+                series: this.cachedCciSeries,
+                params: this.cciConfig,
+                valueMin: cciValueMin,
+                valueMax: cciValueMax,
+                visibleMin: cciVisibleMin,
+                visibleMax: cciVisibleMax,
+            }
+            this.pluginHost.setSharedState<CCIRenderState>(cciStateKey, cciState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<CCIRenderState>(cciStateKey, cciState, 'indicator_scheduler')
 
-        // STOCH State
-        const stochStateKey = createSTOCHStateKey(this.stochPaneId)
-        const stochState: STOCHRenderState = {
-            timestamp: Date.now(),
-            series: this.cachedStochSeries,
-            params: { ...this.stochConfig },
-            valueMin: 0,
-            valueMax: 100,
-            visibleMin: stochVisibleMin,
-            visibleMax: stochVisibleMax,
+        // STOCH State（仅 dirtyStochState 时写入）
+        if (this.dirtyStochState) {
+            const stochStateKey = createSTOCHStateKey(this.stochPaneId)
+            const stochState: STOCHRenderState = {
+                timestamp: Date.now(),
+                series: this.cachedStochSeries,
+                params: this.stochConfig,
+                valueMin: 0,
+                valueMax: 100,
+                visibleMin: stochVisibleMin,
+                visibleMax: stochVisibleMax,
+            }
+            this.pluginHost.setSharedState<STOCHRenderState>(stochStateKey, stochState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<STOCHRenderState>(stochStateKey, stochState, 'indicator_scheduler')
 
-        // MOM State
-        const momStateKey = createMOMStateKey(this.momPaneId)
-        const momPadding = Math.max(Math.abs(momVisibleMax), Math.abs(momVisibleMin)) * 0.1
-        const momValueMin = momVisibleMin - momPadding
-        const momValueMax = momVisibleMax + momPadding
-        const momState: MOMRenderState = {
-            timestamp: Date.now(),
-            series: this.cachedMomSeries,
-            params: { ...this.momConfig },
-            valueMin: momValueMin,
-            valueMax: momValueMax,
-            visibleMin: momVisibleMin,
-            visibleMax: momVisibleMax,
+        // MOM State（仅 dirtyMomState 时写入）
+        if (this.dirtyMomState) {
+            const momStateKey = createMOMStateKey(this.momPaneId)
+            const momPadding = Math.max(Math.abs(momVisibleMax), Math.abs(momVisibleMin)) * 0.1
+            const momValueMin = momVisibleMin - momPadding
+            const momValueMax = momVisibleMax + momPadding
+            const momState: MOMRenderState = {
+                timestamp: Date.now(),
+                series: this.cachedMomSeries,
+                params: this.momConfig,
+                valueMin: momValueMin,
+                valueMax: momValueMax,
+                visibleMin: momVisibleMin,
+                visibleMax: momVisibleMax,
+            }
+            this.pluginHost.setSharedState<MOMRenderState>(momStateKey, momState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<MOMRenderState>(momStateKey, momState, 'indicator_scheduler')
 
-        // WMSR State
-        const wmsrStateKey = createWMSRStateKey(this.wmsrPaneId)
-        const wmsrState: WMSRRenderState = {
-            timestamp: Date.now(),
-            series: this.cachedWmsrSeries,
-            params: { ...this.wmsrConfig },
-            valueMin: -100,
-            valueMax: 0,
-            visibleMin: wmsrVisibleMin,
-            visibleMax: wmsrVisibleMax,
+        // WMSR State（仅 dirtyWmsrState 时写入）
+        if (this.dirtyWmsrState) {
+            const wmsrStateKey = createWMSRStateKey(this.wmsrPaneId)
+            const wmsrState: WMSRRenderState = {
+                timestamp: Date.now(),
+                series: this.cachedWmsrSeries,
+                params: this.wmsrConfig,
+                valueMin: -100,
+                valueMax: 0,
+                visibleMin: wmsrVisibleMin,
+                visibleMax: wmsrVisibleMax,
+            }
+            this.pluginHost.setSharedState<WMSRRenderState>(wmsrStateKey, wmsrState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<WMSRRenderState>(wmsrStateKey, wmsrState, 'indicator_scheduler')
 
-        // KST State
-        const kstStateKey = createKSTStateKey(this.kstPaneId)
-        const kstRange = kstVisibleMax - kstVisibleMin
-        const kstPadding = kstRange * 0.1
-        const kstValueMin = kstVisibleMin - kstPadding
-        const kstValueMax = kstVisibleMax + kstPadding
-        const kstState: KSTRenderState = {
-            timestamp: Date.now(),
-            series: this.cachedKstSeries,
-            params: { ...this.kstConfig },
-            valueMin: kstValueMin,
-            valueMax: kstValueMax,
-            visibleMin: kstVisibleMin,
-            visibleMax: kstVisibleMax,
+        // KST State（仅 dirtyKstState 时写入）
+        if (this.dirtyKstState) {
+            const kstStateKey = createKSTStateKey(this.kstPaneId)
+            const kstRange = kstVisibleMax - kstVisibleMin
+            const kstPadding = kstRange * 0.1
+            const kstValueMin = kstVisibleMin - kstPadding
+            const kstValueMax = kstVisibleMax + kstPadding
+            const kstState: KSTRenderState = {
+                timestamp: Date.now(),
+                series: this.cachedKstSeries,
+                params: this.kstConfig,
+                valueMin: kstValueMin,
+                valueMax: kstValueMax,
+                visibleMin: kstVisibleMin,
+                visibleMax: kstVisibleMax,
+            }
+            this.pluginHost.setSharedState<KSTRenderState>(kstStateKey, kstState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<KSTRenderState>(kstStateKey, kstState, 'indicator_scheduler')
 
-        // FASTK State
-        const fastkStateKey = createFASTKStateKey(this.fastkPaneId)
-        const fastkState: FASTKRenderState = {
-            timestamp: Date.now(),
-            series: this.cachedFastkSeries,
-            params: { ...this.fastkConfig },
-            valueMin: 0,
-            valueMax: 100,
-            visibleMin: fastkVisibleMin,
-            visibleMax: fastkVisibleMax,
+        // FASTK State（仅 dirtyFastkState 时写入）
+        if (this.dirtyFastkState) {
+            const fastkStateKey = createFASTKStateKey(this.fastkPaneId)
+            const fastkState: FASTKRenderState = {
+                timestamp: Date.now(),
+                series: this.cachedFastkSeries,
+                params: this.fastkConfig,
+                valueMin: 0,
+                valueMax: 100,
+                visibleMin: fastkVisibleMin,
+                visibleMax: fastkVisibleMax,
+            }
+            this.pluginHost.setSharedState<FASTKRenderState>(fastkStateKey, fastkState, 'indicator_scheduler')
         }
-        this.pluginHost.setSharedState<FASTKRenderState>(fastkStateKey, fastkState, 'indicator_scheduler')
 
         // 重置脏标记
         this.dirtyData = false
@@ -875,5 +914,14 @@ export class IndicatorScheduler {
         this.dirtyWmsrConfig = false
         this.dirtyKstConfig = false
         this.dirtyFastkConfig = false
+
+        // 重置 state 脏标记
+        this.dirtyRsiState = false
+        this.dirtyCciState = false
+        this.dirtyStochState = false
+        this.dirtyMomState = false
+        this.dirtyWmsrState = false
+        this.dirtyKstState = false
+        this.dirtyFastkState = false
     }
 }

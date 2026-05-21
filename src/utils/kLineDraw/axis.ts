@@ -1,9 +1,27 @@
 import type { KLineData } from '@/types/price'
 import { priceToY, yToPrice } from '../priceToY'
 import { alignToPhysicalPixelCenter, roundToPhysicalPixel } from '@/core/draw/pixelAlign'
-import { formatYMDShanghai, formatMonthOrYear, monthKey, findMonthBoundaries } from '@/utils/dateFormat'
-import { TAG_BG_COLORS, BORDER_COLORS, TEXT_COLORS, CROSSHAIR_COLORS, getTickColor } from '@/core/theme/colors'
-import { FONT_FAMILY } from '@/core/theme/fonts'
+import { formatYMDShanghai, formatMonthOrYear, findMonthBoundaries } from '@/utils/dateFormat'
+import { TAG_BG_COLORS, BORDER_COLORS, TEXT_COLORS, CROSSHAIR_COLORS } from '@/core/theme/colors'
+import { getFont, setCanvasFont } from '@/core/theme/fonts'
+
+const textWidthCache = new Map<string, number>()
+const TEXT_WIDTH_CACHE_LIMIT = 512
+
+function measureTextWidth(ctx: CanvasRenderingContext2D, text: string): number {
+    const key = `${ctx.font}\n${text}`
+    const cached = textWidthCache.get(key)
+    if (cached !== undefined) {
+        return cached
+    }
+
+    const width = ctx.measureText(text).width
+    if (textWidthCache.size >= TEXT_WIDTH_CACHE_LIMIT) {
+        textWidthCache.clear()
+    }
+    textWidthCache.set(key, width)
+    return width
+}
 
 export interface PriceAxisOptions {
     x: number
@@ -54,11 +72,9 @@ export function drawPriceAxis(ctx: CanvasRenderingContext2D, opts: PriceAxisOpti
     const range = maxPrice - minPrice
     const step = range === 0 ? 0 : range / (Math.max(2, ticks) - 1)
 
-    // 背景
     ctx.fillStyle = bgColor
     ctx.fillRect(x, y, width, height)
 
-    // 左边界线
     if (drawLeftBorder) {
         ctx.strokeStyle = lineColor
         ctx.lineWidth = 1
@@ -68,32 +84,27 @@ export function drawPriceAxis(ctx: CanvasRenderingContext2D, opts: PriceAxisOpti
         ctx.stroke()
     }
 
-    ctx.font = `${fontSize}px ${FONT_FAMILY}`
+    setCanvasFont(ctx, getFont(fontSize))
     ctx.textBaseline = 'middle'
-    // 价格轴文字水平居中
     ctx.textAlign = 'center'
+    ctx.strokeStyle = lineColor
+    ctx.fillStyle = textColor
 
     const centerX = x + width / 2
 
     for (let i = 0; i < Math.max(2, ticks); i++) {
         const p = range === 0 ? maxPrice : maxPrice - step * i
-        // 统一对 y 做一次四舍五入，减少与 gridLines 的 1px 级误差
         const yy = Math.round(priceToY(p, maxPrice, minPrice, height, pad, pad) + y)
 
-        // 刻度短线
         if (drawTickLines) {
-            ctx.strokeStyle = lineColor
             ctx.beginPath()
             const lineY = alignToPhysicalPixelCenter(yy, dpr)
-
             ctx.moveTo(x, lineY)
             ctx.lineTo(x + 4, lineY)
             ctx.stroke()
         }
 
-        // 文字：显示平移后的价格
         const displayPrice = p + priceOffset
-        ctx.fillStyle = textColor
         ctx.fillText(displayPrice.toFixed(2), roundToPhysicalPixel(centerX, dpr), alignToPhysicalPixelCenter(yy, dpr))
     }
 }
@@ -184,10 +195,6 @@ export interface CrosshairTimeLabelOptions {
     paddingY?: number
 }
 
-/**
- * 在底部时间轴上绘制"十字线日期标签"
- * 说明：该函数假设时间轴背景/刻度已绘制完（即 drawTimeAxis 之后调用）。
- */
 export function drawCrosshairTimeLabel(ctx: CanvasRenderingContext2D, opts: CrosshairTimeLabelOptions) {
     const {
         x,
@@ -204,11 +211,11 @@ export function drawCrosshairTimeLabel(ctx: CanvasRenderingContext2D, opts: Cros
     const text = formatYMDShanghai(timestamp)
 
     ctx.save()
-    ctx.font = `${fontSize}px ${FONT_FAMILY}`
+    setCanvasFont(ctx, getFont(fontSize))
     ctx.textBaseline = 'middle'
     ctx.textAlign = 'center'
 
-    const tw = Math.round(ctx.measureText(text).width)
+    const tw = Math.round(measureTextWidth(ctx, text))
     const rectW = Math.min(width, tw + paddingX * 2)
     const rectH = height
 
@@ -218,7 +225,6 @@ export function drawCrosshairTimeLabel(ctx: CanvasRenderingContext2D, opts: Cros
     const rectX = centerX - rectW / 2
     const rectY = y
 
-    // 背景条（黑色，占满整个时间轴高度）
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
     ctx.fillRect(
         roundToPhysicalPixel(rectX, dpr),
@@ -227,17 +233,12 @@ export function drawCrosshairTimeLabel(ctx: CanvasRenderingContext2D, opts: Cros
         roundToPhysicalPixel(rectH, dpr),
     )
 
-    // 文字（白色）
     ctx.fillStyle = '#ffffff'
     ctx.fillText(text, roundToPhysicalPixel(centerX, dpr), alignToPhysicalPixelCenter(centerY, dpr))
 
     ctx.restore()
 }
 
-/**
- * 在右侧价格轴上绘制"十字线价格标签"
- * 说明：该函数假设价格轴背景/刻度已绘制完（即 drawPriceAxis 之后调用）。
- */
 export function drawCrosshairPriceLabel(ctx: CanvasRenderingContext2D, opts: CrosshairPriceLabelOptions) {
     const {
         x,
@@ -259,13 +260,11 @@ export function drawCrosshairPriceLabel(ctx: CanvasRenderingContext2D, opts: Cro
 
     const pad = Math.max(0, Math.min(yPaddingPx, Math.floor(height / 2) - 1))
     const { maxPrice, minPrice } = priceRange
-
-    // 优先使用外部传入价格（active pane 已计算），否则按当前 pane 反算并应用偏移
     const displayPrice = price ?? (yToPrice(crosshairY - y, maxPrice, minPrice, height, pad, pad) + priceOffset)
     const priceText = formatPrice ? formatPrice(displayPrice) : displayPrice.toFixed(2)
 
     ctx.save()
-    ctx.font = `${fontSize}px ${FONT_FAMILY}`
+    setCanvasFont(ctx, getFont(fontSize))
     ctx.textBaseline = 'middle'
     ctx.textAlign = 'center'
 
@@ -275,7 +274,6 @@ export function drawCrosshairPriceLabel(ctx: CanvasRenderingContext2D, opts: Cro
     const yy = Math.min(Math.max(crosshairY, y + rectH / 2), y + height - rectH / 2)
     const rectY = yy - rectH / 2
 
-    // 背景条
     const rx = x
     const ry = roundToPhysicalPixel(rectY, dpr)
     const rw = width
@@ -294,7 +292,6 @@ export function drawCrosshairPriceLabel(ctx: CanvasRenderingContext2D, opts: Cro
         )
     }
 
-    // 绘制价格文字
     const centerX = x + width / 2
     ctx.fillStyle = textColor
     ctx.fillText(priceText, roundToPhysicalPixel(centerX, dpr), alignToPhysicalPixelCenter(yy, dpr))
@@ -365,23 +362,19 @@ export function drawTimeAxis(ctx: CanvasRenderingContext2D, opts: TimeAxisOption
         drawBottomBorder = true,
     } = opts
 
-    // 使用物理像素对齐后的单位，与 getPhysicalKLineConfig 保持一致
     const physKWidth = Math.round(kWidth * dpr)
     const alignedPhysKWidth = physKWidth % 2 === 0 ? physKWidth + 1 : physKWidth
     const physKGap = Math.round(kGap * dpr)
     const unitPx = alignedPhysKWidth + physKGap
-    const startXPx = physKGap // 第一根 K 线左侧的间距
+    const startXPx = physKGap
 
-    // 转换到逻辑像素空间
     const unit = unitPx / dpr
     const startX = startXPx / dpr
     const alignedKWidth = alignedPhysKWidth / dpr
 
-    // 背景
     ctx.fillStyle = bgColor
     ctx.fillRect(x, y, width, height)
 
-    // 上边界线（如果主图已有底边框则不绘制）
     if (drawTopBorder) {
         ctx.strokeStyle = lineColor
         ctx.lineWidth = 1
@@ -391,7 +384,6 @@ export function drawTimeAxis(ctx: CanvasRenderingContext2D, opts: TimeAxisOption
         ctx.stroke()
     }
 
-    // 下边界线（如果副图已有下边框则不绘制）
     if (drawBottomBorder) {
         ctx.strokeStyle = lineColor
         ctx.lineWidth = 1
@@ -403,32 +395,28 @@ export function drawTimeAxis(ctx: CanvasRenderingContext2D, opts: TimeAxisOption
 
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
+    ctx.fillStyle = textColor
     const textY = y + height / 2
+    const regularFont = getFont(fontSize)
+    const boldFont = getFont(fontSize, { bold: true })
 
-    // 使用预计算的月边界
     const boundaries = findMonthBoundaries(data)
-
-    // 只考虑可视范围内的边界
     const visibleBoundaries = boundaries.filter((idx: number) => idx >= startIndex && idx < endIndex)
 
     for (const idx of visibleBoundaries) {
         const k = data[idx]
         if (!k) continue
 
-        // 使用与 calcKLinePositions 一致的坐标计算
         const worldX = startX + idx * unit + alignedKWidth / 2
         const screenX = worldX - scrollLeft
 
-        // 避免文字/刻度贴边：按左右 padding 收紧可绘制区域
         const minX = paddingX
         const maxX = Math.max(paddingX, width - paddingX)
 
         if (screenX >= minX && screenX <= maxX) {
             const drawX = Math.min(Math.max(screenX, minX), maxX)
-
             const { text, isYear } = formatMonthOrYear(k.timestamp)
-            ctx.fillStyle = textColor
-            ctx.font = `${isYear ? 'bold ' : ''}${fontSize}px Arial`
+            setCanvasFont(ctx, isYear ? boldFont : regularFont)
             ctx.fillText(text, roundToPhysicalPixel(drawX, dpr), alignToPhysicalPixelCenter(textY, dpr))
         }
     }
@@ -450,10 +438,6 @@ export interface AxisPriceLabelOptions {
     fontSize?: number
 }
 
-/**
- * 在右侧价格轴上绘制价格标签
- * 与 drawCrosshairPriceLabel 类似，但简化了参数（价格直接传入，无需计算）
- */
 export function drawAxisPriceLabel(ctx: CanvasRenderingContext2D, opts: AxisPriceLabelOptions) {
     const {
         x,
@@ -472,7 +456,7 @@ export function drawAxisPriceLabel(ctx: CanvasRenderingContext2D, opts: AxisPric
     const priceText = price.toFixed(2)
 
     ctx.save()
-    ctx.font = `${fontSize}px ${FONT_FAMILY}`
+    setCanvasFont(ctx, getFont(fontSize))
     ctx.textBaseline = 'middle'
     ctx.textAlign = 'center'
 
@@ -482,7 +466,6 @@ export function drawAxisPriceLabel(ctx: CanvasRenderingContext2D, opts: AxisPric
     const yy = Math.min(Math.max(priceY, y + rectH / 2), y + height - rectH / 2)
     const rectY = yy - rectH / 2
 
-    // 背景条
     const rx = x
     const ry = roundToPhysicalPixel(rectY, dpr)
     const rw = width
@@ -501,7 +484,6 @@ export function drawAxisPriceLabel(ctx: CanvasRenderingContext2D, opts: AxisPric
         )
     }
 
-    // 绘制价格文字
     const centerX = x + width / 2
     ctx.fillStyle = textColor
     ctx.fillText(priceText, roundToPhysicalPixel(centerX, dpr), alignToPhysicalPixelCenter(yy, dpr))
@@ -523,10 +505,6 @@ export interface AxisTimeLabelOptions {
     paddingX?: number
 }
 
-/**
- * 在底部时间轴上绘制时间标签
- * 与 drawCrosshairTimeLabel 类似，但 labelX 是屏幕坐标（已处理 scrollLeft）
- */
 export function drawAxisTimeLabel(ctx: CanvasRenderingContext2D, opts: AxisTimeLabelOptions) {
     const {
         x,
@@ -543,11 +521,11 @@ export function drawAxisTimeLabel(ctx: CanvasRenderingContext2D, opts: AxisTimeL
     const text = formatYMDShanghai(timestamp)
 
     ctx.save()
-    ctx.font = `${fontSize}px ${FONT_FAMILY}`
+    setCanvasFont(ctx, getFont(fontSize))
     ctx.textBaseline = 'middle'
     ctx.textAlign = 'center'
 
-    const tw = Math.round(ctx.measureText(text).width)
+    const tw = Math.round(measureTextWidth(ctx, text))
     const rectW = Math.min(width, tw + paddingX * 2)
     const rectH = height
 
@@ -557,7 +535,6 @@ export function drawAxisTimeLabel(ctx: CanvasRenderingContext2D, opts: AxisTimeL
     const rectX = centerX - rectW / 2
     const rectY = y
 
-    // 背景条（使用传入颜色或默认黑色）
     ctx.fillStyle = opts.bgColor ?? 'rgba(0, 0, 0, 0.8)'
     ctx.fillRect(
         roundToPhysicalPixel(rectX, dpr),
@@ -566,7 +543,6 @@ export function drawAxisTimeLabel(ctx: CanvasRenderingContext2D, opts: AxisTimeL
         roundToPhysicalPixel(rectH, dpr),
     )
 
-    // 文字（使用传入颜色或默认白色）
     ctx.fillStyle = opts.textColor ?? '#ffffff'
     ctx.fillText(text, roundToPhysicalPixel(centerX, dpr), alignToPhysicalPixelCenter(centerY, dpr))
 
