@@ -5,6 +5,8 @@ import type { KLineData } from '@/types/price'
 import { MACD_COLORS } from '@/core/theme/colors'
 import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 
+type Rect = { x: number; y: number; width: number; height: number }
+
 export interface MACDConfig {
     /** 快线周期（默认 12） */
     fastPeriod?: number
@@ -238,15 +240,17 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
             // 零轴位置
             const zeroY = pane.height - (0 - displayMin) / displayValueRange * pane.height
 
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
-
             const drawStart = Math.max(range.start, config.slowPeriod - 1)
             const drawEnd = Math.min(range.end, klineData.length)
 
-            // 绘制 MACD 柱状图
+            // 绘制 MACD 柱状图（WebGL 优先）
             if (config.showBAR) {
                 const alignedZeroY = Math.round(zeroY * dpr) / dpr
+
+                const barUpRects: Array<{ x: number; y: number; width: number; height: number }> = []
+                const barUpLightRects: Array<{ x: number; y: number; width: number; height: number }> = []
+                const barDownRects: Array<{ x: number; y: number; width: number; height: number }> = []
+                const barDownLightRects: Array<{ x: number; y: number; width: number; height: number }> = []
 
                 for (let i = drawStart; i < drawEnd; i++) {
                     const point = macdData[i]
@@ -254,54 +258,42 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
 
                     const barRect = context.kBarRects[i - range.start]
                     if (!barRect) continue
-                    const alignedBarX = barRect.x
-                    const alignedBarWidth = barRect.width
 
                     const barY = pane.height - (point.macd - displayMin) / displayValueRange * pane.height
                     const isPositive = point.macd >= 0
 
-                    // TradingView风格：比较当前柱与前一根柱的高度
-                    // 上升趋势（当前 > 前一根）：深色
-                    // 下降趋势（当前 < 前一根）：淡色
                     const prevPoint = i > 0 ? macdData[i - 1] : null
-                    let isRising: boolean
-                    if (prevPoint) {
-                        // 比较柱子高度（绝对值方向）
-                        isRising = point.macd >= prevPoint.macd
-                    } else {
-                        // 第一根柱子默认使用深色
-                        isRising = true
-                    }
+                    const isRising = prevPoint ? point.macd >= prevPoint.macd : true
 
-                    // 根据正负值和趋势选择颜色
-                    let color: string
-                    if (isPositive) {
-                        color = isRising ? MACD_COLORS.BAR_UP : MACD_COLORS.BAR_UP_LIGHT
-                    } else {
-                        color = isRising ? MACD_COLORS.BAR_DOWN_LIGHT : MACD_COLORS.BAR_DOWN
-                    }
-                    ctx.fillStyle = color
-
-                    // 对齐到物理像素
                     const alignedBarY = Math.round(barY * dpr) / dpr
-
-                    // 确保最小物理像素高度（1px），保持零轴附近视觉连续性
                     const minBarHPx = 1 / dpr
+
                     if (isPositive) {
                         const rawH = alignedZeroY - alignedBarY
                         const finalH = rawH <= 0 ? minBarHPx : Math.max(rawH, minBarHPx)
                         const finalBarY = rawH <= 0 ? alignedZeroY - minBarHPx : alignedZeroY - finalH
-                        ctx.fillRect(alignedBarX, finalBarY, alignedBarWidth, finalH)
+                        const rect = { x: barRect.x, y: finalBarY, width: barRect.width, height: finalH }
+                        if (isRising) { barUpRects.push(rect) } else { barUpLightRects.push(rect) }
                     } else {
                         const rawH = alignedBarY - alignedZeroY
                         const finalH = rawH <= 0 ? minBarHPx : Math.max(rawH, minBarHPx)
-                        ctx.fillRect(alignedBarX, alignedZeroY, alignedBarWidth, finalH)
+                        const rect = { x: barRect.x, y: alignedZeroY, width: barRect.width, height: finalH }
+                        if (isRising) { barDownLightRects.push(rect) } else { barDownRects.push(rect) }
                     }
+                }
 
+                const usedWebGL = drawMacdBarsWithWebGL(context, barUpRects, barUpLightRects, barDownRects, barDownLightRects)
+                if (!usedWebGL) {
+                    drawMacdBarsWithCanvas2D(ctx, scrollLeft, barUpRects, barUpLightRects, barDownRects, barDownLightRects)
+                } else {
+                    compositeMacdWebGL(ctx, context)
                 }
             }
 
-            // 绘制 DIF 线
+            // DIF/DEA 线始终走 Canvas2D
+            ctx.save()
+            ctx.translate(-scrollLeft, 0)
+
             if (config.showDIF) {
                 ctx.strokeStyle = MACD_COLORS.DIF
                 ctx.lineWidth = 1
@@ -332,7 +324,6 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
                 ctx.stroke()
             }
 
-            // 绘制 DEA 线
             if (config.showDEA) {
                 ctx.strokeStyle = MACD_COLORS.DEA
                 ctx.lineWidth = 1
@@ -387,6 +378,62 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
             Object.assign(config, newConfig)
         },
     }
+}
+
+function drawMacdBarsWithWebGL(
+    context: RenderContext,
+    barUpRects: Rect[],
+    barUpLightRects: Rect[],
+    barDownRects: Rect[],
+    barDownLightRects: Rect[]
+): boolean {
+    const surface = context.candleWebGLSurface
+    if (!surface || !surface.isAvailable()) return false
+
+    surface.clear()
+
+    const ok1 = barUpRects.length === 0 || surface.drawRects(barUpRects, MACD_COLORS.BAR_UP, context.scrollLeft)
+    const ok2 = barUpLightRects.length === 0 || surface.drawRects(barUpLightRects, MACD_COLORS.BAR_UP_LIGHT, context.scrollLeft)
+    const ok3 = barDownRects.length === 0 || surface.drawRects(barDownRects, MACD_COLORS.BAR_DOWN, context.scrollLeft)
+    const ok4 = barDownLightRects.length === 0 || surface.drawRects(barDownLightRects, MACD_COLORS.BAR_DOWN_LIGHT, context.scrollLeft)
+
+    return ok1 && ok2 && ok3 && ok4
+}
+
+function drawMacdBarsWithCanvas2D(
+    ctx: CanvasRenderingContext2D,
+    scrollLeft: number,
+    barUpRects: Rect[],
+    barUpLightRects: Rect[],
+    barDownRects: Rect[],
+    barDownLightRects: Rect[]
+): void {
+    ctx.save()
+    ctx.translate(-scrollLeft, 0)
+
+    ctx.fillStyle = MACD_COLORS.BAR_UP
+    for (const r of barUpRects) ctx.fillRect(r.x, r.y, r.width, r.height)
+
+    ctx.fillStyle = MACD_COLORS.BAR_UP_LIGHT
+    for (const r of barUpLightRects) ctx.fillRect(r.x, r.y, r.width, r.height)
+
+    ctx.fillStyle = MACD_COLORS.BAR_DOWN
+    for (const r of barDownRects) ctx.fillRect(r.x, r.y, r.width, r.height)
+
+    ctx.fillStyle = MACD_COLORS.BAR_DOWN_LIGHT
+    for (const r of barDownLightRects) ctx.fillRect(r.x, r.y, r.width, r.height)
+
+    ctx.restore()
+}
+
+function compositeMacdWebGL(ctx: CanvasRenderingContext2D, context: RenderContext): void {
+    const surface = context.candleWebGLSurface
+    if (!surface) return
+
+    const canvas = surface.getCanvas()
+    if (canvas.width <= 0 || canvas.height <= 0) return
+
+    ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width / context.dpr, canvas.height / context.dpr)
 }
 
 /**

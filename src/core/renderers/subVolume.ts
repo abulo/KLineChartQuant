@@ -112,10 +112,8 @@ export function createVolumeRendererPlugin(options: VolumeRendererOptions = {}):
 
             const usedWebGL = drawVolumeWithWebGL(context, upRects, downRects, neutralRects)
             if (!usedWebGL) {
-                console.log('[vol] Canvas2D')
                 drawVolumeWithCanvas2D(ctx, context.scrollLeft, upRects, downRects, neutralRects)
             } else {
-                console.log('[vol] WebGL')
                 compositeVolumeWebGL(ctx, context)
             }
         },
