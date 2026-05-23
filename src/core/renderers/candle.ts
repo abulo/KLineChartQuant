@@ -22,7 +22,7 @@ export function createCandleRenderer(): RendererPlugin {
         priority: RENDERER_PRIORITY.MAIN,
 
         draw(context: RenderContext) {
-            const { ctx, pane, data, range, scrollLeft, kWidth, kGap, dpr, kLinePositions, markerManager } = context
+            const { ctx, pane, data, range, scrollLeft, kWidth, kGap, dpr, kLinePositions, markerManager, settings } = context
             const klineData = data as KLineData[]
             if (!klineData.length) return
 
@@ -32,13 +32,11 @@ export function createCandleRenderer(): RendererPlugin {
             ctx.translate(-scrollLeft, 0)
             const positions = kLinePositions || []
 
-            // 批量计算量价关系，使用前缀和优化性能
-            const relations = analyzeVolumePriceRelationBatch(
-                klineData,
-                range.start,
-                range.end,
-                DEFAULT_VOLUME_PRICE_CONFIG
-            )
+            // 批量计算量价关系（未开启标记时跳过计算）
+            const showVolumePriceMarkers = settings?.showVolumePriceMarkers !== false
+            const relations = showVolumePriceMarkers
+                ? analyzeVolumePriceRelationBatch(klineData, range.start, range.end, DEFAULT_VOLUME_PRICE_CONFIG)
+                : null
 
             for (let i = range.start; i < range.end && i < klineData.length; i++) {
 
@@ -96,11 +94,10 @@ export function createCandleRenderer(): RendererPlugin {
                 }
 
                 // 绘制量价关系标记（小缩放下不显示，避免拥挤；可通过设置关闭）
-                const relation = relations[i - range.start]
+                const relation = relations?.[i - range.start]
                 const MIN_ZOOM_LEVEL_FOR_MARKER = 2
-                const showVolumePriceMarkers = context.settings?.showVolumePriceMarkers ?? true
                 if (showVolumePriceMarkers &&
-                    relation !== VolumePriceRelation.OTHERS &&
+                    relation !== undefined && relation !== VolumePriceRelation.OTHERS &&
                     markerManager &&
                     (context.zoomLevel ?? 1) >= MIN_ZOOM_LEVEL_FOR_MARKER) {
                     // 根据量价关系决定标记位置

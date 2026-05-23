@@ -288,7 +288,7 @@ export interface RenderContext {
     plotHeight: number
   }
   /** 用户设置配置（渲染器只读） */
-  settings?: Record<string, boolean>
+  settings?: import('@/config/chartSettings').ChartSettings
   /** 需要在Y轴上绘制的标签列表（由各类标记渲染器填充） */
   yAxisLabels?: YAxisLabel[]
   /** 需要在X轴上绘制的标签列表（由各类标记渲染器填充） */

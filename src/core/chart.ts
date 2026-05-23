@@ -1,4 +1,5 @@
 import type { KLineData } from '@/types/price'
+import type { ChartSettings } from '@/config/chartSettings'
 import { getVisibleRange } from '@/core/viewport/viewport'
 import { Pane, type VisibleRange, UpdateLevel } from '@/core/layout/pane'
 import { InteractionController } from '@/core/controller/interaction'
@@ -157,7 +158,7 @@ export class Chart {
     private observedSize = { width: 0, height: 0 }
 
     /** 用户设置配置（传递给渲染器） */
-    private settings: Record<string, boolean> = {}
+    private settings: ChartSettings = {}
 
     /** pane ratio 状态（按 paneId 维护，sum=1 仅对可见 pane） */
     private paneRatios: Map<string, number> = new Map()
@@ -589,7 +590,7 @@ export class Chart {
     }
 
     /** 更新用户设置（触发重绘） */
-    updateSettings(settings: Record<string, boolean>): void {
+    updateSettings(settings: ChartSettings): void {
         this.settings = { ...settings }
         this.interaction.updateSettings(settings)
 

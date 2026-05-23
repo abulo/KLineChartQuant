@@ -3,6 +3,7 @@
 import type { Chart } from '../chart'
 import type { MarkerEntity, CustomMarkerEntity } from '@/core/marker/registry'
 import { UpdateLevel } from '@/core/layout/pane'
+import type { ChartSettings } from '@/config/chartSettings'
 
 interface PointerLocation {
     mouseX: number
@@ -86,7 +87,7 @@ export class InteractionController {
     /** 统一交互状态变更回调 */
     private onInteractionChangeCallback?: (snapshot: InteractionSnapshot) => void
     /** 用户设置 */
-    private settings: Record<string, boolean> = {}
+    private settings: ChartSettings = {}
 
     /** 当前 hover 的 marker ID */
     hoveredMarkerId: string | null = null
@@ -126,7 +127,7 @@ export class InteractionController {
     }
 
     /** 更新用户设置 */
-    updateSettings(settings: Record<string, boolean>): void {
+    updateSettings(settings: ChartSettings): void {
         const prev = this.settings.disableMainPaneVerticalScroll
         this.settings = { ...settings }
         // 开启自适应时，重置主图垂直偏移
