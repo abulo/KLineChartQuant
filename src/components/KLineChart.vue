@@ -171,8 +171,8 @@ import type {
   WMSRSchedulerConfig,
   KSTSchedulerConfig,
   FASTKSchedulerConfig,
-  MACDSchedulerConfig,
 } from '@/core/indicators/scheduler'
+import type { MACDSchedulerConfig } from '@/core/indicators/macdState'
 
 const props = withDefaults(
   defineProps<{

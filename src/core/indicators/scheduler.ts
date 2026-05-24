@@ -152,17 +152,7 @@ export interface FASTKSchedulerConfig {
     showFASTK: boolean
 }
 
-/**
- * MACD 调度器配置
- */
-export interface MACDSchedulerConfig {
-    fastPeriod: number
-    slowPeriod: number
-    signalPeriod: number
-    showDIF: boolean
-    showDEA: boolean
-    showBAR: boolean
-}
+
 
 /**
  * 指标调度器
@@ -992,12 +982,15 @@ export class IndicatorScheduler {
             const latestPoint = latestIndex >= 0 && latestIndex < this.cachedMacdSeries.length
                 ? this.cachedMacdSeries[latestIndex]
                 : null
+            const macdPadding = Math.max(Math.abs(macdVisibleMax), Math.abs(macdVisibleMin)) * 0.1
+            const macdValueMin = Number.isFinite(macdVisibleMin) ? macdVisibleMin - macdPadding : macdVisibleMin
+            const macdValueMax = Number.isFinite(macdVisibleMax) ? macdVisibleMax + macdPadding : macdVisibleMax
             const macdState: MACDRenderState = {
                 timestamp: Date.now(),
                 series: this.cachedMacdSeries,
                 params: this.macdConfig,
-                valueMin: -Infinity,
-                valueMax: Infinity,
+                valueMin: macdValueMin,
+                valueMax: macdValueMax,
                 visibleMin: macdVisibleMin,
                 visibleMax: macdVisibleMax,
                 latestValues: latestPoint ? {
