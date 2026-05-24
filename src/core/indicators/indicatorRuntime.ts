@@ -175,51 +175,51 @@ export class IndicatorRuntime {
      */
     setConfig(config: Partial<IndicatorConfigSnapshot>, version: number): void {
         // 合并配置（仅值变更时才标记脏）
-        if (config.ma !== undefined && !this.shallowEqual(config.ma as Record<string, unknown>, this.config.ma as Record<string, unknown>)) {
+        if (config.ma !== undefined && !this.shallowEqual(config.ma as unknown as Record<string, unknown>, this.config.ma as unknown as Record<string, unknown>)) {
             this.config.ma = { ...this.config.ma, ...config.ma }
             this.dirtyMAConfig = true
         }
-        if (config.boll !== undefined && !this.shallowEqual(config.boll as Record<string, unknown>, this.config.boll as Record<string, unknown>)) {
+        if (config.boll !== undefined && !this.shallowEqual(config.boll as unknown as Record<string, unknown>, this.config.boll as unknown as Record<string, unknown>)) {
             this.config.boll = { ...this.config.boll, ...config.boll }
             this.dirtyBollConfig = true
         }
-        if (config.expma !== undefined && !this.shallowEqual(config.expma as Record<string, unknown>, this.config.expma as Record<string, unknown>)) {
+        if (config.expma !== undefined && !this.shallowEqual(config.expma as unknown as Record<string, unknown>, this.config.expma as unknown as Record<string, unknown>)) {
             this.config.expma = { ...this.config.expma, ...config.expma }
             this.dirtyExpmaConfig = true
         }
-        if (config.ene !== undefined && !this.shallowEqual(config.ene as Record<string, unknown>, this.config.ene as Record<string, unknown>)) {
+        if (config.ene !== undefined && !this.shallowEqual(config.ene as unknown as Record<string, unknown>, this.config.ene as unknown as Record<string, unknown>)) {
             this.config.ene = { ...this.config.ene, ...config.ene }
             this.dirtyEneConfig = true
         }
-        if (config.rsi !== undefined && !this.shallowEqual(config.rsi as Record<string, unknown>, this.config.rsi as Record<string, unknown>)) {
+        if (config.rsi !== undefined && !this.shallowEqual(config.rsi as unknown as Record<string, unknown>, this.config.rsi as unknown as Record<string, unknown>)) {
             this.config.rsi = { ...this.config.rsi, ...config.rsi }
             this.dirtyRsiConfig = true
         }
-        if (config.cci !== undefined && !this.shallowEqual(config.cci as Record<string, unknown>, this.config.cci as Record<string, unknown>)) {
+        if (config.cci !== undefined && !this.shallowEqual(config.cci as unknown as Record<string, unknown>, this.config.cci as unknown as Record<string, unknown>)) {
             this.config.cci = { ...this.config.cci, ...config.cci }
             this.dirtyCciConfig = true
         }
-        if (config.stoch !== undefined && !this.shallowEqual(config.stoch as Record<string, unknown>, this.config.stoch as Record<string, unknown>)) {
+        if (config.stoch !== undefined && !this.shallowEqual(config.stoch as unknown as Record<string, unknown>, this.config.stoch as unknown as Record<string, unknown>)) {
             this.config.stoch = { ...this.config.stoch, ...config.stoch }
             this.dirtyStochConfig = true
         }
-        if (config.mom !== undefined && !this.shallowEqual(config.mom as Record<string, unknown>, this.config.mom as Record<string, unknown>)) {
+        if (config.mom !== undefined && !this.shallowEqual(config.mom as unknown as Record<string, unknown>, this.config.mom as unknown as Record<string, unknown>)) {
             this.config.mom = { ...this.config.mom, ...config.mom }
             this.dirtyMomConfig = true
         }
-        if (config.wmsr !== undefined && !this.shallowEqual(config.wmsr as Record<string, unknown>, this.config.wmsr as Record<string, unknown>)) {
+        if (config.wmsr !== undefined && !this.shallowEqual(config.wmsr as unknown as Record<string, unknown>, this.config.wmsr as unknown as Record<string, unknown>)) {
             this.config.wmsr = { ...this.config.wmsr, ...config.wmsr }
             this.dirtyWmsrConfig = true
         }
-        if (config.kst !== undefined && !this.shallowEqual(config.kst as Record<string, unknown>, this.config.kst as Record<string, unknown>)) {
+        if (config.kst !== undefined && !this.shallowEqual(config.kst as unknown as Record<string, unknown>, this.config.kst as unknown as Record<string, unknown>)) {
             this.config.kst = { ...this.config.kst, ...config.kst }
             this.dirtyKstConfig = true
         }
-        if (config.fastk !== undefined && !this.shallowEqual(config.fastk as Record<string, unknown>, this.config.fastk as Record<string, unknown>)) {
+        if (config.fastk !== undefined && !this.shallowEqual(config.fastk as unknown as Record<string, unknown>, this.config.fastk as unknown as Record<string, unknown>)) {
             this.config.fastk = { ...this.config.fastk, ...config.fastk }
             this.dirtyFastkConfig = true
         }
-        if (config.macd !== undefined && !this.shallowEqual(config.macd as Record<string, unknown>, this.config.macd as Record<string, unknown>)) {
+        if (config.macd !== undefined && !this.shallowEqual(config.macd as unknown as Record<string, unknown>, this.config.macd as unknown as Record<string, unknown>)) {
             this.config.macd = { ...this.config.macd, ...config.macd }
             this.dirtyMacdConfig = true
         }

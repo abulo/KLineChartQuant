@@ -6,8 +6,10 @@
 import type {
     IndicatorWorkerRequest,
     IndicatorWorkerResponse,
+    IndicatorConfigSnapshot,
 } from './workerProtocol'
 import { PROTOCOL_VERSION } from './workerProtocol'
+import type { KLineData } from '@/types/price'
 import { IndicatorRuntime } from './indicatorRuntime'
 
 // Worker 全局作用域
@@ -37,7 +39,7 @@ function handleInit(): void {
 /**
  * 处理设置数据
  */
-function handleSetData(data: unknown[], version: number): void {
+function handleSetData(data: KLineData[], version: number): void {
     if (!runtime) {
         postResponse({
             type: 'error',
@@ -46,13 +48,13 @@ function handleSetData(data: unknown[], version: number): void {
         })
         return
     }
-    runtime.setData(data as unknown[], version)
+    runtime.setData(data, version)
 }
 
 /**
  * 处理设置配置
  */
-function handleSetConfig(config: unknown, version: number): void {
+function handleSetConfig(config: Partial<IndicatorConfigSnapshot>, version: number): void {
     if (!runtime) {
         postResponse({
             type: 'error',
@@ -61,7 +63,7 @@ function handleSetConfig(config: unknown, version: number): void {
         })
         return
     }
-    runtime.setConfig(config as unknown, version)
+    runtime.setConfig(config, version)
 }
 
 /**

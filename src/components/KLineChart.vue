@@ -971,7 +971,7 @@ function switchSubIndicator(paneId: string, newIndicatorId: SubIndicatorType): v
 }
 
 // 获取副图标题信息（带缓存，只在 crosshairIdx 或 data 变化时重算）
-const _titleInfoCache = new Map<string, { idx: number; dataLen: number; result: TitleInfo | null }>()
+const _titleInfoCache = new Map<string, { idx: number | null; dataLen: number; result: TitleInfo | null }>()
 
 function getSubPaneTitleInfo(paneId: string): TitleInfo | null {
   const pane = subPanes.value.find((p) => p.id === paneId)
