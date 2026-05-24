@@ -1,10 +1,10 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
-import type { KLineData } from '@/types/price'
 import { KDJ_COLORS } from '@/core/theme/colors'
-import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 import type { STOCHRenderState } from '@/core/indicators/stochState'
 import { createSTOCHStateKey } from '@/core/indicators/stochState'
+
+type LinePoint = { x: number; y: number }
 
 export interface STOCHRendererOptions {
     /** 目标 pane ID（默认 'sub'） */
@@ -19,10 +19,45 @@ export function createSTOCHRendererPlugin(options: STOCHRendererOptions = {}): R
     const STATE_KEY = createSTOCHStateKey(paneId)
     let pluginHost: PluginHost | null = null
 
+    // 线条点缓存
+    let cachedKey = ''
+    let cachedKPoints: LinePoint[] = []
+    let cachedDPoints: LinePoint[] = []
+
+    function clearLineCache() {
+        cachedKey = ''
+        cachedKPoints = []
+        cachedDPoints = []
+    }
+
+    function buildSTOCHCacheKey(
+        range: { start: number; end: number },
+        kLineCenters: number[],
+        pane: RenderContext['pane'],
+        params: STOCHRenderState['params']
+    ): string {
+        const dr = pane.yAxis.getDisplayRange()
+        return [
+            range.start,
+            range.end,
+            kLineCenters.length,
+            kLineCenters[0]?.toFixed(2) ?? 'n',
+            kLineCenters[kLineCenters.length - 1]?.toFixed(2) ?? 'n',
+            dr.maxPrice.toFixed(6),
+            dr.minPrice.toFixed(6),
+            pane.yAxis.getPriceOffset().toFixed(6),
+            pane.yAxis.getScaleType(),
+            params.showK,
+            params.showD,
+            params.n,
+            params.m,
+        ].join('|')
+    }
+
     return {
         name: `stoch_${paneId}`,
         version: '2.0.0',
-        description: 'STOCH 随机指标渲染器（无状态）',
+        description: 'STOCH 随机指标渲染器（WebGL + Canvas2D 回退）',
         debugName: 'STOCH',
         paneId: paneId,
         priority: RENDERER_PRIORITY.MAIN,
@@ -36,10 +71,13 @@ export function createSTOCHRendererPlugin(options: STOCHRendererOptions = {}): R
         },
 
         draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, dpr, kLineCenters } = context
+            const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
 
             const state = pluginHost?.getSharedState<STOCHRenderState>(STATE_KEY)
-            if (!state || state.visibleMin > state.visibleMax) return
+            if (!state || state.visibleMin > state.visibleMax) {
+                clearLineCache()
+                return
+            }
 
             const { valueMin, valueMax, params, series } = state
             const valueRange = valueMax - valueMin || 1
@@ -52,7 +90,7 @@ export function createSTOCHRendererPlugin(options: STOCHRendererOptions = {}): R
             ctx.save()
             ctx.translate(-scrollLeft, 0)
 
-            // 绘制超买超卖线 80/20
+            // 绘制超买超卖线 80/20（虚线保持 Canvas 2D）
             const y80 = pane.height - (80 - displayMin) / displayValueRange * pane.height
             const y20 = pane.height - (20 - displayMin) / displayValueRange * pane.height
 
@@ -70,70 +108,82 @@ export function createSTOCHRendererPlugin(options: STOCHRendererOptions = {}): R
             ctx.stroke()
             ctx.setLineDash([])
 
+            ctx.restore()
+
+            // 确定绘制范围
             const drawStart = Math.max(range.start, params.n + params.m - 2)
             const drawEnd = Math.min(range.end, series.length)
 
-            // 绘制 K 线
-            if (params.showK) {
-                ctx.strokeStyle = KDJ_COLORS.K
-                ctx.lineWidth = 1
-                ctx.lineJoin = 'round'
-                ctx.lineCap = 'round'
-                ctx.beginPath()
-                let isFirst = true
+            // 更新线条缓存
+            const cacheKey = buildSTOCHCacheKey(range, kLineCenters, pane, params)
+            if (cachedKey !== cacheKey) {
+                cachedKey = cacheKey
+                cachedKPoints = []
+                cachedDPoints = []
 
-                for (let i = drawStart; i < drawEnd; i++) {
-                    const point = series[i]
-                    if (!point) continue
+                if (params.showK) {
+                    for (let i = drawStart; i < drawEnd; i++) {
+                        const point = series[i]
+                        if (!point) continue
 
-                    const centerX = kLineCenters[i - range.start]
-                    if (centerX === undefined) continue
-                    const logicY = pane.height - (point.k - displayMin) / displayValueRange * pane.height
+                        const centerX = kLineCenters[i - range.start]
+                        if (centerX === undefined) continue
 
-                    const px = centerX
-                    const py = alignToPhysicalPixelCenter(logicY, dpr)
-
-                    if (isFirst) {
-                        ctx.moveTo(px, py)
-                        isFirst = false
-                    } else {
-                        ctx.lineTo(px, py)
+                        const logicY = pane.height - (point.k - displayMin) / displayValueRange * pane.height
+                        cachedKPoints.push({ x: centerX, y: logicY })
                     }
                 }
-                ctx.stroke()
-            }
 
-            // 绘制 D 线
-            if (params.showD) {
-                ctx.strokeStyle = KDJ_COLORS.D
-                ctx.lineWidth = 1
-                ctx.lineJoin = 'round'
-                ctx.lineCap = 'round'
-                ctx.beginPath()
-                let isFirst = true
+                if (params.showD) {
+                    for (let i = drawStart; i < drawEnd; i++) {
+                        const point = series[i]
+                        if (!point) continue
 
-                for (let i = drawStart; i < drawEnd; i++) {
-                    const point = series[i]
-                    if (!point) continue
+                        const centerX = kLineCenters[i - range.start]
+                        if (centerX === undefined) continue
 
-                    const centerX = kLineCenters[i - range.start]
-                    if (centerX === undefined) continue
-                    const logicY = pane.height - (point.d - displayMin) / displayValueRange * pane.height
-
-                    const px = centerX
-                    const py = alignToPhysicalPixelCenter(logicY, dpr)
-
-                    if (isFirst) {
-                        ctx.moveTo(px, py)
-                        isFirst = false
-                    } else {
-                        ctx.lineTo(px, py)
+                        const logicY = pane.height - (point.d - displayMin) / displayValueRange * pane.height
+                        cachedDPoints.push({ x: centerX, y: logicY })
                     }
                 }
-                ctx.stroke()
             }
 
-            ctx.restore()
+            // 绘制 STOCH 线（WebGL 优先，Canvas2D 回退）
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGL = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                let allOk = true
+
+                if (params.showK && cachedKPoints.length >= 2) {
+                    allOk = lineWebGLSurface.drawLineStrip(
+                        { points: cachedKPoints, width: 1 },
+                        KDJ_COLORS.K,
+                        scrollLeft
+                    )
+                }
+                if (allOk && params.showD && cachedDPoints.length >= 2) {
+                    allOk = lineWebGLSurface.drawLineStrip(
+                        { points: cachedDPoints, width: 1 },
+                        KDJ_COLORS.D,
+                        scrollLeft
+                    )
+                }
+
+                if (allOk) {
+                    usedWebGL = true
+                    const canvas = lineWebGLSurface.getCanvas()
+                    if (canvas.width > 0 && canvas.height > 0) {
+                        const prevImageSmoothingEnabled = ctx.imageSmoothingEnabled
+                        ctx.imageSmoothingEnabled = false
+                        ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width / dpr, canvas.height / dpr)
+                        ctx.imageSmoothingEnabled = prevImageSmoothingEnabled
+                    }
+                }
+            }
+
+            if (!usedWebGL) {
+                drawSTOCHLinesWithCanvas2D(ctx, scrollLeft, cachedKPoints, cachedDPoints, params)
+            }
         },
 
         getConfig() {
@@ -145,6 +195,47 @@ export function createSTOCHRendererPlugin(options: STOCHRendererOptions = {}): R
             // no-op: 配置通过 scheduler.updateSTOCHConfig() 更新
         },
     }
+}
+
+/**
+ * 使用 Canvas 2D 绘制 STOCH 线（WebGL 回退）
+ */
+function drawSTOCHLinesWithCanvas2D(
+    ctx: CanvasRenderingContext2D,
+    scrollLeft: number,
+    kPoints: LinePoint[],
+    dPoints: LinePoint[],
+    params: { showK: boolean; showD: boolean }
+): void {
+    ctx.save()
+    ctx.translate(-scrollLeft, 0)
+    ctx.lineWidth = 1
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+
+    if (params.showK && kPoints.length >= 2) {
+        ctx.strokeStyle = KDJ_COLORS.K
+        ctx.beginPath()
+        ctx.moveTo(kPoints[0]!.x, kPoints[0]!.y)
+        for (let i = 1; i < kPoints.length; i++) {
+            const point = kPoints[i]!
+            ctx.lineTo(point.x, point.y)
+        }
+        ctx.stroke()
+    }
+
+    if (params.showD && dPoints.length >= 2) {
+        ctx.strokeStyle = KDJ_COLORS.D
+        ctx.beginPath()
+        ctx.moveTo(dPoints[0]!.x, dPoints[0]!.y)
+        for (let i = 1; i < dPoints.length; i++) {
+            const point = dPoints[i]!
+            ctx.lineTo(point.x, point.y)
+        }
+        ctx.stroke()
+    }
+
+    ctx.restore()
 }
 
 /**

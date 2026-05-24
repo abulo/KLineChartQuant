@@ -1,10 +1,10 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
-import type { KLineData } from '@/types/price'
 import { WMSR_COLORS } from '@/core/theme/colors'
-import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 import type { WMSRRenderState } from '@/core/indicators/wmsrState'
 import { createWMSRStateKey } from '@/core/indicators/wmsrState'
+
+type LinePoint = { x: number; y: number }
 
 export interface WMSRRendererOptions {
     /** 目标 pane ID（默认 'sub'） */
@@ -19,10 +19,41 @@ export function createWMSRRendererPlugin(options: WMSRRendererOptions = {}): Ren
     const STATE_KEY = createWMSRStateKey(paneId)
     let pluginHost: PluginHost | null = null
 
+    // 线条点缓存
+    let cachedKey = ''
+    let cachedWMSRPoints: LinePoint[] = []
+
+    function clearLineCache() {
+        cachedKey = ''
+        cachedWMSRPoints = []
+    }
+
+    function buildWMSRCacheKey(
+        range: { start: number; end: number },
+        kLineCenters: number[],
+        pane: RenderContext['pane'],
+        params: WMSRRenderState['params']
+    ): string {
+        const dr = pane.yAxis.getDisplayRange()
+        return [
+            range.start,
+            range.end,
+            kLineCenters.length,
+            kLineCenters[0]?.toFixed(2) ?? 'n',
+            kLineCenters[kLineCenters.length - 1]?.toFixed(2) ?? 'n',
+            dr.maxPrice.toFixed(6),
+            dr.minPrice.toFixed(6),
+            pane.yAxis.getPriceOffset().toFixed(6),
+            pane.yAxis.getScaleType(),
+            params.showWMSR,
+            params.period,
+        ].join('|')
+    }
+
     return {
         name: `wmsr_${paneId}`,
         version: '2.0.0',
-        description: 'WMSR 威廉指标渲染器（无状态）',
+        description: 'WMSR 威廉指标渲染器（WebGL + Canvas2D 回退）',
         debugName: 'WMSR',
         paneId: paneId,
         priority: RENDERER_PRIORITY.MAIN,
@@ -36,10 +67,13 @@ export function createWMSRRendererPlugin(options: WMSRRendererOptions = {}): Ren
         },
 
         draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, dpr, kLineCenters } = context
+            const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
 
             const state = pluginHost?.getSharedState<WMSRRenderState>(STATE_KEY)
-            if (!state || state.visibleMin > state.visibleMax) return
+            if (!state || state.visibleMin > state.visibleMax) {
+                clearLineCache()
+                return
+            }
 
             const { valueMin, valueMax, params, series } = state
             const valueRange = valueMax - valueMin || 1
@@ -52,7 +86,7 @@ export function createWMSRRendererPlugin(options: WMSRRendererOptions = {}): Ren
             ctx.save()
             ctx.translate(-scrollLeft, 0)
 
-            // 绘制超买超卖线 -20 / -80 / -50
+            // 绘制超买超卖线 -20 / -80 / -50（虚线保持 Canvas 2D）
             const y20 = pane.height - (-20 - displayMin) / displayValueRange * pane.height
             const y80 = pane.height - (-80 - displayMin) / displayValueRange * pane.height
             const y50 = pane.height - (-50 - displayMin) / displayValueRange * pane.height
@@ -81,40 +115,58 @@ export function createWMSRRendererPlugin(options: WMSRRendererOptions = {}): Ren
             ctx.stroke()
             ctx.setLineDash([])
 
-            // 绘制 WMSR 线
+            ctx.restore()
+
+            // 确定绘制范围
             const drawStart = Math.max(range.start, params.period - 1)
             const drawEnd = Math.min(range.end, series.length)
 
-            if (params.showWMSR) {
-                ctx.strokeStyle = WMSR_COLORS.WMSR
-                ctx.lineWidth = 1
-                ctx.lineJoin = 'round'
-                ctx.lineCap = 'round'
-                ctx.beginPath()
-                let isFirst = true
+            // 更新线条缓存
+            const cacheKey = buildWMSRCacheKey(range, kLineCenters, pane, params)
+            if (cachedKey !== cacheKey) {
+                cachedKey = cacheKey
+                cachedWMSRPoints = []
 
-                for (let i = drawStart; i < drawEnd; i++) {
-                    const value = series[i]
-                    if (value === undefined) continue
+                if (params.showWMSR) {
+                    for (let i = drawStart; i < drawEnd; i++) {
+                        const value = series[i]
+                        if (value === undefined) continue
 
-                    const centerX = kLineCenters[i - range.start]
-                    if (centerX === undefined) continue
-                    const logicY = pane.height - (value - displayMin) / displayValueRange * pane.height
+                        const centerX = kLineCenters[i - range.start]
+                        if (centerX === undefined) continue
 
-                    const px = centerX
-                    const py = alignToPhysicalPixelCenter(logicY, dpr)
-
-                    if (isFirst) {
-                        ctx.moveTo(px, py)
-                        isFirst = false
-                    } else {
-                        ctx.lineTo(px, py)
+                        const logicY = pane.height - (value - displayMin) / displayValueRange * pane.height
+                        cachedWMSRPoints.push({ x: centerX, y: logicY })
                     }
                 }
-                ctx.stroke()
             }
 
-            ctx.restore()
+            // 绘制 WMSR 线（WebGL 优先，Canvas2D 回退）
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGL = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                if (params.showWMSR && cachedWMSRPoints.length >= 2) {
+                    const ok = lineWebGLSurface.drawLineStrip(
+                        { points: cachedWMSRPoints, width: 1 },
+                        WMSR_COLORS.WMSR,
+                        scrollLeft
+                    )
+                    if (ok) {
+                        usedWebGL = true
+                        const canvas = lineWebGLSurface.getCanvas()
+                        if (canvas.width > 0 && canvas.height > 0) {
+                            const prevImageSmoothingEnabled = ctx.imageSmoothingEnabled
+                            ctx.imageSmoothingEnabled = false
+                            ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width / dpr, canvas.height / dpr)
+                            ctx.imageSmoothingEnabled = prevImageSmoothingEnabled
+                        }
+                    }
+                }
+            }
+
+            if (!usedWebGL) {
+                drawWMSRLineWithCanvas2D(ctx, scrollLeft, cachedWMSRPoints, params)
+            }
         },
 
         getConfig() {
@@ -126,6 +178,33 @@ export function createWMSRRendererPlugin(options: WMSRRendererOptions = {}): Ren
             // no-op: 配置通过 scheduler.updateWMSRConfig() 更新
         },
     }
+}
+
+/**
+ * 使用 Canvas 2D 绘制 WMSR 线（WebGL 回退）
+ */
+function drawWMSRLineWithCanvas2D(
+    ctx: CanvasRenderingContext2D,
+    scrollLeft: number,
+    wmsrPoints: LinePoint[],
+    params: { showWMSR: boolean }
+): void {
+    if (!params.showWMSR || wmsrPoints.length < 2) return
+
+    ctx.save()
+    ctx.translate(-scrollLeft, 0)
+    ctx.strokeStyle = WMSR_COLORS.WMSR
+    ctx.lineWidth = 1
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(wmsrPoints[0]!.x, wmsrPoints[0]!.y)
+    for (let i = 1; i < wmsrPoints.length; i++) {
+        const point = wmsrPoints[i]!
+        ctx.lineTo(point.x, point.y)
+    }
+    ctx.stroke()
+    ctx.restore()
 }
 
 /**

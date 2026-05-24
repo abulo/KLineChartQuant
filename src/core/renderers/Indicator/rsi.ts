@@ -277,7 +277,7 @@ export function drawRSILinesWithCanvas2D(
     ctx.restore()
 }
 
-function getRSITitleInfo(
+export function getRSITitleInfo(
     index: number,
     period1: number,
     period2: number,

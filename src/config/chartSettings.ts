@@ -10,6 +10,15 @@ export interface SettingItem {
   group?: string
 }
 
+/**
+ * 检测是否为移动端设备
+ */
+export function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const userAgent = navigator.userAgent.toLowerCase()
+  return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|touch/.test(userAgent)
+}
+
 /** 默认设置配置 */
 export const DEFAULT_SETTINGS = [
   { key: 'showVolumePriceMarkers', label: '显示量价关系标记', type: 'boolean', default: false, group: 'main' },

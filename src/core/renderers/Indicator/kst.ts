@@ -1,10 +1,10 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
-import type { KLineData } from '@/types/price'
 import { KST_COLORS } from '@/core/theme/colors'
-import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 import type { KSTRenderState } from '@/core/indicators/kstState'
 import { createKSTStateKey } from '@/core/indicators/kstState'
+
+type LinePoint = { x: number; y: number }
 
 export interface KSTRendererOptions {
     /** 目标 pane ID（默认 'sub'） */
@@ -19,10 +19,48 @@ export function createKSTRendererPlugin(options: KSTRendererOptions = {}): Rende
     const STATE_KEY = createKSTStateKey(paneId)
     let pluginHost: PluginHost | null = null
 
+    // 线条点缓存
+    let cachedKey = ''
+    let cachedKSTPoints: LinePoint[] = []
+    let cachedSignalPoints: LinePoint[] = []
+
+    function clearLineCache() {
+        cachedKey = ''
+        cachedKSTPoints = []
+        cachedSignalPoints = []
+    }
+
+    function buildKSTCacheKey(
+        range: { start: number; end: number },
+        kLineCenters: number[],
+        pane: RenderContext['pane'],
+        params: KSTRenderState['params']
+    ): string {
+        const dr = pane.yAxis.getDisplayRange()
+        return [
+            range.start,
+            range.end,
+            kLineCenters.length,
+            kLineCenters[0]?.toFixed(2) ?? 'n',
+            kLineCenters[kLineCenters.length - 1]?.toFixed(2) ?? 'n',
+            dr.maxPrice.toFixed(6),
+            dr.minPrice.toFixed(6),
+            pane.yAxis.getPriceOffset().toFixed(6),
+            pane.yAxis.getScaleType(),
+            params.showKST,
+            params.showSignal,
+            params.roc1,
+            params.roc2,
+            params.roc3,
+            params.roc4,
+            params.signalPeriod,
+        ].join('|')
+    }
+
     return {
         name: `kst_${paneId}`,
         version: '2.0.0',
-        description: 'KST 确知指标渲染器（无状态）',
+        description: 'KST 确知指标渲染器（WebGL + Canvas2D 回退）',
         debugName: 'KST',
         paneId: paneId,
         priority: RENDERER_PRIORITY.MAIN,
@@ -36,10 +74,13 @@ export function createKSTRendererPlugin(options: KSTRendererOptions = {}): Rende
         },
 
         draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, dpr, kLineCenters } = context
+            const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
 
             const state = pluginHost?.getSharedState<KSTRenderState>(STATE_KEY)
-            if (!state || state.visibleMin > state.visibleMax) return
+            if (!state || state.visibleMin > state.visibleMax) {
+                clearLineCache()
+                return
+            }
 
             const { valueMin, valueMax, params, series } = state
             const valueRange = valueMax - valueMin || 1
@@ -53,7 +94,7 @@ export function createKSTRendererPlugin(options: KSTRendererOptions = {}): Rende
             ctx.save()
             ctx.translate(-scrollLeft, 0)
 
-            // 绘制零轴
+            // 绘制零轴（实线，保持 Canvas 2D）
             const lineStartX = scrollLeft
             const lineEndX = scrollLeft + context.paneWidth
 
@@ -64,70 +105,82 @@ export function createKSTRendererPlugin(options: KSTRendererOptions = {}): Rende
             ctx.lineTo(lineEndX, zeroY)
             ctx.stroke()
 
+            ctx.restore()
+
+            // 确定绘制范围
             const drawStart = Math.max(range.start, params.roc4 + 15 + params.signalPeriod - 1)
             const drawEnd = Math.min(range.end, series.length)
 
-            // 绘制 KST 线
-            if (params.showKST) {
-                ctx.strokeStyle = KST_COLORS.KST
-                ctx.lineWidth = 1
-                ctx.lineJoin = 'round'
-                ctx.lineCap = 'round'
-                ctx.beginPath()
-                let isFirst = true
+            // 更新线条缓存
+            const cacheKey = buildKSTCacheKey(range, kLineCenters, pane, params)
+            if (cachedKey !== cacheKey) {
+                cachedKey = cacheKey
+                cachedKSTPoints = []
+                cachedSignalPoints = []
 
-                for (let i = drawStart; i < drawEnd; i++) {
-                    const point = series[i]
-                    if (!point) continue
+                if (params.showKST) {
+                    for (let i = drawStart; i < drawEnd; i++) {
+                        const point = series[i]
+                        if (!point) continue
 
-                    const centerX = kLineCenters[i - range.start]
-                    if (centerX === undefined) continue
-                    const logicY = pane.height - (point.kst - displayMin) / displayValueRange * pane.height
+                        const centerX = kLineCenters[i - range.start]
+                        if (centerX === undefined) continue
 
-                    const px = centerX
-                    const py = alignToPhysicalPixelCenter(logicY, dpr)
-
-                    if (isFirst) {
-                        ctx.moveTo(px, py)
-                        isFirst = false
-                    } else {
-                        ctx.lineTo(px, py)
+                        const logicY = pane.height - (point.kst - displayMin) / displayValueRange * pane.height
+                        cachedKSTPoints.push({ x: centerX, y: logicY })
                     }
                 }
-                ctx.stroke()
-            }
 
-            // 绘制信号线
-            if (params.showSignal) {
-                ctx.strokeStyle = KST_COLORS.SIGNAL
-                ctx.lineWidth = 1
-                ctx.lineJoin = 'round'
-                ctx.lineCap = 'round'
-                ctx.beginPath()
-                let isFirst = true
+                if (params.showSignal) {
+                    for (let i = drawStart; i < drawEnd; i++) {
+                        const point = series[i]
+                        if (!point) continue
 
-                for (let i = drawStart; i < drawEnd; i++) {
-                    const point = series[i]
-                    if (!point) continue
+                        const centerX = kLineCenters[i - range.start]
+                        if (centerX === undefined) continue
 
-                    const centerX = kLineCenters[i - range.start]
-                    if (centerX === undefined) continue
-                    const logicY = pane.height - (point.signal - displayMin) / displayValueRange * pane.height
-
-                    const px = centerX
-                    const py = alignToPhysicalPixelCenter(logicY, dpr)
-
-                    if (isFirst) {
-                        ctx.moveTo(px, py)
-                        isFirst = false
-                    } else {
-                        ctx.lineTo(px, py)
+                        const logicY = pane.height - (point.signal - displayMin) / displayValueRange * pane.height
+                        cachedSignalPoints.push({ x: centerX, y: logicY })
                     }
                 }
-                ctx.stroke()
             }
 
-            ctx.restore()
+            // 绘制 KST 线（WebGL 优先，Canvas2D 回退）
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGL = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                let allOk = true
+
+                if (params.showKST && cachedKSTPoints.length >= 2) {
+                    allOk = lineWebGLSurface.drawLineStrip(
+                        { points: cachedKSTPoints, width: 1 },
+                        KST_COLORS.KST,
+                        scrollLeft
+                    )
+                }
+                if (allOk && params.showSignal && cachedSignalPoints.length >= 2) {
+                    allOk = lineWebGLSurface.drawLineStrip(
+                        { points: cachedSignalPoints, width: 1 },
+                        KST_COLORS.SIGNAL,
+                        scrollLeft
+                    )
+                }
+
+                if (allOk) {
+                    usedWebGL = true
+                    const canvas = lineWebGLSurface.getCanvas()
+                    if (canvas.width > 0 && canvas.height > 0) {
+                        const prevImageSmoothingEnabled = ctx.imageSmoothingEnabled
+                        ctx.imageSmoothingEnabled = false
+                        ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width / dpr, canvas.height / dpr)
+                        ctx.imageSmoothingEnabled = prevImageSmoothingEnabled
+                    }
+                }
+            }
+
+            if (!usedWebGL) {
+                drawKSTLinesWithCanvas2D(ctx, scrollLeft, cachedKSTPoints, cachedSignalPoints, params)
+            }
         },
 
         getConfig() {
@@ -139,6 +192,47 @@ export function createKSTRendererPlugin(options: KSTRendererOptions = {}): Rende
             // no-op: 配置通过 scheduler.updateKSTConfig() 更新
         },
     }
+}
+
+/**
+ * 使用 Canvas 2D 绘制 KST 线（WebGL 回退）
+ */
+function drawKSTLinesWithCanvas2D(
+    ctx: CanvasRenderingContext2D,
+    scrollLeft: number,
+    kstPoints: LinePoint[],
+    signalPoints: LinePoint[],
+    params: { showKST: boolean; showSignal: boolean }
+): void {
+    ctx.save()
+    ctx.translate(-scrollLeft, 0)
+    ctx.lineWidth = 1
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+
+    if (params.showKST && kstPoints.length >= 2) {
+        ctx.strokeStyle = KST_COLORS.KST
+        ctx.beginPath()
+        ctx.moveTo(kstPoints[0]!.x, kstPoints[0]!.y)
+        for (let i = 1; i < kstPoints.length; i++) {
+            const point = kstPoints[i]!
+            ctx.lineTo(point.x, point.y)
+        }
+        ctx.stroke()
+    }
+
+    if (params.showSignal && signalPoints.length >= 2) {
+        ctx.strokeStyle = KST_COLORS.SIGNAL
+        ctx.beginPath()
+        ctx.moveTo(signalPoints[0]!.x, signalPoints[0]!.y)
+        for (let i = 1; i < signalPoints.length; i++) {
+            const point = signalPoints[i]!
+            ctx.lineTo(point.x, point.y)
+        }
+        ctx.stroke()
+    }
+
+    ctx.restore()
 }
 
 /**
