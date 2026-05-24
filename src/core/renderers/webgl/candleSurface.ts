@@ -101,6 +101,8 @@ export class CandleWebGLSurface {
     private logicalWidth = 0
     private logicalHeight = 0
     private available = false
+    private rectCapacity = 0
+    private rectScratch = new Float32Array(0)
 
     constructor(canvas?: HTMLCanvasElement) {
         this.canvas = canvas ?? document.createElement('canvas')
@@ -149,14 +151,18 @@ export class CandleWebGLSurface {
         const colorValue = parseColor(color)
         if (!colorValue) return false
 
-        const rectData = new Float32Array(rects.length * 4)
+        const floatCount = rects.length * 4
+        if (this.rectScratch.length < floatCount) {
+            this.rectScratch = new Float32Array(nextBufferFloatCapacity(floatCount))
+        }
+
         for (let i = 0; i < rects.length; i++) {
             const rect = rects[i]!
             const offset = i * 4
-            rectData[offset] = rect.x
-            rectData[offset + 1] = rect.y
-            rectData[offset + 2] = rect.width
-            rectData[offset + 3] = rect.height
+            this.rectScratch[offset] = rect.x
+            this.rectScratch[offset + 1] = rect.y
+            this.rectScratch[offset + 2] = rect.width
+            this.rectScratch[offset + 3] = rect.height
         }
 
         const { gl } = handles
@@ -164,13 +170,18 @@ export class CandleWebGLSurface {
         gl.useProgram(handles.program)
         gl.bindVertexArray(handles.vao)
         gl.bindBuffer(gl.ARRAY_BUFFER, handles.rectBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, rectData, gl.DYNAMIC_DRAW)
+
+        if (this.rectCapacity < floatCount) {
+            this.rectCapacity = nextBufferFloatCapacity(floatCount)
+            gl.bufferData(gl.ARRAY_BUFFER, this.rectCapacity * Float32Array.BYTES_PER_ELEMENT, gl.DYNAMIC_DRAW)
+        }
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.rectScratch.subarray(0, floatCount))
+
         gl.uniform2f(handles.resolutionLocation, this.logicalWidth, this.logicalHeight)
         gl.uniform1f(handles.scrollXLocation, scrollLeft)
         gl.uniform4f(handles.colorLocation, colorValue[0], colorValue[1], colorValue[2], colorValue[3])
         gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, rects.length)
         gl.bindVertexArray(null)
-        gl.flush()
         return true
     }
 
@@ -285,6 +296,7 @@ export class LineWebGLSurface {
     private logicalHeight = 0
     private dpr = 1
     private available = false
+    private vertexCapacity = 0
 
     constructor(canvas?: HTMLCanvasElement) {
         this.canvas = canvas ?? document.createElement('canvas')
@@ -342,13 +354,19 @@ export class LineWebGLSurface {
         gl.useProgram(handles.program)
         gl.bindVertexArray(handles.vao)
         gl.bindBuffer(gl.ARRAY_BUFFER, handles.vertexBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, geometry.vertices, gl.DYNAMIC_DRAW)
+
+        const floatCount = geometry.vertices.length
+        if (this.vertexCapacity < floatCount) {
+            this.vertexCapacity = nextBufferFloatCapacity(floatCount)
+            gl.bufferData(gl.ARRAY_BUFFER, this.vertexCapacity * Float32Array.BYTES_PER_ELEMENT, gl.DYNAMIC_DRAW)
+        }
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, geometry.vertices)
+
         gl.uniform2f(handles.resolutionLocation, this.logicalWidth, this.logicalHeight)
         gl.uniform1f(handles.scrollXLocation, scrollLeft)
         gl.uniform4f(handles.colorLocation, colorValue[0], colorValue[1], colorValue[2], colorValue[3])
         gl.drawArrays(gl.TRIANGLES, 0, geometry.vertexCount)
         gl.bindVertexArray(null)
-        gl.flush()
         return true
     }
 
@@ -442,10 +460,29 @@ export class LineWebGLSurface {
     }
 }
 
+
+function nextBufferFloatCapacity(required: number): number {
+    let capacity = 1
+    while (capacity < required) {
+        capacity <<= 1
+    }
+    return capacity
+}
+
+interface PolylineNormal {
+    nx: number
+    ny: number
+    valid: boolean
+}
+
 function buildJoinedPolylineGeometry(points: Array<{ x: number; y: number }>, halfWidth: number) {
     if (points.length < 2) return null
 
-    const normals: Array<{ x: number; y: number } | null> = new Array(points.length - 1)
+    // 使用固定结构数组，避免动态对象分配
+    const normals: PolylineNormal[] = new Array(points.length - 1)
+    let validSegmentCount = 0
+
+    // 第一遍：计算所有法线
     for (let i = 0; i < points.length - 1; i++) {
         const start = points[i]!
         const end = points[i + 1]!
@@ -453,74 +490,111 @@ function buildJoinedPolylineGeometry(points: Array<{ x: number; y: number }>, ha
         const dy = end.y - start.y
         const length = Math.hypot(dx, dy)
         if (length <= 0) {
-            normals[i] = null
+            normals[i] = { nx: 0, ny: 0, valid: false }
             continue
         }
-        normals[i] = { x: -dy / length, y: dx / length }
+        normals[i] = { nx: -dy / length, ny: dx / length, valid: true }
+        validSegmentCount++
     }
 
-    const leftPoints: Array<{ x: number; y: number }> = []
-    const rightPoints: Array<{ x: number; y: number }> = []
+    if (validSegmentCount === 0) return null
 
-    for (let i = 0; i < points.length; i++) {
-        const point = points[i]!
+    // 预分配顶点数组：每对有效相邻点生成12个float（6个顶点 * 2个坐标）
+    // 最多 (points.length - 1) 个线段
+    const maxVerticesFloats = (points.length - 1) * 12
+    const vertices = new Float32Array(maxVerticesFloats)
+    let vertexWriteIndex = 0
+
+    // 计算 miter 并直接写入顶点
+    for (let i = 0; i < points.length - 1; i++) {
+        const curr = points[i]!
+        const next = points[i + 1]!
+
         const prevNormal = i > 0 ? normals[i - 1] : null
-        const nextNormal = i < points.length - 1 ? normals[i] : null
+        const currNormal = normals[i]!
 
-        if (!prevNormal && !nextNormal) continue
+        if (!currNormal.valid) continue
+        if (!prevNormal && !currNormal.valid) continue
 
-        let normalX = 0
-        let normalY = 0
-
-        if (prevNormal && nextNormal) {
-            normalX = prevNormal.x + nextNormal.x
-            normalY = prevNormal.y + nextNormal.y
-            const normalLength = Math.hypot(normalX, normalY)
-            if (normalLength > 1e-6) {
-                normalX /= normalLength
-                normalY /= normalLength
-                const dot = normalX * nextNormal.x + normalY * nextNormal.y
+        // 计算 curr 点的 miter 法线
+        let miterNX = 0
+        let miterNY = 0
+        if (prevNormal?.valid && currNormal.valid) {
+            miterNX = prevNormal.nx + currNormal.nx
+            miterNY = prevNormal.ny + currNormal.ny
+            const miterLen = Math.hypot(miterNX, miterNY)
+            if (miterLen > 1e-6) {
+                miterNX /= miterLen
+                miterNY /= miterLen
+                const dot = miterNX * currNormal.nx + miterNY * currNormal.ny
                 const safeDot = Math.max(0.2, Math.abs(dot))
-                normalX *= 1 / safeDot
-                normalY *= 1 / safeDot
+                miterNX *= 1 / safeDot
+                miterNY *= 1 / safeDot
             } else {
-                normalX = nextNormal.x
-                normalY = nextNormal.y
+                miterNX = currNormal.nx
+                miterNY = currNormal.ny
             }
+        } else if (currNormal.valid) {
+            miterNX = currNormal.nx
+            miterNY = currNormal.ny
+        } else if (prevNormal?.valid) {
+            miterNX = prevNormal.nx
+            miterNY = prevNormal.ny
         } else {
-            const fallback = prevNormal ?? nextNormal!
-            normalX = fallback.x
-            normalY = fallback.y
+            continue
         }
 
-        leftPoints.push({ x: point.x + normalX * halfWidth, y: point.y + normalY * halfWidth })
-        rightPoints.push({ x: point.x - normalX * halfWidth, y: point.y - normalY * halfWidth })
+        // 计算 next 点的法线（用于下一对点）
+        let nextMiterNX = currNormal.nx
+        let nextMiterNY = currNormal.ny
+        const nextNormal = i < points.length - 2 ? normals[i + 1] : null
+        if (nextNormal?.valid && currNormal.valid) {
+            nextMiterNX = currNormal.nx + nextNormal.nx
+            nextMiterNY = currNormal.ny + nextNormal.ny
+            const miterLen = Math.hypot(nextMiterNX, nextMiterNY)
+            if (miterLen > 1e-6) {
+                nextMiterNX /= miterLen
+                nextMiterNY /= miterLen
+                const dot = nextMiterNX * nextNormal.nx + nextMiterNY * nextNormal.ny
+                const safeDot = Math.max(0.2, Math.abs(dot))
+                nextMiterNX *= 1 / safeDot
+                nextMiterNY *= 1 / safeDot
+            } else {
+                nextMiterNX = currNormal.nx
+                nextMiterNY = currNormal.ny
+            }
+        }
+
+        // 计算四个角点
+        const leftAX = curr.x + miterNX * halfWidth
+        const leftAY = curr.y + miterNY * halfWidth
+        const rightAX = curr.x - miterNX * halfWidth
+        const rightAY = curr.y - miterNY * halfWidth
+        const leftBX = next.x + nextMiterNX * halfWidth
+        const leftBY = next.y + nextMiterNY * halfWidth
+        const rightBX = next.x - nextMiterNX * halfWidth
+        const rightBY = next.y - nextMiterNY * halfWidth
+
+        // 写入两个三角形（6个顶点）
+        vertices[vertexWriteIndex++] = leftAX
+        vertices[vertexWriteIndex++] = leftAY
+        vertices[vertexWriteIndex++] = rightAX
+        vertices[vertexWriteIndex++] = rightAY
+        vertices[vertexWriteIndex++] = leftBX
+        vertices[vertexWriteIndex++] = leftBY
+        vertices[vertexWriteIndex++] = leftBX
+        vertices[vertexWriteIndex++] = leftBY
+        vertices[vertexWriteIndex++] = rightAX
+        vertices[vertexWriteIndex++] = rightAY
+        vertices[vertexWriteIndex++] = rightBX
+        vertices[vertexWriteIndex++] = rightBY
     }
 
-    if (leftPoints.length < 2 || rightPoints.length < 2) return null
-
-    const vertices: number[] = []
-    for (let i = 0; i < leftPoints.length - 1; i++) {
-        const leftA = leftPoints[i]!
-        const rightA = rightPoints[i]!
-        const leftB = leftPoints[i + 1]!
-        const rightB = rightPoints[i + 1]!
-
-        vertices.push(
-            leftA.x, leftA.y,
-            rightA.x, rightA.y,
-            leftB.x, leftB.y,
-            leftB.x, leftB.y,
-            rightA.x, rightA.y,
-            rightB.x, rightB.y,
-        )
-    }
-
-    if (vertices.length === 0) return null
+    if (vertexWriteIndex === 0) return null
 
     return {
-        vertices: new Float32Array(vertices),
-        vertexCount: vertices.length / 2,
+        vertices: vertexWriteIndex === maxVerticesFloats ? vertices : vertices.subarray(0, vertexWriteIndex),
+        vertexCount: vertexWriteIndex / 2,
     }
 }
 

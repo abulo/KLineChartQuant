@@ -103,8 +103,9 @@ export function createMARendererPlugin(): RendererPluginWithHost {
                 }
             }
 
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
             let usedWebGL = false
-            if (lineWebGLSurface?.isAvailable()) {
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
                 let allOk = true
                 for (const period of state.enabledPeriods) {
                     const points = cachedLines.get(period)

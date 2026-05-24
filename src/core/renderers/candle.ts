@@ -214,6 +214,7 @@ function drawCandlesWithCanvas2D(ctx: CanvasRenderingContext2D, scrollLeft: numb
 }
 
 function drawCandlesWithWebGL(context: RenderContext, prepared: PreparedCandles): boolean {
+    if (context.settings?.enableWebGLRendering === false) return false
     const surface = context.candleWebGLSurface
     if (!surface || !surface.isAvailable()) return false
 

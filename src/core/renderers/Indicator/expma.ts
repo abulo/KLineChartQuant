@@ -90,8 +90,9 @@ export function createEXPMARendererPlugin(): RendererPluginWithHost {
                 }
             }
 
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
             let usedWebGL = false
-            if (lineWebGLSurface?.isAvailable()) {
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
                 let allOk = true
                 if (cachedFastPoints.length >= 2) {
                     allOk = lineWebGLSurface.drawLineStrip(

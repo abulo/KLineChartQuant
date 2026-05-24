@@ -126,6 +126,7 @@ function drawVolumeWithWebGL(
     downRects: Rect[],
     neutralRects: Rect[]
 ): boolean {
+    if (context.settings?.enableWebGLRendering === false) return false
     const surface = context.candleWebGLSurface
     if (!surface || !surface.isAvailable()) return false
 

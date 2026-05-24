@@ -6,6 +6,7 @@ import { MACD_COLORS } from '@/core/theme/colors'
 import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 
 type Rect = { x: number; y: number; width: number; height: number }
+type LinePoint = { x: number; y: number }
 
 export interface MACDConfig {
     /** 快线周期（默认 12） */
@@ -159,6 +160,41 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
     let cachedSignalPeriod: number = 0
     let macdPoints: MACDPoint[] = []
 
+    // 线条点缓存（用于 WebGL/Canvas2D 渲染）
+    let cachedLineKey = ''
+    let cachedDifPoints: LinePoint[] = []
+    let cachedDeaPoints: LinePoint[] = []
+
+    function clearLineCache() {
+        cachedLineKey = ''
+        cachedDifPoints = []
+        cachedDeaPoints = []
+    }
+
+    // 构建线条缓存 key
+    function buildLineCacheKey(
+        range: { start: number; end: number },
+        kLineCenters: number[],
+        pane: RenderContext['pane'],
+        displayMin: number,
+        displayMax: number
+    ): string {
+        const dr = pane.yAxis.getDisplayRange()
+        return [
+            range.start,
+            range.end,
+            kLineCenters.length,
+            kLineCenters[0]?.toFixed(2) ?? 'n',
+            kLineCenters[kLineCenters.length - 1]?.toFixed(2) ?? 'n',
+            displayMax.toFixed(6),
+            displayMin.toFixed(6),
+            pane.yAxis.getPriceOffset().toFixed(6),
+            pane.yAxis.getScaleType(),
+            config.showDIF,
+            config.showDEA,
+        ].join('|')
+    }
+
     // 获取或更新缓存
     function getMACDPoints(data: KLineData[]): MACDPoint[] {
         if (
@@ -193,7 +229,7 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
         },
 
         draw(context: RenderContext) {
-            const { ctx, pane, data, range, scrollLeft, dpr } = context
+            const { ctx, pane, data, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
             const klineData = data as KLineData[]
             if (klineData.length < config.slowPeriod) return
 
@@ -290,75 +326,76 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
                 }
             }
 
-            // DIF/DEA 线始终走 Canvas2D
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
+            // 更新线条点缓存
+            const lineCacheKey = buildLineCacheKey(range, kLineCenters, pane, displayMin, displayMax)
+            if (cachedLineKey !== lineCacheKey) {
+                cachedLineKey = lineCacheKey
+                cachedDifPoints = []
+                cachedDeaPoints = []
 
-            if (config.showDIF) {
-                ctx.strokeStyle = MACD_COLORS.DIF
-                ctx.lineWidth = 1
-                ctx.lineJoin = 'round'
-                ctx.lineCap = 'round'
-                ctx.beginPath()
-                let isFirst = true
-
-                for (let i = drawStart; i < drawEnd; i++) {
-                    const point = macdData[i]
-                    if (!point) continue
-
-                    const centerX = context.kLineCenters[i - range.start]
-                    if (centerX === undefined) continue
-
-                    const logicY = pane.height - (point.dif - displayMin) / displayValueRange * pane.height
-
-                    const px = centerX
-                    const py = alignToPhysicalPixelCenter(logicY, dpr)
-
-                    if (isFirst) {
-                        ctx.moveTo(px, py)
-                        isFirst = false
-                    } else {
-                        ctx.lineTo(px, py)
+                if (config.showDIF) {
+                    for (let i = drawStart; i < drawEnd; i++) {
+                        const point = macdData[i]
+                        if (!point) continue
+                        const centerX = kLineCenters[i - range.start]
+                        if (centerX === undefined) continue
+                        const logicY = pane.height - (point.dif - displayMin) / displayValueRange * pane.height
+                        cachedDifPoints.push({ x: centerX, y: logicY })
                     }
                 }
-                ctx.stroke()
-            }
 
-            if (config.showDEA) {
-                ctx.strokeStyle = MACD_COLORS.DEA
-                ctx.lineWidth = 1
-                ctx.lineJoin = 'round'
-                ctx.lineCap = 'round'
-                ctx.beginPath()
-                let isFirst = true
-
-                for (let i = drawStart; i < drawEnd; i++) {
-                    const point = macdData[i]
-                    if (!point) continue
-
-                    const centerX = context.kLineCenters[i - range.start]
-                    if (centerX === undefined) continue
-
-                    const logicY = pane.height - (point.dea - displayMin) / displayValueRange * pane.height
-
-                    const px = centerX
-                    const py = alignToPhysicalPixelCenter(logicY, dpr)
-
-                    if (isFirst) {
-                        ctx.moveTo(px, py)
-                        isFirst = false
-                    } else {
-                        ctx.lineTo(px, py)
+                if (config.showDEA) {
+                    for (let i = drawStart; i < drawEnd; i++) {
+                        const point = macdData[i]
+                        if (!point) continue
+                        const centerX = kLineCenters[i - range.start]
+                        if (centerX === undefined) continue
+                        const logicY = pane.height - (point.dea - displayMin) / displayValueRange * pane.height
+                        cachedDeaPoints.push({ x: centerX, y: logicY })
                     }
                 }
-                ctx.stroke()
             }
 
-            ctx.restore()
+            // 绘制 DIF/DEA 线（WebGL 优先，Canvas2D 回退）
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGLForLines = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                let allOk = true
+                if (config.showDIF && cachedDifPoints.length >= 2) {
+                    allOk = lineWebGLSurface.drawLineStrip(
+                        { points: cachedDifPoints, width: 1 },
+                        MACD_COLORS.DIF,
+                        scrollLeft
+                    )
+                }
+                if (allOk && config.showDEA && cachedDeaPoints.length >= 2) {
+                    allOk = lineWebGLSurface.drawLineStrip(
+                        { points: cachedDeaPoints, width: 1 },
+                        MACD_COLORS.DEA,
+                        scrollLeft
+                    )
+                }
+                if (allOk) {
+                    usedWebGLForLines = true
+                    const canvas = lineWebGLSurface.getCanvas()
+                    if (canvas.width > 0 && canvas.height > 0) {
+                        const prevImageSmoothingEnabled = ctx.imageSmoothingEnabled
+                        ctx.imageSmoothingEnabled = false
+                        ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width / dpr, canvas.height / dpr)
+                        ctx.imageSmoothingEnabled = prevImageSmoothingEnabled
+                    }
+                }
+            }
+
+            if (!usedWebGLForLines) {
+
+                drawMacdLinesWithCanvas2D(ctx, scrollLeft, cachedDifPoints, cachedDeaPoints, config)
+            }
         },
 
         onDataUpdate() {
             cachedData = null
+            clearLineCache()
         },
 
         getConfig() {
@@ -366,6 +403,7 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
         },
 
         setConfig(newConfig: Record<string, unknown>) {
+            let needClearLineCache = false
             if ('fastPeriod' in newConfig && newConfig.fastPeriod !== config.fastPeriod) {
                 cachedData = null
             }
@@ -375,7 +413,16 @@ export function createMACDRendererPlugin(options: MACDRendererOptions = {}): Ren
             if ('signalPeriod' in newConfig && newConfig.signalPeriod !== config.signalPeriod) {
                 cachedData = null
             }
+            if ('showDIF' in newConfig && newConfig.showDIF !== config.showDIF) {
+                needClearLineCache = true
+            }
+            if ('showDEA' in newConfig && newConfig.showDEA !== config.showDEA) {
+                needClearLineCache = true
+            }
             Object.assign(config, newConfig)
+            if (needClearLineCache) {
+                clearLineCache()
+            }
         },
     }
 }
@@ -387,6 +434,7 @@ function drawMacdBarsWithWebGL(
     barDownRects: Rect[],
     barDownLightRects: Rect[]
 ): boolean {
+    if (context.settings?.enableWebGLRendering === false) return false
     const surface = context.candleWebGLSurface
     if (!surface || !surface.isAvailable()) return false
 
@@ -422,6 +470,45 @@ function drawMacdBarsWithCanvas2D(
 
     ctx.fillStyle = MACD_COLORS.BAR_DOWN_LIGHT
     for (const r of barDownLightRects) ctx.fillRect(r.x, r.y, r.width, r.height)
+
+    ctx.restore()
+}
+
+function drawMacdLinesWithCanvas2D(
+    ctx: CanvasRenderingContext2D,
+    scrollLeft: number,
+    difPoints: LinePoint[],
+    deaPoints: LinePoint[],
+    config: { showDIF: boolean; showDEA: boolean }
+): void {
+    console.log('drawMacdLinesWithCanvas2D')
+    ctx.save()
+    ctx.translate(-scrollLeft, 0)
+    ctx.lineWidth = 1
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+
+    if (config.showDIF && difPoints.length >= 2) {
+        ctx.strokeStyle = MACD_COLORS.DIF
+        ctx.beginPath()
+        ctx.moveTo(difPoints[0]!.x, difPoints[0]!.y)
+        for (let i = 1; i < difPoints.length; i++) {
+            const point = difPoints[i]!
+            ctx.lineTo(point.x, point.y)
+        }
+        ctx.stroke()
+    }
+
+    if (config.showDEA && deaPoints.length >= 2) {
+        ctx.strokeStyle = MACD_COLORS.DEA
+        ctx.beginPath()
+        ctx.moveTo(deaPoints[0]!.x, deaPoints[0]!.y)
+        for (let i = 1; i < deaPoints.length; i++) {
+            const point = deaPoints[i]!
+            ctx.lineTo(point.x, point.y)
+        }
+        ctx.stroke()
+    }
 
     ctx.restore()
 }
