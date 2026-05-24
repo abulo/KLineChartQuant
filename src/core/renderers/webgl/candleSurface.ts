@@ -334,7 +334,7 @@ export class LineWebGLSurface {
         const colorValue = parseColor(color)
         if (!colorValue) return false
 
-        const geometry = buildJoinedPolylineGeometry(line.points, (line.width * this.dpr) / 2)
+        const geometry = buildJoinedPolylineGeometry(line.points, line.width / 2)
         if (!geometry) return false
 
         const { gl } = handles
