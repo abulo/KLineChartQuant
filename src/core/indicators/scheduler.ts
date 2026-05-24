@@ -1,28 +1,41 @@
+/**
+ * IndicatorScheduler - 指标调度器（Worker 化重构版）
+ *
+ * 职责：
+ * 1. 维护当前图表激活的指标配置
+ * 2. 在数据/配置变更时触发 Worker 计算
+ * 3. 接收 Worker 结果，组装 RenderState 并写入 StateStore
+ * 4. 同步处理 visibleRange 变更（不走 Worker，避免异步延迟）
+ *
+ * 架构：
+ * - 主线程 facade（本文件）
+ * - Worker backend（indicator.worker.ts）
+ * - Inline fallback backend（indicatorRuntime.ts）
+ */
+
 import type { PluginHost } from '@/plugin'
 import type { KLineData } from '@/types/price'
-import {
-    calcMAData,
-    calcBOLLData,
-    calcEXPMAData,
-    calcENEData,
-    calcCCIData,
-    calcSTOCHData,
-    calcMOMData,
-    calcWMSRData,
-    calcKSTData,
-    calcFASTKData,
-    calcMACDData,
-} from './calculators'
+import { IndicatorRuntime } from './indicatorRuntime'
+import type { IndicatorWorkerResponse } from './workerProtocol'
+import { isWorkerResponse, PROTOCOL_VERSION } from './workerProtocol'
+import { composeRenderStates, computeMainIndicatorPriceRange } from './stateComposer'
 import type {
-    MAFlags,
-    BOLLPoint,
-    EXPMAPoint,
-    ENEPoint,
-    STOCHPoint,
-    KSTPoint,
-    MACDPoint,
-} from './calculators'
-import { DEFAULT_MA_PERIODS } from './calculators'
+    BOLLSchedulerConfig,
+    EXPMASchedulerConfig,
+    ENESchedulerConfig,
+    RSISchedulerConfig,
+    CCISchedulerConfig,
+    STOCHSchedulerConfig,
+    MOMSchedulerConfig,
+    WMSRSchedulerConfig,
+    KSTSchedulerConfig,
+    FASTKSchedulerConfig,
+    MACDSchedulerConfig,
+    IndicatorConfigSnapshot,
+    IndicatorSeriesBundle,
+} from './workerProtocol'
+import type { MAFlags } from './calculators'
+
 import type { MARenderState } from './maState'
 import { MA_STATE_KEY } from './maState'
 import type { BOLLRenderState } from './bollState'
@@ -31,7 +44,6 @@ import type { EXPMARenderState } from './expmaState'
 import { EXPMA_STATE_KEY } from './expmaState'
 import type { ENERenderState } from './eneState'
 import { ENE_STATE_KEY } from './eneState'
-import { calcRSIData } from './calculators'
 import type { RSIRenderState } from './rsiState'
 import { createRSIStateKey } from './rsiState'
 import type { CCIRenderState } from './cciState'
@@ -46,7 +58,7 @@ import type { KSTRenderState } from './kstState'
 import { createKSTStateKey } from './kstState'
 import type { FASTKRenderState } from './fastkState'
 import { createFASTKStateKey } from './fastkState'
-import type { MACDRenderState, MACDSchedulerConfig } from './macdState'
+import type { MACDRenderState } from './macdState'
 import { createMACDStateKey } from './macdState'
 
 /**
@@ -57,1036 +69,661 @@ interface VisibleRange {
     end: number
 }
 
-/**
- * BOLL 调度器配置
- */
-export interface BOLLSchedulerConfig {
-    period: number
-    multiplier: number
-    showUpper: boolean
-    showMiddle: boolean
-    showLower: boolean
-    showBand: boolean
+// 重新导出配置类型（保持向后兼容）
+export type {
+    BOLLSchedulerConfig,
+    EXPMASchedulerConfig,
+    ENESchedulerConfig,
+    RSISchedulerConfig,
+    CCISchedulerConfig,
+    STOCHSchedulerConfig,
+    MOMSchedulerConfig,
+    WMSRSchedulerConfig,
+    KSTSchedulerConfig,
+    FASTKSchedulerConfig,
+    MACDSchedulerConfig,
 }
 
 /**
- * EXPMA 调度器配置
- */
-export interface EXPMASchedulerConfig {
-    fastPeriod: number
-    slowPeriod: number
-}
-
-/**
- * ENE 调度器配置
- */
-export interface ENESchedulerConfig {
-    period: number
-    deviation: number
-}
-
-/**
- * RSI 调度器配置
- */
-export interface RSISchedulerConfig {
-    period1: number
-    period2: number
-    period3: number
-    showRSI1: boolean
-    showRSI2: boolean
-    showRSI3: boolean
-}
-
-/**
- * CCI 调度器配置
- */
-export interface CCISchedulerConfig {
-    period: number
-    showCCI: boolean
-}
-
-/**
- * STOCH 调度器配置
- */
-export interface STOCHSchedulerConfig {
-    n: number
-    m: number
-    showK: boolean
-    showD: boolean
-}
-
-/**
- * MOM 调度器配置
- */
-export interface MOMSchedulerConfig {
-    period: number
-    showMOM: boolean
-}
-
-/**
- * WMSR 调度器配置
- */
-export interface WMSRSchedulerConfig {
-    period: number
-    showWMSR: boolean
-}
-
-/**
- * KST 调度器配置
- */
-export interface KSTSchedulerConfig {
-    roc1: number
-    roc2: number
-    roc3: number
-    roc4: number
-    signalPeriod: number
-    showKST: boolean
-    showSignal: boolean
-}
-
-/**
- * FASTK 调度器配置
- */
-export interface FASTKSchedulerConfig {
-    period: number
-    showFASTK: boolean
-}
-
-
-
-/**
- * 指标调度器
- *
- * 职责：
- * 1. 维护当前图表激活的指标配置
- * 2. 在数据/视口/配置变更时触发计算
- * 3. 将计算结果写入 StateStore，供渲染器消费
- *
- * 优化策略：
- * - 双脏标记（dirtyData/dirtyRange）：数据变更重算 series + 极值，视口变更仅重算极值
- * - cachedSeries 缓存：视口变更时复用已计算的 series，避免 O(n) 重算
+ * IndicatorScheduler - 主线程 facade
  */
 export class IndicatorScheduler {
     private pluginHost: PluginHost | null = null
-    private currentData: KLineData[] = []
-    private maConfig: MAFlags = { ma5: true, ma10: true, ma20: true, ma30: true, ma60: true }
     private visibleRange: VisibleRange = { start: 0, end: 0 }
-
-    // MA 缓存
-    private cachedSeries: Record<number, (number | undefined)[]> = {}
-
-    // BOLL 配置和缓存
-    private bollConfig: BOLLSchedulerConfig = {
-        period: 20,
-        multiplier: 2,
-        showUpper: true,
-        showMiddle: true,
-        showLower: true,
-        showBand: true,
-    }
-    private cachedBollSeries: BOLLPoint[] = []
-
-    // EXPMA 配置和缓存
-    private expmaConfig: EXPMASchedulerConfig = {
-        fastPeriod: 12,
-        slowPeriod: 50,
-    }
-    private cachedExpmaSeries: EXPMAPoint[] = []
-
-    // ENE 配置和缓存
-    private eneConfig: ENESchedulerConfig = {
-        period: 10,
-        deviation: 11,
-    }
-    private cachedEneSeries: ENEPoint[] = []
-
-    // RSI 配置和缓存
-    private rsiConfig: RSISchedulerConfig = {
-        period1: 6,
-        period2: 12,
-        period3: 24,
-        showRSI1: true,
-        showRSI2: true,
-        showRSI3: true,
-    }
-    private rsiPaneId: string = 'sub_RSI'
-    private cachedRsiSeries: Record<number, (number | undefined)[]> = {}
-
-    // CCI 配置和缓存
-    private cciConfig: CCISchedulerConfig = { period: 14, showCCI: true }
-    private cciPaneId: string = 'sub_CCI'
-    private cachedCciSeries: (number | undefined)[] = []
-
-    // STOCH 配置和缓存
-    private stochConfig: STOCHSchedulerConfig = { n: 9, m: 3, showK: true, showD: true }
-    private stochPaneId: string = 'sub_STOCH'
-    private cachedStochSeries: STOCHPoint[] = []
-
-    // MOM 配置和缓存
-    private momConfig: MOMSchedulerConfig = { period: 10, showMOM: true }
-    private momPaneId: string = 'sub_MOM'
-    private cachedMomSeries: (number | undefined)[] = []
-
-    // WMSR 配置和缓存
-    private wmsrConfig: WMSRSchedulerConfig = { period: 14, showWMSR: true }
-    private wmsrPaneId: string = 'sub_WMSR'
-    private cachedWmsrSeries: (number | undefined)[] = []
-
-    // KST 配置和缓存
-    private kstConfig: KSTSchedulerConfig = {
-        roc1: 10,
-        roc2: 15,
-        roc3: 20,
-        roc4: 30,
-        signalPeriod: 9,
-        showKST: true,
-        showSignal: true,
-    }
-    private kstPaneId: string = 'sub_KST'
-    private cachedKstSeries: KSTPoint[] = []
-
-    // FASTK 配置和缓存
-    private fastkConfig: FASTKSchedulerConfig = { period: 9, showFASTK: true }
-    private fastkPaneId: string = 'sub_FASTK'
-    private cachedFastkSeries: (number | undefined)[] = []
-
-    // MACD 配置和缓存
-    private macdConfig: MACDSchedulerConfig = {
-        fastPeriod: 12,
-        slowPeriod: 26,
-        signalPeriod: 9,
-        showDIF: true,
-        showDEA: true,
-        showBAR: true,
-    }
-    private macdPaneId: string = 'sub_MACD'
-    private cachedMacdSeries: MACDPoint[] = []
-
-    // 双脏标记（数据/视口）
-    private dirtyData = true   // 数据变更 → 重算所有 series + 极值
-    private dirtyRange = true  // 仅视口变更 → 仅重算极值
-
-    // 各指标配置脏标记（配置变更时仅重算该指标）
-    private dirtyBollConfig = true
-    private dirtyExpmaConfig = true
-    private dirtyEneConfig = true
-    private dirtyRsiConfig = true
-    private dirtyCciConfig = true
-    private dirtyStochConfig = true
-    private dirtyMomConfig = true
-    private dirtyWmsrConfig = true
-    private dirtyKstConfig = true
-    private dirtyFastkConfig = true
-    private dirtyMacdConfig = true
-
-    // 各指标 state 脏标记（series 或极值重算时置位，控制 state 写入）
-    private dirtyRsiState = true
-    private dirtyCciState = true
-    private dirtyStochState = true
-    private dirtyMomState = true
-    private dirtyWmsrState = true
-    private dirtyKstState = true
-    private dirtyFastkState = true
-    private dirtyMacdState = true
-
-    /** 当前激活的主图指标列表 */
     private activeMainIndicators: Set<string> = new Set()
 
+    // 版本控制
+    private dataVersion = 0
+    private configVersion = 0
+    private requestId = 0
+    private lastAppliedRequestId = 0
+
+    // 当前数据和配置快照
+    private currentData: KLineData[] = []
+    private configSnapshot: IndicatorConfigSnapshot = this.getDefaultConfig()
+
+    // Worker 相关
+    private worker: Worker | null = null
+    private workerReady = false
+    private useWorker = false
+    private pendingRequest: {
+        requestId: number
+        dataVersion: number
+        configVersion: number
+    } | null = null
+
+    // Inline fallback runtime
+    private inlineRuntime: IndicatorRuntime | null = null
+
+    // 缓存的最新结果（用于 visibleRange 变更时同步更新）
+    private latestResult: IndicatorSeriesBundle | null = null
+
+    // 重绘回调
+    private invalidateCallback: (() => void) | null = null
+
+    constructor() {
+        this.initBackend()
+    }
+
     /**
-     * 设置 PluginHost，用于读写 StateStore
+     * 设置 PluginHost
      */
     setPluginHost(host: PluginHost): void {
         this.pluginHost = host
     }
 
     /**
-     * 设置当前激活的主图指标（用于极值计算过滤）
-     * @param indicators 激活的指标ID列表，如 ['ma', 'boll', 'expma', 'ene']
+     * 设置重绘回调
+     */
+    setInvalidateCallback(callback: () => void): void {
+        this.invalidateCallback = callback
+    }
+
+    /**
+     * 销毁调度器
+     */
+    destroy(): void {
+        this.terminateWorker()
+        this.inlineRuntime = null
+        this.latestResult = null
+        this.invalidateCallback = null
+    }
+
+    // ============================================================================
+    // 初始化
+    // ============================================================================
+
+    private getDefaultConfig(): IndicatorConfigSnapshot {
+        return {
+            ma: { ma5: true, ma10: true, ma20: true, ma30: true, ma60: true },
+            boll: {
+                period: 20,
+                multiplier: 2,
+                showUpper: true,
+                showMiddle: true,
+                showLower: true,
+                showBand: true,
+            },
+            expma: { fastPeriod: 12, slowPeriod: 50 },
+            ene: { period: 10, deviation: 11 },
+            rsi: {
+                period1: 6,
+                period2: 12,
+                period3: 24,
+                showRSI1: true,
+                showRSI2: true,
+                showRSI3: true,
+            },
+            cci: { period: 14, showCCI: true },
+            stoch: { n: 9, m: 3, showK: true, showD: true },
+            mom: { period: 10, showMOM: true },
+            wmsr: { period: 14, showWMSR: true },
+            kst: {
+                roc1: 10,
+                roc2: 15,
+                roc3: 20,
+                roc4: 30,
+                signalPeriod: 9,
+                showKST: true,
+                showSignal: true,
+            },
+            fastk: { period: 9, showFASTK: true },
+            macd: {
+                fastPeriod: 12,
+                slowPeriod: 26,
+                signalPeriod: 9,
+                showDIF: true,
+                showDEA: true,
+                showBAR: true,
+            },
+            rsiPaneId: 'sub_RSI',
+            cciPaneId: 'sub_CCI',
+            stochPaneId: 'sub_STOCH',
+            momPaneId: 'sub_MOM',
+            wmsrPaneId: 'sub_WMSR',
+            kstPaneId: 'sub_KST',
+            fastkPaneId: 'sub_FASTK',
+            macdPaneId: 'sub_MACD',
+        }
+    }
+
+    private initBackend(): void {
+        // 尝试初始化 Worker
+        if (this.tryInitWorker()) {
+            return
+        }
+        // 失败则使用 inline fallback
+        this.initInlineRuntime()
+    }
+
+    private tryInitWorker(): boolean {
+        console.log('[IndicatorScheduler] tryInitWorker: Worker available?', typeof Worker !== 'undefined')
+        if (typeof Worker === 'undefined') {
+            return false
+        }
+        try {
+            // Vite 模块 Worker
+            const workerUrl = new URL('./indicator.worker.ts', import.meta.url)
+            console.log('[IndicatorScheduler] Creating worker from:', workerUrl.href)
+            this.worker = new Worker(workerUrl, { type: 'module' })
+            console.log('[IndicatorScheduler] Worker created, waiting for ready...')
+            this.worker.onmessage = (e) => this.handleWorkerMessage(e.data)
+            this.worker.onerror = (err) => {
+                console.error('[IndicatorScheduler] Worker error:', err)
+                this.fallbackToInline()
+            }
+            // 发送 init
+            this.worker.postMessage({
+                type: 'init',
+                protocolVersion: PROTOCOL_VERSION,
+            })
+            return true
+        } catch (err) {
+            console.warn('[IndicatorScheduler] Failed to init worker:', err)
+            return false
+        }
+    }
+
+    private initInlineRuntime(): void {
+        console.log('[IndicatorScheduler] Using INLINE runtime (fallback)')
+        this.inlineRuntime = new IndicatorRuntime()
+        this.useWorker = false
+        this.workerReady = true
+    }
+
+    private fallbackToInline(): void {
+        console.warn('[IndicatorScheduler] Falling back to inline runtime')
+        this.terminateWorker()
+        this.initInlineRuntime()
+        // 如果有待处理的请求，用 inline 重新执行
+        if (this.pendingRequest) {
+            this.computeWithInline()
+        }
+    }
+
+    private terminateWorker(): void {
+        if (this.worker) {
+            this.worker.terminate()
+            this.worker = null
+        }
+        this.workerReady = false
+        this.useWorker = false
+    }
+
+    // ============================================================================
+    // Worker 消息处理
+    // ============================================================================
+
+    private handleWorkerMessage(msg: unknown): void {
+        if (!isWorkerResponse(msg)) {
+            console.warn('[IndicatorScheduler] Invalid worker response:', msg)
+            return
+        }
+
+        switch (msg.type) {
+            case 'ready':
+                this.workerReady = true
+                this.useWorker = true
+                console.log('[IndicatorScheduler] Worker READY - using Worker backend')
+                // Worker 就绪后立即补算一次，确保后续走 Worker
+                this.triggerRecompute()
+                break
+
+            case 'seriesResult':
+                this.handleSeriesResult(msg)
+                break
+
+            case 'error':
+                console.error('[IndicatorScheduler] Worker error:', msg.stage, msg.message)
+                if (this.pendingRequest && msg.requestId === this.pendingRequest.requestId) {
+                    this.fallbackToInline()
+                }
+                break
+
+            default: {
+                const _exhaustive: never = msg
+                console.warn('[IndicatorScheduler] Unknown response type:', (_exhaustive as unknown as { type: string }).type)
+            }
+        }
+    }
+
+    private handleSeriesResult(msg: Extract<IndicatorWorkerResponse, { type: 'seriesResult' }>): void {
+        // 检查版本是否过期
+        if (msg.requestId < this.lastAppliedRequestId) {
+            return // 丢弃旧结果
+        }
+        if (msg.dataVersion !== this.dataVersion || msg.configVersion !== this.configVersion) {
+            return // 数据或配置已变更，丢弃旧结果
+        }
+
+        console.log(`[IndicatorScheduler] << Worker result: requestId=${msg.requestId} metrics=`, msg.metrics)
+        this.lastAppliedRequestId = msg.requestId
+        this.pendingRequest = null
+        this.latestResult = msg.results
+
+        // 组装并写入 states
+        this.applyResults(msg.results)
+
+        // 触发重绘
+        this.invalidateCallback?.()
+    }
+
+    // ============================================================================
+    // 结果应用
+    // ============================================================================
+
+    private applyResults(bundle: IndicatorSeriesBundle): void {
+        if (!this.pluginHost) return
+
+        const changed = new Set(bundle._changed)
+        const timestamp = Date.now()
+        const states = composeRenderStates(bundle, this.visibleRange, timestamp)
+
+        // MA（空状态也需要写入，渲染器依赖 sentinel 判断）
+        if (changed.has('ma')) {
+            this.pluginHost.setSharedState<MARenderState>(MA_STATE_KEY, states.ma, 'ma_scheduler')
+        }
+
+        // BOLL
+        if (changed.has('boll')) {
+            this.pluginHost.setSharedState<BOLLRenderState>(BOLL_STATE_KEY, states.boll, 'indicator_scheduler')
+        }
+
+        // EXPMA
+        if (changed.has('expma')) {
+            this.pluginHost.setSharedState<EXPMARenderState>(EXPMA_STATE_KEY, states.expma, 'indicator_scheduler')
+        }
+
+        // ENE
+        if (changed.has('ene')) {
+            this.pluginHost.setSharedState<ENERenderState>(ENE_STATE_KEY, states.ene, 'indicator_scheduler')
+        }
+
+        // RSI
+        if (changed.has('rsi')) {
+            const rsiKey = createRSIStateKey(this.configSnapshot.rsiPaneId)
+            this.pluginHost.setSharedState<RSIRenderState>(rsiKey, states.rsi, 'indicator_scheduler')
+        }
+
+        // CCI
+        if (changed.has('cci')) {
+            const cciKey = createCCIStateKey(this.configSnapshot.cciPaneId)
+            this.pluginHost.setSharedState<CCIRenderState>(cciKey, states.cci, 'indicator_scheduler')
+        }
+
+        // STOCH
+        if (changed.has('stoch')) {
+            const stochKey = createSTOCHStateKey(this.configSnapshot.stochPaneId)
+            this.pluginHost.setSharedState<STOCHRenderState>(stochKey, states.stoch, 'indicator_scheduler')
+        }
+
+        // MOM
+        if (changed.has('mom')) {
+            const momKey = createMOMStateKey(this.configSnapshot.momPaneId)
+            this.pluginHost.setSharedState<MOMRenderState>(momKey, states.mom, 'indicator_scheduler')
+        }
+
+        // WMSR
+        if (changed.has('wmsr')) {
+            const wmsrKey = createWMSRStateKey(this.configSnapshot.wmsrPaneId)
+            this.pluginHost.setSharedState<WMSRRenderState>(wmsrKey, states.wmsr, 'indicator_scheduler')
+        }
+
+        // KST
+        if (changed.has('kst')) {
+            const kstKey = createKSTStateKey(this.configSnapshot.kstPaneId)
+            this.pluginHost.setSharedState<KSTRenderState>(kstKey, states.kst, 'indicator_scheduler')
+        }
+
+        // FASTK
+        if (changed.has('fastk')) {
+            const fastkKey = createFASTKStateKey(this.configSnapshot.fastkPaneId)
+            this.pluginHost.setSharedState<FASTKRenderState>(fastkKey, states.fastk, 'indicator_scheduler')
+        }
+
+        // MACD
+        if (changed.has('macd')) {
+            const macdKey = createMACDStateKey(this.configSnapshot.macdPaneId)
+            this.pluginHost.setSharedState<MACDRenderState>(macdKey, states.macd, 'indicator_scheduler')
+        }
+    }
+
+    private updateVisibleStatesOnly(): void {
+        // 只有 visibleRange 变更时，基于缓存的 series 重新计算极值
+        if (!this.pluginHost || !this.latestResult) return
+
+        const timestamp = Date.now()
+        const states = composeRenderStates(this.latestResult, this.visibleRange, timestamp)
+
+        // 只更新包含 visibleMin/visibleMax 的字段
+        // MA
+        if (states.ma.enabledPeriods.length > 0) {
+            this.pluginHost.setSharedState<MARenderState>(MA_STATE_KEY, states.ma, 'ma_scheduler')
+        }
+
+        // BOLL
+        this.pluginHost.setSharedState<BOLLRenderState>(BOLL_STATE_KEY, states.boll, 'indicator_scheduler')
+
+        // EXPMA
+        this.pluginHost.setSharedState<EXPMARenderState>(EXPMA_STATE_KEY, states.expma, 'indicator_scheduler')
+
+        // ENE
+        this.pluginHost.setSharedState<ENERenderState>(ENE_STATE_KEY, states.ene, 'indicator_scheduler')
+
+        // RSI
+        const rsiKey = createRSIStateKey(this.configSnapshot.rsiPaneId)
+        this.pluginHost.setSharedState<RSIRenderState>(rsiKey, states.rsi, 'indicator_scheduler')
+
+        // CCI
+        const cciKey = createCCIStateKey(this.configSnapshot.cciPaneId)
+        this.pluginHost.setSharedState<CCIRenderState>(cciKey, states.cci, 'indicator_scheduler')
+
+        // STOCH
+        const stochKey = createSTOCHStateKey(this.configSnapshot.stochPaneId)
+        this.pluginHost.setSharedState<STOCHRenderState>(stochKey, states.stoch, 'indicator_scheduler')
+
+        // MOM
+        const momKey = createMOMStateKey(this.configSnapshot.momPaneId)
+        this.pluginHost.setSharedState<MOMRenderState>(momKey, states.mom, 'indicator_scheduler')
+
+        // WMSR
+        const wmsrKey = createWMSRStateKey(this.configSnapshot.wmsrPaneId)
+        this.pluginHost.setSharedState<WMSRRenderState>(wmsrKey, states.wmsr, 'indicator_scheduler')
+
+        // KST
+        const kstKey = createKSTStateKey(this.configSnapshot.kstPaneId)
+        this.pluginHost.setSharedState<KSTRenderState>(kstKey, states.kst, 'indicator_scheduler')
+
+        // FASTK
+        const fastkKey = createFASTKStateKey(this.configSnapshot.fastkPaneId)
+        this.pluginHost.setSharedState<FASTKRenderState>(fastkKey, states.fastk, 'indicator_scheduler')
+
+        // MACD
+        const macdKey = createMACDStateKey(this.configSnapshot.macdPaneId)
+        this.pluginHost.setSharedState<MACDRenderState>(macdKey, states.macd, 'indicator_scheduler')
+    }
+
+    // ============================================================================
+    // Public API
+    // ============================================================================
+
+    /**
+     * 数据变更时调用
+     */
+    update(data: KLineData[], visibleRange: VisibleRange): void {
+        this.currentData = data
+        this.visibleRange = visibleRange
+        this.dataVersion++
+
+        if (this.useWorker && this.worker && this.workerReady) {
+            this.computeWithWorker()
+        } else {
+            this.computeWithInline()
+        }
+    }
+
+    /**
+     * 视口变更时调用 - 同步处理，不走 Worker
+     */
+    updateVisibleRange(visibleRange: VisibleRange): void {
+        this.visibleRange = visibleRange
+
+        // 基于缓存的 series 同步更新极值
+        if (this.latestResult) {
+            this.updateVisibleStatesOnly()
+        }
+    }
+
+    /**
+     * MA 配置变更
+     */
+    updateMAConfig(config: MAFlags): void {
+        this.configSnapshot.ma = { ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * BOLL 配置变更
+     */
+    updateBOLLConfig(config: Partial<BOLLSchedulerConfig>): void {
+        this.configSnapshot.boll = { ...this.configSnapshot.boll, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * EXPMA 配置变更
+     */
+    updateEXPMAConfig(config: Partial<EXPMASchedulerConfig>): void {
+        this.configSnapshot.expma = { ...this.configSnapshot.expma, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * ENE 配置变更
+     */
+    updateENEConfig(config: Partial<ENESchedulerConfig>): void {
+        this.configSnapshot.ene = { ...this.configSnapshot.ene, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * RSI 配置变更
+     */
+    updateRSIConfig(config: Partial<RSISchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.rsiPaneId = paneId
+        }
+        this.configSnapshot.rsi = { ...this.configSnapshot.rsi, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * CCI 配置变更
+     */
+    updateCCIConfig(config: Partial<CCISchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.cciPaneId = paneId
+        }
+        this.configSnapshot.cci = { ...this.configSnapshot.cci, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * STOCH 配置变更
+     */
+    updateSTOCHConfig(config: Partial<STOCHSchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.stochPaneId = paneId
+        }
+        this.configSnapshot.stoch = { ...this.configSnapshot.stoch, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * MOM 配置变更
+     */
+    updateMOMConfig(config: Partial<MOMSchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.momPaneId = paneId
+        }
+        this.configSnapshot.mom = { ...this.configSnapshot.mom, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * WMSR 配置变更
+     */
+    updateWMSRConfig(config: Partial<WMSRSchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.wmsrPaneId = paneId
+        }
+        this.configSnapshot.wmsr = { ...this.configSnapshot.wmsr, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * KST 配置变更
+     */
+    updateKSTConfig(config: Partial<KSTSchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.kstPaneId = paneId
+        }
+        this.configSnapshot.kst = { ...this.configSnapshot.kst, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * FASTK 配置变更
+     */
+    updateFASTKConfig(config: Partial<FASTKSchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.fastkPaneId = paneId
+        }
+        this.configSnapshot.fastk = { ...this.configSnapshot.fastk, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * MACD 配置变更
+     */
+    updateMACDConfig(config: Partial<MACDSchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.macdPaneId = paneId
+        }
+        this.configSnapshot.macd = { ...this.configSnapshot.macd, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * 设置当前激活的主图指标
      */
     setActiveMainIndicators(indicators: string[]): void {
         this.activeMainIndicators = new Set(indicators.map(i => i.toLowerCase()))
     }
 
     /**
-     * 数据变更时调用
-     * @param data 新的 K 线数据
-     * @param visibleRange 当前可见范围
+     * 获取主图指标价格范围
      */
-    update(data: KLineData[], visibleRange: VisibleRange): void {
-        this.currentData = data
-        this.visibleRange = visibleRange
-        this.dirtyData = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * MA 配置变更时调用
-     * @param config 新的 MA 配置（哪些周期启用）
-     */
-    updateMAConfig(config: MAFlags): void {
-        this.maConfig = { ...config }
-        this.dirtyData = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * BOLL 配置变更时调用
-     * @param config 新的 BOLL 配置
-     */
-    updateBOLLConfig(config: Partial<BOLLSchedulerConfig>): void {
-        this.bollConfig = { ...this.bollConfig, ...config }
-        this.dirtyBollConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * EXPMA 配置变更时调用
-     * @param config 新的 EXPMA 配置
-     */
-    updateEXPMAConfig(config: Partial<EXPMASchedulerConfig>): void {
-        this.expmaConfig = { ...this.expmaConfig, ...config }
-        this.dirtyExpmaConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * ENE 配置变更时调用
-     * @param config 新的 ENE 配置
-     */
-    updateENEConfig(config: Partial<ENESchedulerConfig>): void {
-        this.eneConfig = { ...this.eneConfig, ...config }
-        this.dirtyEneConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * RSI 配置变更时调用
-     * @param config 新的 RSI 配置
-     * @param paneId RSI pane ID（可选，默认 'sub_RSI'）
-     */
-    updateRSIConfig(config: Partial<RSISchedulerConfig>, paneId?: string): void {
-        if (paneId !== undefined) {
-            this.rsiPaneId = paneId
-        }
-        this.rsiConfig = { ...this.rsiConfig, ...config }
-        this.dirtyRsiConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * CCI 配置变更时调用
-     * @param config 新的 CCI 配置
-     * @param paneId CCI pane ID（可选，默认 'sub_CCI'）
-     */
-    updateCCIConfig(config: Partial<CCISchedulerConfig>, paneId?: string): void {
-        if (paneId !== undefined) {
-            this.cciPaneId = paneId
-        }
-        this.cciConfig = { ...this.cciConfig, ...config }
-        this.dirtyCciConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * STOCH 配置变更时调用
-     * @param config 新的 STOCH 配置
-     * @param paneId STOCH pane ID（可选，默认 'sub_STOCH'）
-     */
-    updateSTOCHConfig(config: Partial<STOCHSchedulerConfig>, paneId?: string): void {
-        if (paneId !== undefined) {
-            this.stochPaneId = paneId
-        }
-        this.stochConfig = { ...this.stochConfig, ...config }
-        this.dirtyStochConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * MOM 配置变更时调用
-     * @param config 新的 MOM 配置
-     * @param paneId MOM pane ID（可选，默认 'sub_MOM'）
-     */
-    updateMOMConfig(config: Partial<MOMSchedulerConfig>, paneId?: string): void {
-        if (paneId !== undefined) {
-            this.momPaneId = paneId
-        }
-        this.momConfig = { ...this.momConfig, ...config }
-        this.dirtyMomConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * WMSR 配置变更时调用
-     * @param config 新的 WMSR 配置
-     * @param paneId WMSR pane ID（可选，默认 'sub_WMSR'）
-     */
-    updateWMSRConfig(config: Partial<WMSRSchedulerConfig>, paneId?: string): void {
-        if (paneId !== undefined) {
-            this.wmsrPaneId = paneId
-        }
-        this.wmsrConfig = { ...this.wmsrConfig, ...config }
-        this.dirtyWmsrConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * KST 配置变更时调用
-     * @param config 新的 KST 配置
-     * @param paneId KST pane ID（可选，默认 'sub_KST'）
-     */
-    updateKSTConfig(config: Partial<KSTSchedulerConfig>, paneId?: string): void {
-        if (paneId !== undefined) {
-            this.kstPaneId = paneId
-        }
-        this.kstConfig = { ...this.kstConfig, ...config }
-        this.dirtyKstConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * FASTK 配置变更时调用
-     * @param config 新的 FASTK 配置
-     * @param paneId FASTK pane ID（可选，默认 'sub_FASTK'）
-     */
-    updateFASTKConfig(config: Partial<FASTKSchedulerConfig>, paneId?: string): void {
-        if (paneId !== undefined) {
-            this.fastkPaneId = paneId
-        }
-        this.fastkConfig = { ...this.fastkConfig, ...config }
-        this.dirtyFastkConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * MACD 配置变更时调用
-     * @param config 新的 MACD 配置
-     * @param paneId MACD pane ID（可选，默认 'sub_MACD'）
-     */
-    updateMACDConfig(config: Partial<MACDSchedulerConfig>, paneId?: string): void {
-        if (paneId !== undefined) {
-            this.macdPaneId = paneId
-        }
-        this.macdConfig = { ...this.macdConfig, ...config }
-        this.dirtyMacdConfig = true
-        this.computeIfDirty()
-    }
-
-    /**
-     * 视口变更时调用
-     * @param visibleRange 新的可见范围
-     */
-    updateVisibleRange(visibleRange: VisibleRange): void {
-        this.visibleRange = visibleRange
-        this.dirtyRange = true
-        this.computeIfDirty()
+    getMainIndicatorPriceRange(): { min: number; max: number } | null {
+        if (!this.latestResult) return null
+        return computeMainIndicatorPriceRange(
+            this.latestResult,
+            this.visibleRange,
+            this.activeMainIndicators
+        )
     }
 
     /**
      * 强制全部重算
      */
     recompute(): void {
-        this.dirtyData = true
-        this.dirtyRange = true
-        this.computeIfDirty()
+        // 强制 inline runtime 重新计算（无视脏标记）
+        if (this.inlineRuntime) {
+            this.inlineRuntime.forceDirty()
+        }
+        // 递增版本号，确保 worker 端也会重新计算
+        this.dataVersion++
+        this.triggerRecompute()
     }
 
-    /**
-     * 根据脏标记执行计算
-     *
-     * 计算流程：
-     * 1. 若 dirtyData 或指标配置脏标记，重算对应 series
-     * 2. 若任一 series 重算或 dirtyRange，重算所有指标在视口内的极值
-     * 3. 写入所有指标的 StateStore
-     */
-    private computeIfDirty(): void {
-        if (!this.dirtyData && !this.dirtyRange &&
-            !this.dirtyBollConfig && !this.dirtyExpmaConfig && !this.dirtyEneConfig && !this.dirtyRsiConfig &&
-            !this.dirtyCciConfig && !this.dirtyStochConfig && !this.dirtyMomConfig && !this.dirtyWmsrConfig &&
-            !this.dirtyKstConfig && !this.dirtyFastkConfig && !this.dirtyMacdConfig) {
-            return
+    // ============================================================================
+    // 计算触发
+    // ============================================================================
+
+    private triggerRecompute(): void {
+        if (this.useWorker && this.worker && this.workerReady) {
+            this.computeWithWorker()
+        } else {
+            this.computeWithInline()
         }
-        if (!this.pluginHost) return
-
-// 各指标独立的极值守卫条件，避免一脏全算
-
-        // ===== 步骤1：重算各指标 series =====
-
-        // MA series（dirtyData 时重算）
-        if (this.dirtyData) {
-            this.cachedSeries = {}
-            for (const period of DEFAULT_MA_PERIODS) {
-                const flagKey = `ma${period}` as keyof MAFlags
-                if (this.maConfig[flagKey]) {
-                    this.cachedSeries[period] = calcMAData(this.currentData, period)
-                }
-            }
-        }
-
-        // BOLL series（dirtyData 或 dirtyBollConfig 时重算）
-        if (this.dirtyData || this.dirtyBollConfig) {
-            this.cachedBollSeries = calcBOLLData(
-                this.currentData,
-                this.bollConfig.period,
-                this.bollConfig.multiplier
-            )
-        }
-
-        // EXPMA series（dirtyData 或 dirtyExpmaConfig 时重算）
-        if (this.dirtyData || this.dirtyExpmaConfig) {
-            this.cachedExpmaSeries = calcEXPMAData(
-                this.currentData,
-                this.expmaConfig.fastPeriod,
-                this.expmaConfig.slowPeriod
-            )
-        }
-
-        // ENE series（dirtyData 或 dirtyEneConfig 时重算）
-        if (this.dirtyData || this.dirtyEneConfig) {
-            this.cachedEneSeries = calcENEData(
-                this.currentData,
-                this.eneConfig.period,
-                this.eneConfig.deviation
-            )
-        }
-
-        // RSI series（dirtyData 或 dirtyRsiConfig 时重算）
-        if (this.dirtyData || this.dirtyRsiConfig) {
-            this.cachedRsiSeries = {}
-            const periods = [this.rsiConfig.period1, this.rsiConfig.period2, this.rsiConfig.period3]
-            const shows = [this.rsiConfig.showRSI1, this.rsiConfig.showRSI2, this.rsiConfig.showRSI3]
-            for (let i = 0; i < periods.length; i++) {
-                if (shows[i]) {
-                    this.cachedRsiSeries[periods[i]] = calcRSIData(this.currentData, periods[i])
-                }
-            }
-        }
-
-        // CCI series（dirtyData 或 dirtyCciConfig 时重算）
-        if (this.dirtyData || this.dirtyCciConfig) {
-            if (this.cciConfig.showCCI) {
-                this.cachedCciSeries = calcCCIData(this.currentData, this.cciConfig.period)
-            } else {
-                this.cachedCciSeries = []
-            }
-        }
-
-        // STOCH series（dirtyData 或 dirtyStochConfig 时重算）
-        if (this.dirtyData || this.dirtyStochConfig) {
-            if (this.stochConfig.showK || this.stochConfig.showD) {
-                this.cachedStochSeries = calcSTOCHData(this.currentData, this.stochConfig.n, this.stochConfig.m)
-            } else {
-                this.cachedStochSeries = []
-            }
-        }
-
-        // MOM series（dirtyData 或 dirtyMomConfig 时重算）
-        if (this.dirtyData || this.dirtyMomConfig) {
-            if (this.momConfig.showMOM) {
-                this.cachedMomSeries = calcMOMData(this.currentData, this.momConfig.period)
-            } else {
-                this.cachedMomSeries = []
-            }
-        }
-
-        // WMSR series（dirtyData 或 dirtyWmsrConfig 时重算）
-        if (this.dirtyData || this.dirtyWmsrConfig) {
-            if (this.wmsrConfig.showWMSR) {
-                this.cachedWmsrSeries = calcWMSRData(this.currentData, this.wmsrConfig.period)
-            } else {
-                this.cachedWmsrSeries = []
-            }
-        }
-
-        // KST series（dirtyData 或 dirtyKstConfig 时重算）
-        if (this.dirtyData || this.dirtyKstConfig) {
-            if (this.kstConfig.showKST || this.kstConfig.showSignal) {
-                this.cachedKstSeries = calcKSTData(
-                    this.currentData,
-                    this.kstConfig.roc1,
-                    this.kstConfig.roc2,
-                    this.kstConfig.roc3,
-                    this.kstConfig.roc4,
-                    this.kstConfig.signalPeriod
-                )
-            } else {
-                this.cachedKstSeries = []
-            }
-        }
-
-        // FASTK series（dirtyData 或 dirtyFastkConfig 时重算）
-        if (this.dirtyData || this.dirtyFastkConfig) {
-            if (this.fastkConfig.showFASTK) {
-                this.cachedFastkSeries = calcFASTKData(this.currentData, this.fastkConfig.period)
-            } else {
-                this.cachedFastkSeries = []
-            }
-        }
-
-        // MACD series（dirtyData 或 dirtyMacdConfig 时重算）
-        if (this.dirtyData || this.dirtyMacdConfig) {
-            if (this.macdConfig.showDIF || this.macdConfig.showDEA || this.macdConfig.showBAR) {
-                this.cachedMacdSeries = calcMACDData(
-                    this.currentData,
-                    this.macdConfig.fastPeriod,
-                    this.macdConfig.slowPeriod,
-                    this.macdConfig.signalPeriod
-                )
-            } else {
-                this.cachedMacdSeries = []
-            }
-        }
-
-        // ===== 步骤2：重算视口极值（所有指标）=====
-        // MA 极值（dirtyData 或 dirtyRange 时重算）
-        let maVisibleMin = Infinity
-        let maVisibleMax = -Infinity
-        if (this.dirtyData || this.dirtyRange) {
-            for (const values of Object.values(this.cachedSeries)) {
-                for (let i = this.visibleRange.start; i < this.visibleRange.end && i < values.length; i++) {
-                    const v = values[i]
-                    if (v !== undefined) {
-                        maVisibleMin = Math.min(maVisibleMin, v)
-                        maVisibleMax = Math.max(maVisibleMax, v)
-                    }
-                }
-            }
-        }
-
-        // BOLL 极值（扫描 upper/middle/lower）
-        let bollVisibleMin = Infinity
-        let bollVisibleMax = -Infinity
-        const dirtyBollState = this.dirtyData || this.dirtyRange || this.dirtyBollConfig
-        if (dirtyBollState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedBollSeries.length; i++) {
-                const p = this.cachedBollSeries[i]
-                if (p) {
-                    bollVisibleMin = Math.min(bollVisibleMin, p.upper, p.middle, p.lower)
-                    bollVisibleMax = Math.max(bollVisibleMax, p.upper, p.middle, p.lower)
-                }
-            }
-        }
-
-        // EXPMA 极值（扫描 fast/slow）
-        let expmaVisibleMin = Infinity
-        let expmaVisibleMax = -Infinity
-        const dirtyExpmaState = this.dirtyData || this.dirtyRange || this.dirtyExpmaConfig
-        if (dirtyExpmaState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedExpmaSeries.length; i++) {
-                const p = this.cachedExpmaSeries[i]
-                if (p) {
-                    expmaVisibleMin = Math.min(expmaVisibleMin, p.fast, p.slow)
-                    expmaVisibleMax = Math.max(expmaVisibleMax, p.fast, p.slow)
-                }
-            }
-        }
-
-        // ENE 极值（扫描 upper/middle/lower）
-        let eneVisibleMin = Infinity
-        let eneVisibleMax = -Infinity
-        const dirtyEneState = this.dirtyData || this.dirtyRange || this.dirtyEneConfig
-        if (dirtyEneState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedEneSeries.length; i++) {
-                const p = this.cachedEneSeries[i]
-                if (p) {
-                    eneVisibleMin = Math.min(eneVisibleMin, p.upper, p.middle, p.lower)
-                    eneVisibleMax = Math.max(eneVisibleMax, p.upper, p.middle, p.lower)
-                }
-            }
-        }
-
-        // RSI 极值（扫描所有启用的周期）
-        let rsiVisibleMin = Infinity
-        let rsiVisibleMax = -Infinity
-        this.dirtyRsiState = this.dirtyData || this.dirtyRange || this.dirtyRsiConfig
-        if (this.dirtyRsiState) {
-            for (const values of Object.values(this.cachedRsiSeries)) {
-                for (let i = this.visibleRange.start; i < this.visibleRange.end && i < values.length; i++) {
-                    const v = values[i]
-                    if (v !== undefined) {
-                        rsiVisibleMin = Math.min(rsiVisibleMin, v)
-                        rsiVisibleMax = Math.max(rsiVisibleMax, v)
-                    }
-                }
-            }
-        }
-
-        // CCI 极值
-        let cciVisibleMin = Infinity
-        let cciVisibleMax = -Infinity
-        this.dirtyCciState = this.dirtyData || this.dirtyRange || this.dirtyCciConfig
-        if (this.dirtyCciState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedCciSeries.length; i++) {
-                const v = this.cachedCciSeries[i]
-                if (v !== undefined) {
-                    cciVisibleMin = Math.min(cciVisibleMin, v)
-                    cciVisibleMax = Math.max(cciVisibleMax, v)
-                }
-            }
-        }
-
-        // STOCH 极值（扫描 k 和 d）
-        let stochVisibleMin = Infinity
-        let stochVisibleMax = -Infinity
-        this.dirtyStochState = this.dirtyData || this.dirtyRange || this.dirtyStochConfig
-        if (this.dirtyStochState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedStochSeries.length; i++) {
-                const p = this.cachedStochSeries[i]
-                if (p) {
-                    stochVisibleMin = Math.min(stochVisibleMin, p.k, p.d)
-                    stochVisibleMax = Math.max(stochVisibleMax, p.k, p.d)
-                }
-            }
-        }
-
-        // MOM 极值
-        let momVisibleMin = Infinity
-        let momVisibleMax = -Infinity
-        this.dirtyMomState = this.dirtyData || this.dirtyRange || this.dirtyMomConfig
-        if (this.dirtyMomState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedMomSeries.length; i++) {
-                const v = this.cachedMomSeries[i]
-                if (v !== undefined) {
-                    momVisibleMin = Math.min(momVisibleMin, v)
-                    momVisibleMax = Math.max(momVisibleMax, v)
-                }
-            }
-        }
-
-        // WMSR 极值
-        let wmsrVisibleMin = Infinity
-        let wmsrVisibleMax = -Infinity
-        this.dirtyWmsrState = this.dirtyData || this.dirtyRange || this.dirtyWmsrConfig
-        if (this.dirtyWmsrState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedWmsrSeries.length; i++) {
-                const v = this.cachedWmsrSeries[i]
-                if (v !== undefined) {
-                    wmsrVisibleMin = Math.min(wmsrVisibleMin, v)
-                    wmsrVisibleMax = Math.max(wmsrVisibleMax, v)
-                }
-            }
-        }
-
-        // KST 极值（扫描 kst 和 signal）
-        let kstVisibleMin = Infinity
-        let kstVisibleMax = -Infinity
-        this.dirtyKstState = this.dirtyData || this.dirtyRange || this.dirtyKstConfig
-        if (this.dirtyKstState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedKstSeries.length; i++) {
-                const p = this.cachedKstSeries[i]
-                if (p) {
-                    kstVisibleMin = Math.min(kstVisibleMin, p.kst, p.signal)
-                    kstVisibleMax = Math.max(kstVisibleMax, p.kst, p.signal)
-                }
-            }
-        }
-
-        // FASTK 极值
-        let fastkVisibleMin = Infinity
-        let fastkVisibleMax = -Infinity
-        this.dirtyFastkState = this.dirtyData || this.dirtyRange || this.dirtyFastkConfig
-        if (this.dirtyFastkState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedFastkSeries.length; i++) {
-                const v = this.cachedFastkSeries[i]
-                if (v !== undefined) {
-                    fastkVisibleMin = Math.min(fastkVisibleMin, v)
-                    fastkVisibleMax = Math.max(fastkVisibleMax, v)
-                }
-            }
-        }
-
-        // MACD 极值（扫描 dif、dea、macd）
-        let macdVisibleMin = Infinity
-        let macdVisibleMax = -Infinity
-        this.dirtyMacdState = this.dirtyData || this.dirtyRange || this.dirtyMacdConfig
-        if (this.dirtyMacdState) {
-            for (let i = this.visibleRange.start; i < this.visibleRange.end && i < this.cachedMacdSeries.length; i++) {
-                const p = this.cachedMacdSeries[i]
-                if (p) {
-                    macdVisibleMin = Math.min(macdVisibleMin, p.dif, p.dea, p.macd)
-                    macdVisibleMax = Math.max(macdVisibleMax, p.dif, p.dea, p.macd)
-                }
-            }
-        }
-
-        // ===== 步骤3：构建状态并写入 StateStore =====
-
-        // MA State（dirtyData 或 dirtyRange 时写入）
-        if (this.dirtyData || this.dirtyRange) {
-            const enabledPeriods = Object.keys(this.cachedSeries).map(Number)
-            const maState: MARenderState = {
-                timestamp: Date.now(),
-                series: this.cachedSeries,
-                enabledPeriods,
-                visibleMin: maVisibleMin,
-                visibleMax: maVisibleMax,
-            }
-            this.pluginHost.setSharedState<MARenderState>(MA_STATE_KEY, maState, 'ma_scheduler')
-        }
-
-        // BOLL State
-        if (dirtyBollState) {
-            const bollState: BOLLRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedBollSeries,
-                params: this.bollConfig,
-                visibleMin: bollVisibleMin,
-                visibleMax: bollVisibleMax,
-            }
-            this.pluginHost.setSharedState<BOLLRenderState>(BOLL_STATE_KEY, bollState, 'indicator_scheduler')
-        }
-
-        // EXPMA State
-        if (dirtyExpmaState) {
-            const expmaState: EXPMARenderState = {
-                timestamp: Date.now(),
-                series: this.cachedExpmaSeries,
-                params: this.expmaConfig,
-                visibleMin: expmaVisibleMin,
-                visibleMax: expmaVisibleMax,
-            }
-            this.pluginHost.setSharedState<EXPMARenderState>(EXPMA_STATE_KEY, expmaState, 'indicator_scheduler')
-        }
-
-        // ENE State
-        if (dirtyEneState) {
-            const eneState: ENERenderState = {
-                timestamp: Date.now(),
-                series: this.cachedEneSeries,
-                params: this.eneConfig,
-                visibleMin: eneVisibleMin,
-                visibleMax: eneVisibleMax,
-            }
-            this.pluginHost.setSharedState<ENERenderState>(ENE_STATE_KEY, eneState, 'indicator_scheduler')
-        }
-
-        // RSI State（仅 dirtyRsiState 时写入）
-        if (this.dirtyRsiState) {
-            const rsiStateKey = createRSIStateKey(this.rsiPaneId)
-            const rsiEnabledPeriods = Object.keys(this.cachedRsiSeries).map(Number)
-            const rsiState: RSIRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedRsiSeries,
-                enabledPeriods: rsiEnabledPeriods,
-                params: this.rsiConfig,
-                valueMin: 0,
-                valueMax: 100,
-                visibleMin: rsiVisibleMin,
-                visibleMax: rsiVisibleMax,
-            }
-            this.pluginHost.setSharedState<RSIRenderState>(rsiStateKey, rsiState, 'indicator_scheduler')
-        }
-
-        // CCI State（仅 dirtyCciState 时写入）
-        if (this.dirtyCciState) {
-            const cciStateKey = createCCIStateKey(this.cciPaneId)
-            const cciValueMin = Math.min(cciVisibleMin, -150)
-            const cciValueMax = Math.max(cciVisibleMax, 150)
-            const cciState: CCIRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedCciSeries,
-                params: this.cciConfig,
-                valueMin: cciValueMin,
-                valueMax: cciValueMax,
-                visibleMin: cciVisibleMin,
-                visibleMax: cciVisibleMax,
-            }
-            this.pluginHost.setSharedState<CCIRenderState>(cciStateKey, cciState, 'indicator_scheduler')
-        }
-
-        // STOCH State（仅 dirtyStochState 时写入）
-        if (this.dirtyStochState) {
-            const stochStateKey = createSTOCHStateKey(this.stochPaneId)
-            const stochState: STOCHRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedStochSeries,
-                params: this.stochConfig,
-                valueMin: 0,
-                valueMax: 100,
-                visibleMin: stochVisibleMin,
-                visibleMax: stochVisibleMax,
-            }
-            this.pluginHost.setSharedState<STOCHRenderState>(stochStateKey, stochState, 'indicator_scheduler')
-        }
-
-        // MOM State（仅 dirtyMomState 时写入）
-        if (this.dirtyMomState) {
-            const momStateKey = createMOMStateKey(this.momPaneId)
-            const momPadding = Math.max(Math.abs(momVisibleMax), Math.abs(momVisibleMin)) * 0.1
-            const momValueMin = momVisibleMin - momPadding
-            const momValueMax = momVisibleMax + momPadding
-            const momState: MOMRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedMomSeries,
-                params: this.momConfig,
-                valueMin: momValueMin,
-                valueMax: momValueMax,
-                visibleMin: momVisibleMin,
-                visibleMax: momVisibleMax,
-            }
-            this.pluginHost.setSharedState<MOMRenderState>(momStateKey, momState, 'indicator_scheduler')
-        }
-
-        // WMSR State（仅 dirtyWmsrState 时写入）
-        if (this.dirtyWmsrState) {
-            const wmsrStateKey = createWMSRStateKey(this.wmsrPaneId)
-            const wmsrState: WMSRRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedWmsrSeries,
-                params: this.wmsrConfig,
-                valueMin: -100,
-                valueMax: 0,
-                visibleMin: wmsrVisibleMin,
-                visibleMax: wmsrVisibleMax,
-            }
-            this.pluginHost.setSharedState<WMSRRenderState>(wmsrStateKey, wmsrState, 'indicator_scheduler')
-        }
-
-        // KST State（仅 dirtyKstState 时写入）
-        if (this.dirtyKstState) {
-            const kstStateKey = createKSTStateKey(this.kstPaneId)
-            const kstRange = kstVisibleMax - kstVisibleMin
-            const kstPadding = kstRange * 0.1
-            const kstValueMin = kstVisibleMin - kstPadding
-            const kstValueMax = kstVisibleMax + kstPadding
-            const kstState: KSTRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedKstSeries,
-                params: this.kstConfig,
-                valueMin: kstValueMin,
-                valueMax: kstValueMax,
-                visibleMin: kstVisibleMin,
-                visibleMax: kstVisibleMax,
-            }
-            this.pluginHost.setSharedState<KSTRenderState>(kstStateKey, kstState, 'indicator_scheduler')
-        }
-
-        // FASTK State（仅 dirtyFastkState 时写入）
-        if (this.dirtyFastkState) {
-            const fastkStateKey = createFASTKStateKey(this.fastkPaneId)
-            const fastkState: FASTKRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedFastkSeries,
-                params: this.fastkConfig,
-                valueMin: 0,
-                valueMax: 100,
-                visibleMin: fastkVisibleMin,
-                visibleMax: fastkVisibleMax,
-            }
-            this.pluginHost.setSharedState<FASTKRenderState>(fastkStateKey, fastkState, 'indicator_scheduler')
-        }
-
-        // MACD State（仅 dirtyMacdState 时写入）
-        if (this.dirtyMacdState) {
-            const macdStateKey = createMACDStateKey(this.macdPaneId)
-            const latestIndex = this.visibleRange.end - 1
-            const latestPoint = latestIndex >= 0 && latestIndex < this.cachedMacdSeries.length
-                ? this.cachedMacdSeries[latestIndex]
-                : null
-            const macdPadding = Math.max(Math.abs(macdVisibleMax), Math.abs(macdVisibleMin)) * 0.1
-            const macdValueMin = Number.isFinite(macdVisibleMin) ? macdVisibleMin - macdPadding : macdVisibleMin
-            const macdValueMax = Number.isFinite(macdVisibleMax) ? macdVisibleMax + macdPadding : macdVisibleMax
-            const macdState: MACDRenderState = {
-                timestamp: Date.now(),
-                series: this.cachedMacdSeries,
-                params: this.macdConfig,
-                valueMin: macdValueMin,
-                valueMax: macdValueMax,
-                visibleMin: macdVisibleMin,
-                visibleMax: macdVisibleMax,
-                latestValues: latestPoint ? {
-                    dif: latestPoint.dif,
-                    dea: latestPoint.dea,
-                    macd: latestPoint.macd,
-                } : undefined,
-            }
-            this.pluginHost.setSharedState<MACDRenderState>(macdStateKey, macdState, 'indicator_scheduler')
-        }
-
-        // 重置脏标记
-        this.dirtyData = false
-        this.dirtyRange = false
-        this.dirtyBollConfig = false
-        this.dirtyExpmaConfig = false
-        this.dirtyEneConfig = false
-        this.dirtyRsiConfig = false
-        this.dirtyCciConfig = false
-        this.dirtyStochConfig = false
-        this.dirtyMomConfig = false
-        this.dirtyWmsrConfig = false
-        this.dirtyKstConfig = false
-        this.dirtyFastkConfig = false
-        this.dirtyMacdConfig = false
-
-        // 重置 state 脏标记
-        this.dirtyRsiState = false
-        this.dirtyCciState = false
-        this.dirtyStochState = false
-        this.dirtyMomState = false
-        this.dirtyWmsrState = false
-        this.dirtyKstState = false
-        this.dirtyFastkState = false
-        this.dirtyMacdState = false
     }
 
-    /**
-     * 获取主图指标极值（用于与K线极值合并计算价格轴范围）
-     * @returns 主图指标的价格范围，无指标时返回 null
-     */
-    getMainIndicatorPriceRange(): { min: number; max: number } | null {
-        let min = Infinity
-        let max = -Infinity
-        const { start, end } = this.visibleRange
+    private computeWithWorker(): void {
+        if (!this.worker || !this.workerReady) return
 
-        // MA极值（仅当MA被激活时计算）
-        if (this.activeMainIndicators.has('ma') && Object.keys(this.cachedSeries).length > 0) {
-            for (const values of Object.values(this.cachedSeries)) {
-                for (let i = start; i < end && i < values.length; i++) {
-                    const v = values[i]
-                    if (v !== undefined) {
-                        min = Math.min(min, v)
-                        max = Math.max(max, v)
-                    }
-                }
-            }
+        console.log(`[IndicatorScheduler] >> Worker compute: requestId=${this.requestId + 1} dataV=${this.dataVersion} configV=${this.configVersion}`)
+        this.requestId++
+        this.pendingRequest = {
+            requestId: this.requestId,
+            dataVersion: this.dataVersion,
+            configVersion: this.configVersion,
         }
 
-        // BOLL极值（仅当BOLL被激活时计算）
-        if (this.activeMainIndicators.has('boll') && this.cachedBollSeries.length > 0) {
-            for (let i = start; i < end && i < this.cachedBollSeries.length; i++) {
-                const p = this.cachedBollSeries[i]
-                if (p) {
-                    min = Math.min(min, p.upper, p.middle, p.lower)
-                    max = Math.max(max, p.upper, p.middle, p.lower)
-                }
-            }
+        // 发送数据（首次或变更时）
+        this.worker.postMessage({
+            type: 'setData',
+            dataVersion: this.dataVersion,
+            format: 'aos',
+            data: this.currentData,
+        })
+
+        // 发送配置
+        this.worker.postMessage({
+            type: 'setConfig',
+            configVersion: this.configVersion,
+            configs: this.configSnapshot,
+        })
+
+        // 请求计算
+        this.worker.postMessage({
+            type: 'computeSeries',
+            requestId: this.requestId,
+            dataVersion: this.dataVersion,
+            configVersion: this.configVersion,
+        })
+    }
+
+    private computeWithInline(): void {
+        if (!this.inlineRuntime) {
+            this.inlineRuntime = new IndicatorRuntime()
         }
 
-        // EXPMA极值（仅当EXPMA被激活时计算）
-        if (this.activeMainIndicators.has('expma') && this.cachedExpmaSeries.length > 0) {
-            for (let i = start; i < end && i < this.cachedExpmaSeries.length; i++) {
-                const p = this.cachedExpmaSeries[i]
-                if (p) {
-                    min = Math.min(min, p.fast, p.slow)
-                    max = Math.max(max, p.fast, p.slow)
-                }
-            }
-        }
+        console.log(`[IndicatorScheduler] >> INLINE compute: dataV=${this.dataVersion} configV=${this.configVersion}`)
 
-        // ENE极值（仅当ENE被激活时计算）
-        if (this.activeMainIndicators.has('ene') && this.cachedEneSeries.length > 0) {
-            for (let i = start; i < end && i < this.cachedEneSeries.length; i++) {
-                const p = this.cachedEneSeries[i]
-                if (p) {
-                    min = Math.min(min, p.upper, p.middle, p.lower)
-                    max = Math.max(max, p.upper, p.middle, p.lower)
-                }
-            }
-        }
+        // 设置数据和配置
+        this.inlineRuntime.setData(this.currentData, this.dataVersion)
+        this.inlineRuntime.setConfig(this.configSnapshot, this.configVersion)
 
-        if (!Number.isFinite(min) || !Number.isFinite(max)) {
-            return null
-        }
+        // 同步计算
+        const results = this.inlineRuntime.computeSeries()
+        this.latestResult = results
 
-        return { min, max }
+        // 组装并写入 states
+        this.applyResults(results)
+
+        // 触发重绘
+        this.invalidateCallback?.()
     }
 }
