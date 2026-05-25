@@ -64,7 +64,26 @@ function toRows(bucket: MetricBucket): CanvasProfilerReportRow[] {
         .sort((a, b) => Number(b.totalTime) - Number(a.totalTime))
 }
 
+/** 全局开关：是否启用 Canvas Profiler 插桩 */
+let isProfilerEnabled = false
+
+/** 启用/禁用 Canvas Profiler */
+export function setCanvasProfilerEnabled(enabled: boolean): void {
+    isProfilerEnabled = enabled
+    if (enabled && typeof window !== 'undefined' && !window.__KMAP_CANVAS_PROFILER_INSTALLED__) {
+        installCanvasProfiler()
+    }
+}
+
+/** 获取 Canvas Profiler 启用状态 */
+export function isCanvasProfilerEnabled(): boolean {
+    return isProfilerEnabled
+}
+
 function getRelevantStackFrame(): string {
+    // 如果未启用，直接返回空字符串避免开销
+    if (!isProfilerEnabled) return 'disabled'
+
     const stack = new Error().stack
     if (!stack) return 'unknown'
 
@@ -115,6 +134,10 @@ function wrapMethod(
     originalMethods.set(key, original as (...args: unknown[]) => unknown)
 
     Reflect.set(proto, name, function (this: object, ...args: unknown[]) {
+        // 快速路径：如果 profiler 未启用，直接调用原方法
+        if (!isProfilerEnabled) {
+            return original.apply(this, args)
+        }
         const source = options?.captureSource ? getRelevantStackFrame() : null
         const start = performance.now()
         const result = original.apply(this, args)
@@ -136,6 +159,11 @@ function wrapSetter(proto: object, prop: string, bucket: MetricBucket): void {
         enumerable: descriptor.enumerable ?? false,
         get: descriptor.get,
         set(this: object, value: unknown) {
+            // 快速路径：如果 profiler 未启用，直接调用原 setter
+            if (!isProfilerEnabled) {
+                descriptor.set!.call(this, value)
+                return
+            }
             const start = performance.now()
             descriptor.set!.call(this, value)
             record(bucket, prop, performance.now() - start)

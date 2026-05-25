@@ -158,7 +158,7 @@
               <!-- 实验性设置 -->
               <template v-if="experimentalSettings.length > 0">
                 <div class="settings-section-divider">
-                  <span class="settings-section-label">实验性 / 临时</span>
+                  <span class="settings-section-label">实验性 / 调试设置</span>
                 </div>
                 <template v-for="item in experimentalSettings" :key="item.key">
                   <div class="settings-item experimental">
@@ -220,8 +220,14 @@ import IconTablerChartDots3 from '~icons/tabler/chart-dots-3'
 import IconTablerCaretUpDown from '~icons/tabler/caret-up-down'
 import IconTablerBrackets from '~icons/tabler/brackets'
 import IconTablerSettings from '~icons/tabler/settings'
-import { DEFAULT_SETTINGS, SETTINGS_STORAGE_KEY, isMobileDevice, type SettingItem } from '../config/chartSettings'
+import {
+  DEFAULT_SETTINGS,
+  SETTINGS_STORAGE_KEY,
+  isMobileDevice,
+  type SettingItem,
+} from '../config/chartSettings'
 import { useFullscreenTeleportTarget } from '@/composables/useFullscreenTeleportTarget'
+import { setCanvasProfilerEnabled } from '@/debug/canvasProfiler'
 
 export interface ToolDef {
   id: string
@@ -292,7 +298,7 @@ function loadSettings(): Record<string, boolean> {
   const isMobile = isMobileDevice()
 
   // 获取默认值（移动端默认关闭 WebGL）
-  const getDefaultValue = (item: typeof DEFAULT_SETTINGS[number]): boolean => {
+  const getDefaultValue = (item: (typeof DEFAULT_SETTINGS)[number]): boolean => {
     if (item.key === 'enableWebGLRendering' && isMobile) {
       return false
     }
@@ -392,6 +398,8 @@ function resetSettings() {
 function confirmSettings() {
   appliedSettings.value = { ...settings.value }
   saveSettings(appliedSettings.value)
+  // 同步 Canvas Profiler 状态
+  setCanvasProfilerEnabled(appliedSettings.value['enableCanvasProfiler'] ?? false)
   emit('settingsChange', { ...appliedSettings.value })
   closeSettings()
 }
@@ -416,6 +424,8 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside, true)
   // 挂载后立即通知父组件当前设置（包括从 localStorage 加载的）
   emit('settingsChange', { ...appliedSettings.value })
+  // 根据已保存的设置初始化 Canvas Profiler 状态
+  setCanvasProfilerEnabled(appliedSettings.value['enableCanvasProfiler'] ?? false)
 })
 
 onUnmounted(() => {
