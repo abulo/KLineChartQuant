@@ -415,20 +415,8 @@ export class IndicatorScheduler {
         const timestamp = Date.now()
         const states = composeRenderStates(this.latestResult, this.visibleRange, timestamp)
 
-        // 只更新包含 visibleMin/visibleMax 的字段
-        // MA
-        if (states.ma.enabledPeriods.length > 0) {
-            this.pluginHost.setSharedState<MARenderState>(MA_STATE_KEY, states.ma, 'ma_scheduler')
-        }
-
-        // BOLL
-        this.pluginHost.setSharedState<BOLLRenderState>(BOLL_STATE_KEY, states.boll, 'indicator_scheduler')
-
-        // EXPMA
-        this.pluginHost.setSharedState<EXPMARenderState>(EXPMA_STATE_KEY, states.expma, 'indicator_scheduler')
-
-        // ENE
-        this.pluginHost.setSharedState<ENERenderState>(ENE_STATE_KEY, states.ene, 'indicator_scheduler')
+        // 主图指标价格范围由 getMainIndicatorPriceRange() 按需计算，
+        // 可视范围滚动时无需同步刷新其 shared state。
 
         // RSI
         const rsiKey = createRSIStateKey(this.configSnapshot.rsiPaneId)
