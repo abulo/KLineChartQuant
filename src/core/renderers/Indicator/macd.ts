@@ -398,24 +398,29 @@ export function calcMACDAtIndex(
 
 /**
  * 获取 MACD 标题信息（供 paneTitle 使用）
+ * 从 pluginHost 获取已计算好的数据，避免重复计算
  */
 export function getMACDTitleInfo(
-  data: KLineData[],
   index: number,
-  fastPeriod: number = 12,
-  slowPeriod: number = 26,
-  signalPeriod: number = 9
+  fastPeriod: number,
+  slowPeriod: number,
+  signalPeriod: number,
+  pluginHost: PluginHost,
+  paneId: string = 'sub_MACD'
 ): { name: string; params: number[]; values: Array<{ label: string; value: number; color: string }> } | null {
-  const macdValue = calcMACDAtIndex(data, index, fastPeriod, slowPeriod, signalPeriod)
-  if (!macdValue) return null
+  const state = pluginHost.getSharedState<MACDRenderState>(createMACDStateKey(paneId))
+  if (!state) return null
+
+  const point = state.series[index]
+  if (!point) return null
 
   return {
     name: 'MACD',
     params: [fastPeriod, slowPeriod, signalPeriod],
     values: [
-      { label: 'DIF', value: macdValue.dif, color: MACD_COLORS.DIF },
-      { label: 'DEA', value: macdValue.dea, color: MACD_COLORS.DEA },
-      { label: 'MACD', value: macdValue.macd, color: macdValue.macd >= 0 ? MACD_COLORS.BAR_UP : MACD_COLORS.BAR_DOWN },
+      { label: 'DIF', value: point.dif, color: MACD_COLORS.DIF },
+      { label: 'DEA', value: point.dea, color: MACD_COLORS.DEA },
+      { label: 'MACD', value: point.macd, color: point.macd >= 0 ? MACD_COLORS.BAR_UP : MACD_COLORS.BAR_DOWN },
     ],
   }
 }

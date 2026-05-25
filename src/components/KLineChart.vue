@@ -564,14 +564,15 @@ const SUB_PANE_INDICATOR_CONFIGS: Record<SubIndicatorType, SubPaneIndicatorConfi
   },
   MACD: {
     defaultParams: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-    getTitleInfo: (data, index, params) => {
-      if (index === null) return null
+    getTitleInfo: (_data, index, params) => {
+      if (index === null || !chartRef.value) return null
       return getMACDTitleInfo(
-        data,
         index,
         (params.fastPeriod as number) ?? 12,
         (params.slowPeriod as number) ?? 26,
         (params.signalPeriod as number) ?? 9,
+        chartRef.value.plugin,
+        'sub_MACD',
       )
     },
   },
