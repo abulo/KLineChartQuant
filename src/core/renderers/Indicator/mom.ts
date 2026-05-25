@@ -1,6 +1,7 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import { MOM_COLORS } from '@/core/theme/colors'
+import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 import type { MOMRenderState } from '@/core/indicators/momState'
 import { createMOMStateKey } from '@/core/indicators/momState'
 
@@ -23,9 +24,58 @@ export function createMOMRendererPlugin(options: MOMRendererOptions = {}): Rende
     let cachedKey = ''
     let cachedMOMPoints: LinePoint[] = []
 
+    // 离屏 Canvas 缓存零轴
+    let offscreenCanvas: HTMLCanvasElement | null = null
+    let offscreenCtx: CanvasRenderingContext2D | null = null
+    let cachedZeroLineKey = ''
+
     function clearLineCache() {
         cachedKey = ''
         cachedMOMPoints = []
+    }
+
+    function getOffscreenCanvas(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+        if (!offscreenCanvas || offscreenCanvas.width !== width || offscreenCanvas.height !== height) {
+            offscreenCanvas = document.createElement('canvas')
+            offscreenCanvas.width = width
+            offscreenCanvas.height = height
+            offscreenCtx = offscreenCanvas.getContext('2d')!
+            cachedZeroLineKey = ''
+        }
+        return { canvas: offscreenCanvas, ctx: offscreenCtx! }
+    }
+
+    function buildZeroLineKey(
+        paneWidth: number,
+        paneHeight: number,
+        displayMin: number,
+        displayMax: number,
+        dpr: number
+    ): string {
+        return `${paneWidth}|${paneHeight}|${displayMin.toFixed(4)}|${displayMax.toFixed(4)}|${dpr}`
+    }
+
+    function renderZeroLineToOffscreen(
+        ctx: CanvasRenderingContext2D,
+        paneWidth: number,
+        paneHeight: number,
+        displayMin: number,
+        displayMax: number,
+        dpr: number
+    ): void {
+        const displayValueRange = displayMax - displayMin || 1
+        const zeroY = alignToPhysicalPixelCenter(paneHeight - (0 - displayMin) / displayValueRange * paneHeight, dpr)
+
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ctx.save()
+        ctx.scale(dpr, dpr)
+        ctx.strokeStyle = MOM_COLORS.ZERO
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(0, zeroY)
+        ctx.lineTo(paneWidth, zeroY)
+        ctx.stroke()
+        ctx.restore()
     }
 
     function buildMOMCacheKey(
@@ -77,31 +127,28 @@ export function createMOMRendererPlugin(options: MOMRendererOptions = {}): Rende
             }
 
             const { valueMin, valueMax, params, series } = state
-            const valueRange = valueMax - valueMin || 1
 
             const displayRange = pane.yAxis.getDisplayRange({ minPrice: valueMin, maxPrice: valueMax })
             const displayMin = displayRange.minPrice
             const displayMax = displayRange.maxPrice
             const displayValueRange = displayMax - displayMin || 1
 
-            // 零轴位置
-            const zeroY = pane.height - (0 - displayMin) / displayValueRange * pane.height
+            const paneWidth = context.paneWidth
+            const paneHeight = pane.height
+            const zeroLineKey = buildZeroLineKey(paneWidth, paneHeight, displayMin, displayMax, dpr)
 
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
+            if (cachedZeroLineKey !== zeroLineKey) {
+                cachedZeroLineKey = zeroLineKey
+                const { ctx: offCtx } = getOffscreenCanvas(
+                    Math.ceil(paneWidth * dpr),
+                    Math.ceil(paneHeight * dpr)
+                )
+                renderZeroLineToOffscreen(offCtx, paneWidth, paneHeight, displayMin, displayMax, dpr)
+            }
 
-            // 绘制零轴（实线，保持 Canvas 2D）
-            const lineStartX = scrollLeft
-            const lineEndX = scrollLeft + context.paneWidth
-
-            ctx.strokeStyle = MOM_COLORS.ZERO
-            ctx.lineWidth = 1
-            ctx.beginPath()
-            ctx.moveTo(lineStartX, zeroY)
-            ctx.lineTo(lineEndX, zeroY)
-            ctx.stroke()
-
-            ctx.restore()
+            if (offscreenCanvas) {
+                ctx.drawImage(offscreenCanvas, 0, 0, paneWidth, paneHeight)
+            }
 
             // 确定绘制范围
             const drawStart = Math.max(range.start, params.period)
@@ -111,19 +158,25 @@ export function createMOMRendererPlugin(options: MOMRendererOptions = {}): Rende
             const cacheKey = buildMOMCacheKey(range, kLineCenters, pane, params)
             if (cachedKey !== cacheKey) {
                 cachedKey = cacheKey
-                cachedMOMPoints = []
+
+                const paneH = paneHeight
+                const invRange = paneH / displayValueRange
+                const rangeStart = range.start
 
                 if (params.showMOM) {
+                    const points: LinePoint[] = []
                     for (let i = drawStart; i < drawEnd; i++) {
                         const value = series[i]
                         if (value === undefined) continue
 
-                        const centerX = kLineCenters[i - range.start]
+                        const centerX = kLineCenters[i - rangeStart]
                         if (centerX === undefined) continue
 
-                        const logicY = pane.height - (value - displayMin) / displayValueRange * pane.height
-                        cachedMOMPoints.push({ x: centerX, y: logicY })
+                        points.push({ x: centerX, y: paneH - (value - displayMin) * invRange })
                     }
+                    cachedMOMPoints = points
+                } else {
+                    cachedMOMPoints = []
                 }
             }
 

@@ -25,11 +25,81 @@ export function createRSIRendererPlugin(options: RSIRendererOptions = {}): Rende
     let cachedRSI2Points: LinePoint[] = []
     let cachedRSI3Points: LinePoint[] = []
 
+    // 离屏 Canvas 缓存虚线背景线 (80/50/20)
+    let offscreenCanvas: HTMLCanvasElement | null = null
+    let offscreenCtx: CanvasRenderingContext2D | null = null
+    let cachedDashedLinesKey = ''
+
     function clearLineCache() {
         cachedKey = ''
         cachedRSI1Points = []
         cachedRSI2Points = []
         cachedRSI3Points = []
+    }
+
+    /**
+     * 获取或创建离屏 Canvas
+     */
+    function getOffscreenCanvas(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+        if (!offscreenCanvas || offscreenCanvas.width !== width || offscreenCanvas.height !== height) {
+            offscreenCanvas = document.createElement('canvas')
+            offscreenCanvas.width = width
+            offscreenCanvas.height = height
+            offscreenCtx = offscreenCanvas.getContext('2d')!
+            cachedDashedLinesKey = '' // 尺寸变化时强制重绘
+        }
+        return { canvas: offscreenCanvas, ctx: offscreenCtx! }
+    }
+
+    /**
+     * 生成虚线缓存 key - 只关心影响虚线外观的参数
+     */
+    function buildDashedLinesKey(
+        paneWidth: number,
+        paneHeight: number,
+        displayMin: number,
+        displayMax: number,
+        dpr: number
+    ): string {
+        return `${paneWidth}|${paneHeight}|${displayMin.toFixed(4)}|${displayMax.toFixed(4)}|${dpr}`
+    }
+
+    /**
+     * 绘制虚线背景线到离屏 Canvas
+     */
+    function renderDashedLinesToOffscreen(
+        ctx: CanvasRenderingContext2D,
+        paneWidth: number,
+        paneHeight: number,
+        displayMin: number,
+        displayMax: number,
+        dpr: number
+    ): void {
+        const displayValueRange = displayMax - displayMin || 1
+
+        // 计算三条线的 Y 坐标
+        const y80 = alignToPhysicalPixelCenter(paneHeight - (80 - displayMin) / displayValueRange * paneHeight, dpr)
+        const y50 = alignToPhysicalPixelCenter(paneHeight - (50 - displayMin) / displayValueRange * paneHeight, dpr)
+        const y20 = alignToPhysicalPixelCenter(paneHeight - (20 - displayMin) / displayValueRange * paneHeight, dpr)
+
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ctx.save()
+        ctx.scale(dpr, dpr)
+
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
+        ctx.lineWidth = 1
+        ctx.setLineDash([4, 4])
+
+        ctx.beginPath()
+        ctx.moveTo(0, y80)
+        ctx.lineTo(paneWidth, y80)
+        ctx.moveTo(0, y50)
+        ctx.lineTo(paneWidth, y50)
+        ctx.moveTo(0, y20)
+        ctx.lineTo(paneWidth, y20)
+        ctx.stroke()
+
+        ctx.restore()
     }
 
     function buildRSICacheKey(
@@ -92,31 +162,24 @@ export function createRSIRendererPlugin(options: RSIRendererOptions = {}): Rende
             const displayMax = displayRange.maxPrice
             const displayValueRange = displayMax - displayMin || 1
 
-            // 绘制超买超卖线（80/50/20）- 仍使用 Canvas 2D
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
+            // ========== 优化1: 使用离屏 Canvas 缓存虚线背景线 ==========
+            const paneWidth = context.paneWidth
+            const paneHeight = pane.height
+            const dashedLinesKey = buildDashedLinesKey(paneWidth, paneHeight, displayMin, displayMax, dpr)
 
-            const y80 = pane.height - (80 - displayMin) / displayValueRange * pane.height
-            const y50 = pane.height - (50 - displayMin) / displayValueRange * pane.height
-            const y20 = pane.height - (20 - displayMin) / displayValueRange * pane.height
+            if (cachedDashedLinesKey !== dashedLinesKey) {
+                cachedDashedLinesKey = dashedLinesKey
+                const { ctx: offCtx } = getOffscreenCanvas(
+                    Math.ceil(paneWidth * dpr),
+                    Math.ceil(paneHeight * dpr)
+                )
+                renderDashedLinesToOffscreen(offCtx, paneWidth, paneHeight, displayMin, displayMax, dpr)
+            }
 
-            const lineStartX = scrollLeft
-            const lineEndX = scrollLeft + context.paneWidth
-
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
-            ctx.lineWidth = 1
-            ctx.setLineDash([4, 4])
-            ctx.beginPath()
-            ctx.moveTo(lineStartX, y80)
-            ctx.lineTo(lineEndX, y80)
-            ctx.moveTo(lineStartX, y50)
-            ctx.lineTo(lineEndX, y50)
-            ctx.moveTo(lineStartX, y20)
-            ctx.lineTo(lineEndX, y20)
-            ctx.stroke()
-            ctx.setLineDash([])
-
-            ctx.restore()
+            // 绘制离屏缓存的虚线（只需 drawImage，无需 setLineDash）
+            if (offscreenCanvas) {
+                ctx.drawImage(offscreenCanvas, 0, 0, paneWidth, paneHeight)
+            }
 
             // 确定绘制范围
             const drawStart = Math.max(range.start, params.period1)
@@ -126,45 +189,34 @@ export function createRSIRendererPlugin(options: RSIRendererOptions = {}): Rende
             const cacheKey = buildRSICacheKey(range, kLineCenters, pane, params)
             if (cachedKey !== cacheKey) {
                 cachedKey = cacheKey
-                cachedRSI1Points = []
-                cachedRSI2Points = []
-                cachedRSI3Points = []
 
-                if (params.showRSI1 && series[params.period1]) {
-                    const data = series[params.period1]
+                const paneH = paneHeight
+                const invRange = paneH / displayValueRange
+                const rangeStart = range.start
+
+                const buildPoints = (data: (number | undefined)[]): LinePoint[] => {
+                    const out: LinePoint[] = []
                     for (let i = drawStart; i < drawEnd; i++) {
                         const value = data[i]
                         if (value === undefined) continue
-                        const centerX = kLineCenters[i - range.start]
+                        const centerX = kLineCenters[i - rangeStart]
                         if (centerX === undefined) continue
-                        const logicY = pane.height - (value - displayMin) / displayValueRange * pane.height
-                        cachedRSI1Points.push({ x: centerX, y: logicY })
+                        out.push({ x: centerX, y: paneH - (value - displayMin) * invRange })
                     }
+                    return out
                 }
 
-                if (params.showRSI2 && series[params.period2]) {
-                    const data = series[params.period2]
-                    for (let i = drawStart; i < drawEnd; i++) {
-                        const value = data[i]
-                        if (value === undefined) continue
-                        const centerX = kLineCenters[i - range.start]
-                        if (centerX === undefined) continue
-                        const logicY = pane.height - (value - displayMin) / displayValueRange * pane.height
-                        cachedRSI2Points.push({ x: centerX, y: logicY })
-                    }
-                }
+                cachedRSI1Points = (params.showRSI1 && series[params.period1])
+                    ? buildPoints(series[params.period1])
+                    : []
 
-                if (params.showRSI3 && series[params.period3]) {
-                    const data = series[params.period3]
-                    for (let i = drawStart; i < drawEnd; i++) {
-                        const value = data[i]
-                        if (value === undefined) continue
-                        const centerX = kLineCenters[i - range.start]
-                        if (centerX === undefined) continue
-                        const logicY = pane.height - (value - displayMin) / displayValueRange * pane.height
-                        cachedRSI3Points.push({ x: centerX, y: logicY })
-                    }
-                }
+                cachedRSI2Points = (params.showRSI2 && series[params.period2])
+                    ? buildPoints(series[params.period2])
+                    : []
+
+                cachedRSI3Points = (params.showRSI3 && series[params.period3])
+                    ? buildPoints(series[params.period3])
+                    : []
             }
 
             // 绘制 RSI 线（WebGL 优先，Canvas2D 回退）

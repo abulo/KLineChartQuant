@@ -1,6 +1,7 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import { KDJ_COLORS } from '@/core/theme/colors'
+import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 import type { FASTKRenderState } from '@/core/indicators/fastkState'
 import { createFASTKStateKey } from '@/core/indicators/fastkState'
 
@@ -23,9 +24,64 @@ export function createFASTKRendererPlugin(options: FASTKRendererOptions = {}): R
     let cachedKey = ''
     let cachedFASTKPoints: LinePoint[] = []
 
+    // 离屏 Canvas 缓存虚线背景线 (80/20)
+    let offscreenCanvas: HTMLCanvasElement | null = null
+    let offscreenCtx: CanvasRenderingContext2D | null = null
+    let cachedDashedLinesKey = ''
+
     function clearLineCache() {
         cachedKey = ''
         cachedFASTKPoints = []
+    }
+
+    function getOffscreenCanvas(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+        if (!offscreenCanvas || offscreenCanvas.width !== width || offscreenCanvas.height !== height) {
+            offscreenCanvas = document.createElement('canvas')
+            offscreenCanvas.width = width
+            offscreenCanvas.height = height
+            offscreenCtx = offscreenCanvas.getContext('2d')!
+            cachedDashedLinesKey = ''
+        }
+        return { canvas: offscreenCanvas, ctx: offscreenCtx! }
+    }
+
+    function buildDashedLinesKey(
+        paneWidth: number,
+        paneHeight: number,
+        displayMin: number,
+        displayMax: number,
+        dpr: number
+    ): string {
+        return `${paneWidth}|${paneHeight}|${displayMin.toFixed(4)}|${displayMax.toFixed(4)}|${dpr}`
+    }
+
+    function renderDashedLinesToOffscreen(
+        ctx: CanvasRenderingContext2D,
+        paneWidth: number,
+        paneHeight: number,
+        displayMin: number,
+        displayMax: number,
+        dpr: number
+    ): void {
+        const displayValueRange = displayMax - displayMin || 1
+        const y80 = alignToPhysicalPixelCenter(paneHeight - (80 - displayMin) / displayValueRange * paneHeight, dpr)
+        const y20 = alignToPhysicalPixelCenter(paneHeight - (20 - displayMin) / displayValueRange * paneHeight, dpr)
+
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ctx.save()
+        ctx.scale(dpr, dpr)
+
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
+        ctx.lineWidth = 1
+        ctx.setLineDash([4, 4])
+        ctx.beginPath()
+        ctx.moveTo(0, y80)
+        ctx.lineTo(paneWidth, y80)
+        ctx.moveTo(0, y20)
+        ctx.lineTo(paneWidth, y20)
+        ctx.stroke()
+
+        ctx.restore()
     }
 
     function buildFASTKCacheKey(
@@ -77,35 +133,28 @@ export function createFASTKRendererPlugin(options: FASTKRendererOptions = {}): R
             }
 
             const { valueMin, valueMax, params, series } = state
-            const valueRange = valueMax - valueMin || 1
 
             const displayRange = pane.yAxis.getDisplayRange({ minPrice: valueMin, maxPrice: valueMax })
             const displayMin = displayRange.minPrice
             const displayMax = displayRange.maxPrice
             const displayValueRange = displayMax - displayMin || 1
 
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
+            const paneWidth = context.paneWidth
+            const paneHeight = pane.height
+            const dashedLinesKey = buildDashedLinesKey(paneWidth, paneHeight, displayMin, displayMax, dpr)
 
-            // 绘制超买超卖线 80/20（虚线保持 Canvas 2D）
-            const y80 = pane.height - (80 - displayMin) / displayValueRange * pane.height
-            const y20 = pane.height - (20 - displayMin) / displayValueRange * pane.height
+            if (cachedDashedLinesKey !== dashedLinesKey) {
+                cachedDashedLinesKey = dashedLinesKey
+                const { ctx: offCtx } = getOffscreenCanvas(
+                    Math.ceil(paneWidth * dpr),
+                    Math.ceil(paneHeight * dpr)
+                )
+                renderDashedLinesToOffscreen(offCtx, paneWidth, paneHeight, displayMin, displayMax, dpr)
+            }
 
-            const lineStartX = scrollLeft
-            const lineEndX = scrollLeft + context.paneWidth
-
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
-            ctx.lineWidth = 1
-            ctx.setLineDash([4, 4])
-            ctx.beginPath()
-            ctx.moveTo(lineStartX, y80)
-            ctx.lineTo(lineEndX, y80)
-            ctx.moveTo(lineStartX, y20)
-            ctx.lineTo(lineEndX, y20)
-            ctx.stroke()
-            ctx.setLineDash([])
-
-            ctx.restore()
+            if (offscreenCanvas) {
+                ctx.drawImage(offscreenCanvas, 0, 0, paneWidth, paneHeight)
+            }
 
             // 确定绘制范围
             const drawStart = Math.max(range.start, params.period - 1)
@@ -115,19 +164,25 @@ export function createFASTKRendererPlugin(options: FASTKRendererOptions = {}): R
             const cacheKey = buildFASTKCacheKey(range, kLineCenters, pane, params)
             if (cachedKey !== cacheKey) {
                 cachedKey = cacheKey
-                cachedFASTKPoints = []
+
+                const paneH = paneHeight
+                const invRange = paneH / displayValueRange
+                const rangeStart = range.start
 
                 if (params.showFASTK) {
+                    const points: LinePoint[] = []
                     for (let i = drawStart; i < drawEnd; i++) {
                         const value = series[i]
                         if (value === undefined) continue
 
-                        const centerX = kLineCenters[i - range.start]
+                        const centerX = kLineCenters[i - rangeStart]
                         if (centerX === undefined) continue
 
-                        const logicY = pane.height - (value - displayMin) / displayValueRange * pane.height
-                        cachedFASTKPoints.push({ x: centerX, y: logicY })
+                        points.push({ x: centerX, y: paneH - (value - displayMin) * invRange })
                     }
+                    cachedFASTKPoints = points
+                } else {
+                    cachedFASTKPoints = []
                 }
             }
 

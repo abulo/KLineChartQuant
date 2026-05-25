@@ -8,19 +8,89 @@ import { getFont, setCanvasFont } from '@/core/theme/fonts'
 const textWidthCache = new Map<string, number>()
 const TEXT_WIDTH_CACHE_LIMIT = 256
 
+// 模块级常量，避免每次重复创建
+const PADDING = 4
+const LINE_LENGTH = 30
+const DOT_RADIUS = 2
+const MARKER_FONT = getFont(12)
+const TAU = Math.PI * 2
+
+// Marker 数据接口，用于批量绘制
+interface MarkerData {
+    x: number
+    y: number
+    price: number
+    text: string
+    textWidth: number
+    drawLeft: boolean
+    lineStartX: number
+    lineEndX: number
+    endX: number
+    alignedY: number
+    textX: number
+}
+
 function measureTextWidth(ctx: CanvasRenderingContext2D, text: string): number {
-    const key = `${ctx.font}\n${text}`
+    // 使用固定字体，缓存更稳定
+    const key = MARKER_FONT + '|' + text
     const cached = textWidthCache.get(key)
     if (cached !== undefined) {
         return cached
     }
 
+    const savedFont = ctx.font
+    ctx.font = MARKER_FONT
     const width = ctx.measureText(text).width
+    ctx.font = savedFont
+
     if (textWidthCache.size >= TEXT_WIDTH_CACHE_LIMIT) {
         textWidthCache.clear()
     }
     textWidthCache.set(key, width)
     return width
+}
+
+/**
+ * 批量绘制所有 marker
+ * 分三个阶段：线条 → 圆点 → 文字，避免 Canvas 状态频繁切换
+ */
+function drawAllMarkers(
+    ctx: CanvasRenderingContext2D,
+    markers: MarkerData[],
+    dpr: number
+) {
+    if (markers.length === 0) return
+
+    ctx.save()
+
+    // ========== 阶段1：批量绘制所有线条（同一 fillStyle）==========
+    ctx.fillStyle = TEXT_COLORS.WEAK
+    for (const m of markers) {
+        const lineRect = createHorizontalLineRect(m.lineStartX, m.lineEndX, m.y, dpr)
+        if (lineRect) {
+            ctx.fillRect(lineRect.x, lineRect.y, lineRect.width, lineRect.height)
+        }
+    }
+
+    // ========== 阶段2：批量绘制所有圆点（复用 fillStyle）==========
+    ctx.beginPath()
+    for (const m of markers) {
+        ctx.moveTo(m.endX + DOT_RADIUS, m.alignedY)
+        ctx.arc(m.endX, m.alignedY, DOT_RADIUS, 0, TAU)
+    }
+    ctx.fill()
+
+    // ========== 阶段3：批量绘制所有文字（同一 font/baseline/fillStyle）==========
+    setCanvasFont(ctx, MARKER_FONT)
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = PRICE_COLORS.NEUTRAL
+
+    for (const m of markers) {
+        ctx.textAlign = m.drawLeft ? 'right' : 'left'
+        ctx.fillText(m.text, m.textX, m.alignedY)
+    }
+
+    ctx.restore()
 }
 
 /**
@@ -95,57 +165,80 @@ export function createExtremaMarkersRendererPlugin(): RendererPlugin {
                 }
             })
 
+            // 收集所有 marker 数据
+            const markers: MarkerData[] = []
+
+            const maxMarker = createMarkerData(
+                getCenterX(maxIndex),
+                pane.yAxis.priceToY(max),
+                max,
+                dpr,
+                paneWidth,
+                ctx
+            )
+            if (maxMarker) markers.push(maxMarker)
+
+            const minMarker = createMarkerData(
+                getCenterX(minIndex),
+                pane.yAxis.priceToY(min),
+                min,
+                dpr,
+                paneWidth,
+                ctx
+            )
+            if (minMarker) markers.push(minMarker)
+
+            // 批量绘制所有 markers
             ctx.save()
             ctx.translate(-scrollLeft, 0)
-            drawPriceMarker(ctx, getCenterX(maxIndex), pane.yAxis.priceToY(max), max, dpr, paneWidth, scrollLeft)
-            drawPriceMarker(ctx, getCenterX(minIndex), pane.yAxis.priceToY(min), min, dpr, paneWidth, scrollLeft)
+            drawAllMarkers(ctx, markers, dpr)
             ctx.restore()
         },
     }
 }
 
 /**
- * 绘制价格标记
+ * 创建 marker 数据（不绘制，只计算）
  */
-function drawPriceMarker(ctx: CanvasRenderingContext2D, x: number, y: number, price: number, dpr: number, paneWidth: number, scrollLeft: number) {
+function createMarkerData(
+    x: number,
+    y: number,
+    price: number,
+    dpr: number,
+    paneWidth: number,
+    ctx: CanvasRenderingContext2D
+): MarkerData | null {
     const text = price.toFixed(2)
-    const padding = 4
-    const lineLength = 30
-    const dotRadius = 2
-    const font = getFont(12)
-
-    setCanvasFont(ctx, font)
     const textWidth = measureTextWidth(ctx, text)
 
-    const visibleX = x - scrollLeft
-    const rightEdge = visibleX + lineLength + padding + textWidth
+    const visibleX = x
+    const rightEdge = visibleX + LINE_LENGTH + PADDING + textWidth
     const drawLeft = rightEdge > paneWidth
+
     let lineStartX = x
-    let lineEndX = drawLeft ? x - lineLength : x + lineLength
+    let lineEndX = drawLeft ? x - LINE_LENGTH : x + LINE_LENGTH
     if (lineStartX > lineEndX) {
         ;[lineStartX, lineEndX] = [lineEndX, lineStartX]
     }
-    const lineRect = createHorizontalLineRect(lineStartX, lineEndX, y, dpr)
-    if (lineRect) {
-        ctx.fillStyle = TEXT_COLORS.WEAK
-        ctx.fillRect(lineRect.x, lineRect.y, lineRect.width, lineRect.height)
-    }
 
     const endX = roundToPhysicalPixel(lineEndX, dpr)
-    const alignedY = roundToPhysicalPixel(y, dpr)
-    ctx.fillStyle = TEXT_COLORS.WEAK
-    ctx.beginPath()
-    ctx.arc(endX, alignedY, dotRadius, 0, Math.PI * 2)
-    ctx.fill()
+    const alignedY = alignToPhysicalPixelCenter(y, dpr)
+    const textX = roundToPhysicalPixel(
+        drawLeft ? x - LINE_LENGTH - PADDING : x + LINE_LENGTH + PADDING,
+        dpr
+    )
 
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = PRICE_COLORS.NEUTRAL
-
-    if (drawLeft) {
-        ctx.textAlign = 'right'
-        ctx.fillText(text, roundToPhysicalPixel(x - lineLength - padding, dpr), alignToPhysicalPixelCenter(y, dpr))
-    } else {
-        ctx.textAlign = 'left'
-        ctx.fillText(text, roundToPhysicalPixel(x + lineLength + padding, dpr), alignToPhysicalPixelCenter(y, dpr))
+    return {
+        x,
+        y,
+        price,
+        text,
+        textWidth,
+        drawLeft,
+        lineStartX,
+        lineEndX,
+        endX,
+        alignedY,
+        textX,
     }
 }
