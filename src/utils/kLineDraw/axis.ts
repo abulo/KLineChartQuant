@@ -403,6 +403,8 @@ export function drawTimeAxis(ctx: CanvasRenderingContext2D, opts: TimeAxisOption
     const boundaries = findMonthBoundaries(data)
     const visibleBoundaries = boundaries.filter((idx: number) => idx >= startIndex && idx < endIndex)
 
+    let lastWasYear: boolean | null = null
+
     for (const idx of visibleBoundaries) {
         const k = data[idx]
         if (!k) continue
@@ -416,7 +418,10 @@ export function drawTimeAxis(ctx: CanvasRenderingContext2D, opts: TimeAxisOption
         if (screenX >= minX && screenX <= maxX) {
             const drawX = Math.min(Math.max(screenX, minX), maxX)
             const { text, isYear } = formatMonthOrYear(k.timestamp)
-            setCanvasFont(ctx, isYear ? boldFont : regularFont)
+            if (lastWasYear !== isYear) {
+                setCanvasFont(ctx, isYear ? boldFont : regularFont)
+                lastWasYear = isYear
+            }
             ctx.fillText(text, roundToPhysicalPixel(drawX, dpr), alignToPhysicalPixelCenter(textY, dpr))
         }
     }
