@@ -121,7 +121,12 @@ import DrawingStyleToolbar from './DrawingStyleToolbar.vue'
 import { Chart, type PaneSpec } from '@/core/chart'
 import type { KLineData } from '@/types/price'
 import { createChartStore, TRAILING_DRAWING_SLOTS, type ChartStore } from '@/core/chart-store'
-import { zoomLevelToKWidth, kGapFromKWidth, computeZoom, computeZoomToLevel } from '@/core/utils/zoom'
+import {
+  zoomLevelToKWidth,
+  kGapFromKWidth,
+  computeZoom,
+  computeZoomToLevel,
+} from '@/core/utils/zoom'
 import { getPhysicalKLineConfig } from '@/core/utils/klineConfig'
 import { createCandleRenderer } from '@/core/renderers/candle'
 import { createGridLinesRendererPlugin } from '@/core/renderers/gridLines'
@@ -594,32 +599,61 @@ const SUB_PANE_INDICATOR_CONFIGS: Record<SubIndicatorType, SubPaneIndicatorConfi
     defaultParams: { period: 14, showCCI: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getCCITitleInfo(index, (params.period as number) ?? 14, chartRef.value!.plugin, 'sub_CCI')
+      return getCCITitleInfo(
+        index,
+        (params.period as number) ?? 14,
+        chartRef.value!.plugin,
+        'sub_CCI',
+      )
     },
   },
   STOCH: {
     defaultParams: { n: 9, m: 3, showK: true, showD: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getSTOCHTitleInfo(index, (params.n as number) ?? 9, (params.m as number) ?? 3, chartRef.value!.plugin, 'sub_STOCH')
+      return getSTOCHTitleInfo(
+        index,
+        (params.n as number) ?? 9,
+        (params.m as number) ?? 3,
+        chartRef.value!.plugin,
+        'sub_STOCH',
+      )
     },
   },
   MOM: {
     defaultParams: { period: 10, showMOM: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getMOMTitleInfo(index, (params.period as number) ?? 10, chartRef.value!.plugin, 'sub_MOM')
+      return getMOMTitleInfo(
+        index,
+        (params.period as number) ?? 10,
+        chartRef.value!.plugin,
+        'sub_MOM',
+      )
     },
   },
   WMSR: {
     defaultParams: { period: 14, showWMSR: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getWMSRTitleInfo(index, (params.period as number) ?? 14, chartRef.value!.plugin, 'sub_WMSR')
+      return getWMSRTitleInfo(
+        index,
+        (params.period as number) ?? 14,
+        chartRef.value!.plugin,
+        'sub_WMSR',
+      )
     },
   },
   KST: {
-    defaultParams: { roc1: 10, roc2: 15, roc3: 20, roc4: 30, signalPeriod: 9, showKST: true, showSignal: true },
+    defaultParams: {
+      roc1: 10,
+      roc2: 15,
+      roc3: 20,
+      roc4: 30,
+      signalPeriod: 9,
+      showKST: true,
+      showSignal: true,
+    },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
       return getKSTTitleInfo(
@@ -638,7 +672,12 @@ const SUB_PANE_INDICATOR_CONFIGS: Record<SubIndicatorType, SubPaneIndicatorConfi
     defaultParams: { period: 9, showFASTK: true },
     getTitleInfo: (_data, index, params) => {
       if (index === null) return null
-      return getFASTKTitleInfo(index, (params.period as number) ?? 9, chartRef.value!.plugin, 'sub_FASTK')
+      return getFASTKTitleInfo(
+        index,
+        (params.period as number) ?? 9,
+        chartRef.value!.plugin,
+        'sub_FASTK',
+      )
     },
   },
 }
@@ -694,66 +733,82 @@ function addSubPane(
 
   // MACD 初始化：推送配置到 Scheduler
   if (indicatorId === 'MACD') {
-    chartRef.value?.getIndicatorScheduler().updateMACDConfig(
-      params ?? getDefaultParams(indicatorId) as Partial<MACDSchedulerConfig>,
-      paneId,
-    )
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateMACDConfig(
+        params ?? (getDefaultParams(indicatorId) as Partial<MACDSchedulerConfig>),
+        paneId,
+      )
   }
 
   // RSI 初始化：推送配置到 Scheduler
   if (indicatorId === 'RSI') {
-    chartRef.value?.getIndicatorScheduler().updateRSIConfig(
-      params ?? getDefaultParams(indicatorId) as Partial<RSISchedulerConfig>,
-      paneId,
-    )
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateRSIConfig(
+        params ?? (getDefaultParams(indicatorId) as Partial<RSISchedulerConfig>),
+        paneId,
+      )
   }
 
   // CCI 初始化：推送配置到 Scheduler
   if (indicatorId === 'CCI') {
-    chartRef.value?.getIndicatorScheduler().updateCCIConfig(
-      params ?? getDefaultParams(indicatorId) as Partial<CCISchedulerConfig>,
-      paneId,
-    )
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateCCIConfig(
+        params ?? (getDefaultParams(indicatorId) as Partial<CCISchedulerConfig>),
+        paneId,
+      )
   }
 
   // STOCH 初始化：推送配置到 Scheduler
   if (indicatorId === 'STOCH') {
-    chartRef.value?.getIndicatorScheduler().updateSTOCHConfig(
-      params ?? getDefaultParams(indicatorId) as Partial<STOCHSchedulerConfig>,
-      paneId,
-    )
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateSTOCHConfig(
+        params ?? (getDefaultParams(indicatorId) as Partial<STOCHSchedulerConfig>),
+        paneId,
+      )
   }
 
   // MOM 初始化：推送配置到 Scheduler
   if (indicatorId === 'MOM') {
-    chartRef.value?.getIndicatorScheduler().updateMOMConfig(
-      params ?? getDefaultParams(indicatorId) as Partial<MOMSchedulerConfig>,
-      paneId,
-    )
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateMOMConfig(
+        params ?? (getDefaultParams(indicatorId) as Partial<MOMSchedulerConfig>),
+        paneId,
+      )
   }
 
   // WMSR 初始化：推送配置到 Scheduler
   if (indicatorId === 'WMSR') {
-    chartRef.value?.getIndicatorScheduler().updateWMSRConfig(
-      params ?? getDefaultParams(indicatorId) as Partial<WMSRSchedulerConfig>,
-      paneId,
-    )
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateWMSRConfig(
+        params ?? (getDefaultParams(indicatorId) as Partial<WMSRSchedulerConfig>),
+        paneId,
+      )
   }
 
   // KST 初始化：推送配置到 Scheduler
   if (indicatorId === 'KST') {
-    chartRef.value?.getIndicatorScheduler().updateKSTConfig(
-      params ?? getDefaultParams(indicatorId) as Partial<KSTSchedulerConfig>,
-      paneId,
-    )
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateKSTConfig(
+        params ?? (getDefaultParams(indicatorId) as Partial<KSTSchedulerConfig>),
+        paneId,
+      )
   }
 
   // FASTK 初始化：推送配置到 Scheduler
   if (indicatorId === 'FASTK') {
-    chartRef.value?.getIndicatorScheduler().updateFASTKConfig(
-      params ?? getDefaultParams(indicatorId) as Partial<FASTKSchedulerConfig>,
-      paneId,
-    )
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateFASTKConfig(
+        params ?? (getDefaultParams(indicatorId) as Partial<FASTKSchedulerConfig>),
+        paneId,
+      )
   }
 
   // 创建 paneTitle 渲染器（UI 层职责）
@@ -848,7 +903,10 @@ function initIndicatorsFromConfig(): void {
           indicatorParams.value[indicator.type] = indicator.params as Record<string, unknown>
         }
         // 启用指标（Chart内部管理渲染器）
-        chart.enableMainIndicator(indicator.type, indicator.params as Record<string, number | boolean>)
+        chart.enableMainIndicator(
+          indicator.type,
+          indicator.params as Record<string, number | boolean>,
+        )
       }
     }
   }
@@ -972,7 +1030,10 @@ function switchSubIndicator(paneId: string, newIndicatorId: SubIndicatorType): v
 }
 
 // 获取副图标题信息（带缓存，只在 crosshairIdx 或 data 变化时重算）
-const _titleInfoCache = new Map<string, { idx: number | null; dataLen: number; result: TitleInfo | null }>()
+const _titleInfoCache = new Map<
+  string,
+  { idx: number | null; dataLen: number; result: TitleInfo | null }
+>()
 
 function getSubPaneTitleInfo(paneId: string): TitleInfo | null {
   const pane = subPanes.value.find((p) => p.id === paneId)
@@ -1085,14 +1146,19 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
     indicatorId === 'EXPMA' ||
     indicatorId === 'ENE'
   ) {
-    chartRef.value?.updateMainIndicatorParams(indicatorId, params as Record<string, number | boolean>)
+    chartRef.value?.updateMainIndicatorParams(
+      indicatorId,
+      params as Record<string, number | boolean>,
+    )
     scheduleRender()
     return
   }
 
   // MACD 配置通过 Scheduler 更新
   if (indicatorId === 'MACD') {
-    chartRef.value?.getIndicatorScheduler().updateMACDConfig(params as Partial<MACDSchedulerConfig>, 'sub_MACD')
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateMACDConfig(params as Partial<MACDSchedulerConfig>, 'sub_MACD')
     subPanes.value
       .filter((p) => p.indicatorId === 'MACD')
       .forEach((pane) => {
@@ -1104,7 +1170,9 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
 
   // RSI 配置通过 Scheduler 更新（副图但采用无状态架构）
   if (indicatorId === 'RSI') {
-    chartRef.value?.getIndicatorScheduler().updateRSIConfig(params as Partial<RSISchedulerConfig>, 'sub_RSI')
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateRSIConfig(params as Partial<RSISchedulerConfig>, 'sub_RSI')
     // 更新本地 pane 参数
     subPanes.value
       .filter((p) => p.indicatorId === 'RSI')
@@ -1117,7 +1185,9 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
 
   // CCI 配置通过 Scheduler 更新
   if (indicatorId === 'CCI') {
-    chartRef.value?.getIndicatorScheduler().updateCCIConfig(params as Partial<CCISchedulerConfig>, 'sub_CCI')
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateCCIConfig(params as Partial<CCISchedulerConfig>, 'sub_CCI')
     subPanes.value
       .filter((p) => p.indicatorId === 'CCI')
       .forEach((pane) => {
@@ -1129,7 +1199,9 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
 
   // STOCH 配置通过 Scheduler 更新
   if (indicatorId === 'STOCH') {
-    chartRef.value?.getIndicatorScheduler().updateSTOCHConfig(params as Partial<STOCHSchedulerConfig>, 'sub_STOCH')
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateSTOCHConfig(params as Partial<STOCHSchedulerConfig>, 'sub_STOCH')
     subPanes.value
       .filter((p) => p.indicatorId === 'STOCH')
       .forEach((pane) => {
@@ -1141,7 +1213,9 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
 
   // MOM 配置通过 Scheduler 更新
   if (indicatorId === 'MOM') {
-    chartRef.value?.getIndicatorScheduler().updateMOMConfig(params as Partial<MOMSchedulerConfig>, 'sub_MOM')
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateMOMConfig(params as Partial<MOMSchedulerConfig>, 'sub_MOM')
     subPanes.value
       .filter((p) => p.indicatorId === 'MOM')
       .forEach((pane) => {
@@ -1153,7 +1227,9 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
 
   // WMSR 配置通过 Scheduler 更新
   if (indicatorId === 'WMSR') {
-    chartRef.value?.getIndicatorScheduler().updateWMSRConfig(params as Partial<WMSRSchedulerConfig>, 'sub_WMSR')
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateWMSRConfig(params as Partial<WMSRSchedulerConfig>, 'sub_WMSR')
     subPanes.value
       .filter((p) => p.indicatorId === 'WMSR')
       .forEach((pane) => {
@@ -1165,7 +1241,9 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
 
   // KST 配置通过 Scheduler 更新
   if (indicatorId === 'KST') {
-    chartRef.value?.getIndicatorScheduler().updateKSTConfig(params as Partial<KSTSchedulerConfig>, 'sub_KST')
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateKSTConfig(params as Partial<KSTSchedulerConfig>, 'sub_KST')
     subPanes.value
       .filter((p) => p.indicatorId === 'KST')
       .forEach((pane) => {
@@ -1177,7 +1255,9 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
 
   // FASTK 配置通过 Scheduler 更新
   if (indicatorId === 'FASTK') {
-    chartRef.value?.getIndicatorScheduler().updateFASTKConfig(params as Partial<FASTKSchedulerConfig>, 'sub_FASTK')
+    chartRef.value
+      ?.getIndicatorScheduler()
+      .updateFASTKConfig(params as Partial<FASTKSchedulerConfig>, 'sub_FASTK')
     subPanes.value
       .filter((p) => p.indicatorId === 'FASTK')
       .forEach((pane) => {
@@ -1275,7 +1355,7 @@ function scrollToRight() {
   // 计算需要的滚动位置，使最后一根K线紧贴最右侧
   const targetScrollLeft = Math.min(
     maxScrollLeft,
-    Math.max(0, lastKLineEndPx - container.clientWidth)
+    Math.max(0, lastKLineEndPx - container.clientWidth),
   )
 
   container.scrollLeft = Math.round(targetScrollLeft * dpr) / dpr
@@ -1336,16 +1416,9 @@ defineExpose({
   getZoomLevelCount: () => chartRef.value?.getZoomLevelCount() ?? 10,
 })
 
-onMounted(() => {
-  useAnchorPositioning.value = false
+// ==================== onMounted 拆分函数 ====================
 
-  const container = containerRef.value
-  const canvasLayer = canvasLayerRef.value
-  const rightAxisLayer = rightAxisLayerRef.value
-  const xAxisCanvas = xAxisCanvasRef.value
-  if (!container || !canvasLayer || !rightAxisLayer || !xAxisCanvas) return
-
-  // 手动添加 wheel 事件监听器，设置 passive: false 以允许 preventDefault()
+function setupWheelHandler(container: HTMLDivElement): (e: WheelEvent) => void {
   const onWheelHandler = (e: WheelEvent) => {
     e.preventDefault()
     const chart = chartRef.value
@@ -1372,10 +1445,7 @@ onMounted(() => {
     )
     if (!result) return
 
-    // 更新 Vue 响应式状态 → totalWidth 重算
     store.actions.setZoomState(result.targetLevel, result.newKWidth, result.newKGap)
-
-    // 清除 hover + crosshair
     chart.interaction.clearHover()
 
     nextTick(() => {
@@ -1389,43 +1459,44 @@ onMounted(() => {
     })
   }
   container.addEventListener('wheel', onWheelHandler, { passive: false })
+  return onWheelHandler
+}
 
-  // 主图初始创建，副图由 addSubPane 动态添加
+function initChart(
+  container: HTMLDivElement,
+  canvasLayer: HTMLDivElement,
+  rightAxisLayer: HTMLDivElement,
+  xAxisCanvas: HTMLCanvasElement,
+): Chart {
   const chart = new Chart(
     { container, canvasLayer, rightAxisLayer, xAxisCanvas },
     {
-      // kWidth/kGap 由 zoomLevel 派生，不从 props 注入
       yPaddingPx: props.yPaddingPx,
       rightAxisWidth: props.rightAxisWidth,
       bottomAxisHeight: props.bottomAxisHeight,
       priceLabelWidth: props.priceLabelWidth,
       minKWidth: props.minKWidth,
       maxKWidth: props.maxKWidth,
-      panes: [{ id: 'main', ratio: 1 }], // 初始只有主图
-
-      // 主/副图之间真实留白，形成视觉断开
+      panes: [{ id: 'main', ratio: 1 }],
       paneGap: 0,
-
-      // 缩放级别配置
       zoomLevels: props.zoomLevels,
       initialZoomLevel: props.initialZoomLevel,
     },
   )
 
-  // 注册主图渲染器插件
-  chart.useRenderer(createGridLinesRendererPlugin()) // 网格线渲染到所有 pane
+  chart.useRenderer(createGridLinesRendererPlugin())
   chart.useRenderer(createExtremaMarkersRendererPlugin())
   chart.useRenderer(createMARendererPlugin())
-  chart.setRendererEnabled('ma', false) // 默认禁用，由语义化配置控制
+  chart.setRendererEnabled('ma', false)
   chart.useRenderer(createBOLLRendererPlugin())
-  chart.setRendererEnabled('boll', false) // 默认禁用，由语义化配置控制
+  chart.setRendererEnabled('boll', false)
   chart.useRenderer(createEXPMARendererPlugin())
-  chart.setRendererEnabled('expma', false) // 默认禁用，由语义化配置控制
+  chart.setRendererEnabled('expma', false)
   chart.useRenderer(createENERendererPlugin())
-  chart.setRendererEnabled('ene', false) // 默认禁用，由语义化配置控制
+  chart.setRendererEnabled('ene', false)
   chart.useRenderer(createCandleRenderer())
   chart.useRenderer(createLastPriceLineRendererPlugin())
-  chart.useRenderer(createCustomMarkersRenderer()) // 自定义标记渲染器
+  chart.useRenderer(createCustomMarkersRenderer())
 
   const axisWidth = props.rightAxisWidth + props.priceLabelWidth
   const getAxisCrosshair = () => {
@@ -1438,7 +1509,6 @@ onMounted(() => {
     return null
   }
 
-  // 系统渲染器插件
   chart.useRenderer(
     createYAxisRendererPlugin({
       axisWidth,
@@ -1446,7 +1516,6 @@ onMounted(() => {
       getCrosshair: getAxisCrosshair,
     }),
   )
-  // 主图指标图例（统一管理 MA、BOLL 等）
   chart.useRenderer(
     createMainIndicatorLegendRendererPlugin({
       yPaddingPx: props.yPaddingPx,
@@ -1500,6 +1569,10 @@ onMounted(() => {
     }),
   )
 
+  return chart
+}
+
+function setupChartCallbacks(chart: Chart): void {
   chart.setOnViewportChange((vp) => {
     if (store.state.viewportDpr !== vp.dpr) {
       store.actions.setViewportDpr(vp.dpr)
@@ -1519,6 +1592,7 @@ onMounted(() => {
       chart.applyRenderState(store.state.kWidth, newKGap, store.state.zoomLevel)
     }
   })
+
   chart.setOnPaneLayoutChange((panes) => {
     const next: Record<string, number> = {}
     for (const pane of panes) {
@@ -1543,16 +1617,12 @@ onMounted(() => {
     store.actions.setDataLength(data.length)
     store.actions.bumpDataVersion()
   })
-  chartRef.value = chart
+}
 
-  // 同步初始 zoom 状态到 Chart（Chart 不持有业务 SSOT，由 store 驱动）
-  chart.applyRenderState(store.state.kWidth, store.state.kGap, store.state.zoomLevel)
-
-  // 初始化图表设置（从 LeftToolbar 获取默认设置）
+function applyInitialSettings(chart: Chart): void {
   const initialSettings = toolbarRef.value?.getSettings() ?? { showVolumePriceMarkers: true }
   chart.updateSettings(initialSettings)
 
-  // 应用万条K线性能测试设置（如果有）
   if (initialSettings.performanceTest10kKlines) {
     const testData = generate10kKLineData()
     console.time('updateData-10k')
@@ -1561,28 +1631,28 @@ onMounted(() => {
     store.actions.setDataLength(testData.length)
     store.actions.bumpDataVersion()
   }
+}
 
-  // 初始化绘图交互控制器
+function setupDrawingController(chart: Chart): void {
   drawingController.value = new DrawingInteractionController(chart)
   drawingController.value.setCallbacks({
     onDrawingCreated: (drawing) => {
       store.actions.setDrawings([...store.state.drawings, drawing])
       store.actions.setSelectedDrawingId(drawing.id)
     },
-    onToolChange: (toolId) => {
-      // 可选：同步工具状态到外部
-    },
+    onToolChange: () => {},
     onDrawingSelected: (drawing) => {
       store.actions.setSelectedDrawingId(drawing?.id ?? null)
     },
   })
+}
 
+function setupInteractionCallbacks(chart: Chart): void {
   chart.interaction.setTooltipAnchorPositioning(useAnchorPositioning.value)
   chart.interaction.setOnInteractionChange((snapshot) => {
     interactionState.value = snapshot
   })
 
-  // 设置捏合缩放回调（移动端双指缩放）
   chart.interaction.setOnPinchZoom((delta, centerClientX) => {
     const container = containerRef.value
     if (!container || !chart) return
@@ -1607,10 +1677,7 @@ onMounted(() => {
     )
     if (!result) return
 
-    // 更新 Vue 响应式状态 → totalWidth 重算
     store.actions.setZoomState(result.targetLevel, result.newKWidth, result.newKGap)
-
-    // 清除 hover + crosshair
     chart.interaction.clearHover()
 
     nextTick(() => {
@@ -1623,36 +1690,71 @@ onMounted(() => {
       emit('zoomLevelChange', result.targetLevel, result.newKWidth)
     })
   })
+
   interactionState.value = chart.interaction.getInteractionSnapshot()
   store.actions.setViewportDpr(chart.getCurrentDpr())
   chart.resize()
+}
 
-  // 初始化语义化控制器
+/** 语义化控制器：外部配置 → Chart API 的桥梁 */
+function setupSemanticController(chart: Chart): void {
   semanticController.value = new SemanticChartController(chart)
+
   semanticController.value.on('config:error', (error) => {
     console.error('Semantic config error:', error)
   })
+
+  // config:ready → Chart 侧已完成创建，Vue 回读状态
   semanticController.value.on('config:ready', () => {
     store.actions.setDataLength(chart.getData()?.length ?? 0)
     store.actions.bumpDataVersion()
-
-    // 从语义化配置初始化指标状态（单向数据流：config → state → chart）
     initIndicatorsFromConfig()
-
-    // 同步副图状态（副图由 Chart API 动态创建）
     syncSubPanesFromChart()
-
     nextTick(() => scrollToRight())
   })
-
-  // 应用语义化配置（必需，会创建副图）
+  // 应用副图、主图配置
   semanticController.value.applyConfig(props.semanticConfig).then((result) => {
     if (result && !result.success) {
       console.error('Semantic config apply failed:', result.errors)
     }
   })
+}
 
-  // 保存 wheel handler，确保 onUnmounted 能正确移除
+onMounted(() => {
+  useAnchorPositioning.value = false
+
+  const container = containerRef.value
+  const canvasLayer = canvasLayerRef.value
+  const rightAxisLayer = rightAxisLayerRef.value
+  const xAxisCanvas = xAxisCanvasRef.value
+  if (!container || !canvasLayer || !rightAxisLayer || !xAxisCanvas) return
+
+  // 1) 滚轮缩放：passive:false 以阻止页面滚动
+  const onWheelHandler = setupWheelHandler(container)
+
+  // 2) 创建 Chart 实例并注册全部渲染器
+  const chart = initChart(container, canvasLayer, rightAxisLayer, xAxisCanvas)
+  chartRef.value = chart
+
+  // 3) 视口 / 面板布局 / 数据变更回调
+  setupChartCallbacks(chart)
+
+  // 4) 同步 zoom 状态（Vue SSOT → Chart）
+  chart.applyRenderState(store.state.kWidth, store.state.kGap, store.state.zoomLevel)
+
+  // 5) 工具栏初始设置（含性能测试数据）
+  applyInitialSettings(chart)
+
+  // 6) 绘图交互控制器（线段/箭头等）
+  setupDrawingController(chart)
+
+  // 7) 十字线、捏合缩放、初始交互快照
+  setupInteractionCallbacks(chart)
+
+  // 8) 语义化配置控制器（最终驱动数据加载）
+  setupSemanticController(chart)
+
+  // 供 onUnmounted 移除 wheel 监听
   ;(chart as any).__onWheel = onWheelHandler
 })
 
@@ -1837,7 +1939,6 @@ watch(
   user-select: none;
   touch-action: none;
 }
-
 
 .scroll-content {
   height: 100%;

@@ -499,6 +499,10 @@ export class Chart {
         this.indicatorScheduler = new IndicatorScheduler()
         this.indicatorScheduler.setPluginHost(this.pluginHost)
         this.indicatorScheduler.setInvalidateCallback(() => this.scheduleDraw())
+        // 注册副图活跃列表提供者，调度器据此只计算启用的副图
+        this.indicatorScheduler.setActiveSubPaneProvider(
+            () => this.getSubPaneIndicators().map(id => `sub_${id}`),
+        )
 
         this.initPanes()
         this.useRenderer(createDrawingRendererPlugin({ store: this.drawingStore }))

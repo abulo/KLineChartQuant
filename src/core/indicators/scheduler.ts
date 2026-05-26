@@ -132,6 +132,9 @@ export class IndicatorScheduler {
     // 重绘回调
     private invalidateCallback: (() => void) | null = null
 
+    /** 从 Chart 获取活跃副图 paneId 列表的回调 */
+    private getActiveSubPaneIds: (() => string[]) | null = null
+
     constructor() {
         this.initBackend()
     }
@@ -148,6 +151,13 @@ export class IndicatorScheduler {
      */
     setInvalidateCallback(callback: () => void): void {
         this.invalidateCallback = callback
+    }
+
+    /**
+     * 设置活跃副图 paneId 提供者（来自 Chart.getSubPaneIndicators）
+     */
+    setActiveSubPaneProvider(provider: () => string[]): void {
+        this.getActiveSubPaneIds = provider
     }
 
     /**
@@ -423,8 +433,7 @@ export class IndicatorScheduler {
         if (!this.pluginHost || !this.latestResult) return
 
         const timestamp = Date.now()
-        const activeMask = this.getVisibleSubIndicatorMask()
-        // 仅计算副图指标极值，跳过主图指标（ma/boll/expma/ene）
+        const activeMask = this.buildActiveSubIndicatorMask()
         const states = composeVisibleSubIndicatorStates(this.latestResult, this.visibleRange, timestamp, activeMask)
 
         // RSI
@@ -460,18 +469,41 @@ export class IndicatorScheduler {
         this.pluginHost.setSharedState<MACDRenderState>(macdKey, states.macd, 'indicator_scheduler')
     }
 
-    private getVisibleSubIndicatorMask(): VisibleSubIndicatorMask {
-        const { rsi, cci, stoch, mom, wmsr, kst, fastk, macd } = this.configSnapshot
+    private buildActiveSubIndicatorMask(): VisibleSubIndicatorMask {
+        const activeIds = this.getActiveSubPaneIds?.() ?? []
         return {
-            rsi: rsi.showRSI1 || rsi.showRSI2 || rsi.showRSI3,
-            cci: cci.showCCI,
-            stoch: stoch.showK || stoch.showD,
-            mom: mom.showMOM,
-            wmsr: wmsr.showWMSR,
-            kst: kst.showKST || kst.showSignal,
-            fastk: fastk.showFASTK,
-            macd: macd.showDIF || macd.showDEA || macd.showBAR,
+            rsi: activeIds.includes(this.configSnapshot.rsiPaneId),
+            cci: activeIds.includes(this.configSnapshot.cciPaneId),
+            stoch: activeIds.includes(this.configSnapshot.stochPaneId),
+            mom: activeIds.includes(this.configSnapshot.momPaneId),
+            wmsr: activeIds.includes(this.configSnapshot.wmsrPaneId),
+            kst: activeIds.includes(this.configSnapshot.kstPaneId),
+            fastk: activeIds.includes(this.configSnapshot.fastkPaneId),
+            macd: activeIds.includes(this.configSnapshot.macdPaneId),
         }
+    }
+
+    /** 仅保留活跃副图的配置，后端只算这些 */
+    private buildActiveConfig(): IndicatorConfigSnapshot {
+        const activeIds = this.getActiveSubPaneIds?.() ?? []
+        if (activeIds.length === 0) return { ...this.configSnapshot }
+
+        const cfg: Record<string, unknown> = { ...this.configSnapshot }
+        const subKeys = ['rsi', 'cci', 'stoch', 'mom', 'wmsr', 'kst', 'fastk', 'macd'] as const
+        for (const key of subKeys) {
+            const paneIdKey = `${key}PaneId`
+            const paneId = cfg[paneIdKey] as string
+            if (!activeIds.includes(paneId)) {
+                const subCfg = { ...(cfg[key] as Record<string, unknown>) }
+                for (const k of Object.keys(subCfg)) {
+                    if (k.startsWith('show')) {
+                        subCfg[k] = false
+                    }
+                }
+                cfg[key] = subCfg
+            }
+        }
+        return cfg as unknown as IndicatorConfigSnapshot
     }
 
 
@@ -701,11 +733,11 @@ export class IndicatorScheduler {
             data: this.currentData,
         })
 
-        // 发送配置
+        // 发送配置（仅活跃副图）
         this.worker.postMessage({
             type: 'setConfig',
             configVersion: this.configVersion,
-            configs: this.configSnapshot,
+            configs: this.buildActiveConfig(),
         })
 
         // 请求计算
@@ -724,9 +756,9 @@ export class IndicatorScheduler {
 
         console.log(`[IndicatorScheduler] >> INLINE compute: dataV=${this.dataVersion} configV=${this.configVersion}`)
 
-        // 设置数据和配置
+        // 设置数据和配置（仅活跃副图）
         this.inlineRuntime.setData(this.currentData, this.dataVersion)
-        this.inlineRuntime.setConfig(this.configSnapshot, this.configVersion)
+        this.inlineRuntime.setConfig(this.buildActiveConfig(), this.configVersion)
 
         // 同步计算
         const results = this.inlineRuntime.computeSeries()
