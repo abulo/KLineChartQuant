@@ -41,6 +41,7 @@ import type {
     SuperTrendSchedulerConfig,
     KeltnerSchedulerConfig,
     DonchianSchedulerConfig,
+    IchimokuSchedulerConfig,
     IndicatorConfigSnapshot,
     IndicatorSeriesBundle,
 } from './workerProtocol'
@@ -79,7 +80,7 @@ import { createDEMAStateKey, DEFAULT_DEMA_PERIOD } from './demaState'
 import type { TEMARenderState } from './temaState'
 import { createTEMAStateKey, DEFAULT_TEMA_PERIOD } from './temaState'
 import type { HMARenderState } from './hmaState'
-import { createHMAStateKey, DEFAULT_HMA_PERIOD } from './hmaState'  
+import { createHMAStateKey, DEFAULT_HMA_PERIOD } from './hmaState'
 import type { KAMARenderState } from './kamaState'
 import { createKAMAStateKey, DEFAULT_KAMA_PERIOD, DEFAULT_KAMA_FAST_PERIOD, DEFAULT_KAMA_SLOW_PERIOD } from './kamaState'
 import type { SARRenderState } from './sarState'
@@ -99,6 +100,14 @@ import {
 } from './keltnerState'
 import type { DonchianRenderState } from './donchianState'
 import { createDonchianStateKey, DEFAULT_DONCHIAN_PERIOD } from './donchianState'
+import type { IchimokuRenderState } from './ichimokuState'
+import {
+    createIchimokuStateKey,
+    DEFAULT_ICHIMOKU_TENKAN,
+    DEFAULT_ICHIMOKU_KIJUN,
+    DEFAULT_ICHIMOKU_SPAN_B,
+    DEFAULT_ICHIMOKU_DISPLACEMENT,
+} from './ichimokuState'
 
 /**
  * 可见范围
@@ -127,6 +136,7 @@ type VisibleSubIndicatorMask = {
     supertrend: boolean
     keltner: boolean
     donchian: boolean
+    ichimoku: boolean
 }
 
 // 重新导出配置类型（保持向后兼容）
@@ -152,6 +162,7 @@ export type {
     SuperTrendSchedulerConfig,
     KeltnerSchedulerConfig,
     DonchianSchedulerConfig,
+    IchimokuSchedulerConfig,
 }
 
 /**
@@ -314,6 +325,18 @@ export class IndicatorScheduler {
                 showMiddle: true,
                 showLower: true,
             },
+            ichimoku: {
+                tenkanPeriod: DEFAULT_ICHIMOKU_TENKAN,
+                kijunPeriod: DEFAULT_ICHIMOKU_KIJUN,
+                spanBPeriod: DEFAULT_ICHIMOKU_SPAN_B,
+                displacement: DEFAULT_ICHIMOKU_DISPLACEMENT,
+                showTenkan: true,
+                showKijun: true,
+                showSpanA: true,
+                showSpanB: true,
+                showCloud: true,
+                showChikou: true,
+            },
             rsiPaneId: 'sub_RSI',
             cciPaneId: 'sub_CCI',
             stochPaneId: 'sub_STOCH',
@@ -332,6 +355,7 @@ export class IndicatorScheduler {
             supertrendPaneId: 'sub_SuperTrend',
             keltnerPaneId: 'sub_Keltner',
             donchianPaneId: 'sub_Donchian',
+            ichimokuPaneId: 'sub_Ichimoku',
         }
     }
 
@@ -594,6 +618,12 @@ export class IndicatorScheduler {
             const dKey = createDonchianStateKey(this.configSnapshot.donchianPaneId)
             this.pluginHost.setSharedState<DonchianRenderState>(dKey, states.donchian, 'indicator_scheduler')
         }
+
+        // Ichimoku
+        if (changed.has('ichimoku')) {
+            const iKey = createIchimokuStateKey(this.configSnapshot.ichimokuPaneId)
+            this.pluginHost.setSharedState<IchimokuRenderState>(iKey, states.ichimoku, 'indicator_scheduler')
+        }
     }
 
     private updateVisibleStatesOnly(): void {
@@ -675,6 +705,10 @@ export class IndicatorScheduler {
         // Donchian
         const dKey = createDonchianStateKey(this.configSnapshot.donchianPaneId)
         this.pluginHost.setSharedState<DonchianRenderState>(dKey, states.donchian, 'indicator_scheduler')
+
+        // Ichimoku
+        const iKey = createIchimokuStateKey(this.configSnapshot.ichimokuPaneId)
+        this.pluginHost.setSharedState<IchimokuRenderState>(iKey, states.ichimoku, 'indicator_scheduler')
     }
 
     private buildActiveSubIndicatorMask(): VisibleSubIndicatorMask {
@@ -698,6 +732,7 @@ export class IndicatorScheduler {
             supertrend: activeIds.includes(this.configSnapshot.supertrendPaneId),
             keltner: activeIds.includes(this.configSnapshot.keltnerPaneId),
             donchian: activeIds.includes(this.configSnapshot.donchianPaneId),
+            ichimoku: activeIds.includes(this.configSnapshot.ichimokuPaneId),
         }
     }
 
@@ -707,7 +742,7 @@ export class IndicatorScheduler {
         if (activeIds.length === 0) return { ...this.configSnapshot }
 
         const cfg: Record<string, unknown> = { ...this.configSnapshot }
-        const subKeys = ['rsi', 'cci', 'stoch', 'mom', 'wmsr', 'kst', 'fastk', 'macd', 'atr', 'wma', 'dema', 'tema', 'hma', 'kama', 'sar', 'supertrend', 'keltner', 'donchian'] as const
+        const subKeys = ['rsi', 'cci', 'stoch', 'mom', 'wmsr', 'kst', 'fastk', 'macd', 'atr', 'wma', 'dema', 'tema', 'hma', 'kama', 'sar', 'supertrend', 'keltner', 'donchian', 'ichimoku'] as const
         for (const key of subKeys) {
             const paneIdKey = `${key}PaneId`
             const paneId = cfg[paneIdKey] as string
@@ -998,6 +1033,16 @@ export class IndicatorScheduler {
     updateDonchianConfig(config: Partial<DonchianSchedulerConfig>, paneId?: string): void {
         if (paneId !== undefined) this.configSnapshot.donchianPaneId = paneId
         this.configSnapshot.donchian = { ...this.configSnapshot.donchian, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * Ichimoku 配置变更
+     */
+    updateIchimokuConfig(config: Partial<IchimokuSchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) this.configSnapshot.ichimokuPaneId = paneId
+        this.configSnapshot.ichimoku = { ...this.configSnapshot.ichimoku, ...config }
         this.configVersion++
         this.triggerRecompute()
     }

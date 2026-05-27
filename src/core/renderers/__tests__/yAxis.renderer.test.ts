@@ -127,7 +127,7 @@ describe('yAxis renderer', () => {
     const context = createContext({
       pane: createPane({ id: 'main' }),
       yAxisLabels: [
-        { type: 'lastPrice', dataIndex: 0, y: 50, price: 101, style: { borderColor: '#f00', bgColor: '#fff', textColor: '#000' } },
+        { type: 'lastPrice', y: 50, price: 101, style: { borderColor: '#f00', bgColor: '#fff', textColor: '#000' } },
       ],
     })
 
