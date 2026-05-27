@@ -445,6 +445,7 @@ export class IndicatorScheduler {
         // ATR
         if (changed.has('atr')) {
             const atrKey = createATRStateKey(this.configSnapshot.atrPaneId)
+            console.log(`[ATR-Scheduler] applyResults: set state at key=${atrKey} paneId=${this.configSnapshot.atrPaneId} seriesLen=${states.atr.series.length} vMin=${states.atr.valueMin} vMax=${states.atr.valueMax}`)
             this.pluginHost.setSharedState<ATRRenderState>(atrKey, states.atr, 'indicator_scheduler')
         }
     }
@@ -455,6 +456,7 @@ export class IndicatorScheduler {
         const timestamp = Date.now()
         const activeMask = this.buildActiveSubIndicatorMask()
         const states = composeVisibleSubIndicatorStates(this.latestResult, this.visibleRange, timestamp, activeMask)
+        console.log(`[ATR-Scheduler] updateVisibleStatesOnly: atrActive=${!!activeMask.atr} atrPaneId=${this.configSnapshot.atrPaneId} seriesLen=${states.atr.series.length}`)
 
         // RSI
         const rsiKey = createRSIStateKey(this.configSnapshot.rsiPaneId)
