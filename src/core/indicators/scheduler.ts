@@ -561,6 +561,14 @@ export class IndicatorScheduler {
         // HMA
         const hmaKey = createHMAStateKey(this.configSnapshot.hmaPaneId)
         this.pluginHost.setSharedState<HMARenderState>(hmaKey, states.hma, 'indicator_scheduler')
+
+        // KAMA
+        const kamaKey = createKAMAStateKey(this.configSnapshot.kamaPaneId)
+        this.pluginHost.setSharedState<KAMARenderState>(kamaKey, states.kama, 'indicator_scheduler')
+
+        // SAR
+        const sarKey = createSARStateKey(this.configSnapshot.sarPaneId)
+        this.pluginHost.setSharedState<SARRenderState>(sarKey, states.sar, 'indicator_scheduler')
     }
 
     private buildActiveSubIndicatorMask(): VisibleSubIndicatorMask {
@@ -579,6 +587,8 @@ export class IndicatorScheduler {
             dema: activeIds.includes(this.configSnapshot.demaPaneId),
             tema: activeIds.includes(this.configSnapshot.temaPaneId),
             hma: activeIds.includes(this.configSnapshot.hmaPaneId),
+            kama: activeIds.includes(this.configSnapshot.kamaPaneId),
+            sar: activeIds.includes(this.configSnapshot.sarPaneId),
         }
     }
 
@@ -588,7 +598,7 @@ export class IndicatorScheduler {
         if (activeIds.length === 0) return { ...this.configSnapshot }
 
         const cfg: Record<string, unknown> = { ...this.configSnapshot }
-        const subKeys = ['rsi', 'cci', 'stoch', 'mom', 'wmsr', 'kst', 'fastk', 'macd', 'atr', 'wma', 'dema', 'tema', 'hma'] as const
+        const subKeys = ['rsi', 'cci', 'stoch', 'mom', 'wmsr', 'kst', 'fastk', 'macd', 'atr', 'wma', 'dema', 'tema', 'hma', 'kama', 'sar'] as const
         for (const key of subKeys) {
             const paneIdKey = `${key}PaneId`
             const paneId = cfg[paneIdKey] as string
@@ -825,6 +835,30 @@ export class IndicatorScheduler {
             this.configSnapshot.hmaPaneId = paneId
         }
         this.configSnapshot.hma = { ...this.configSnapshot.hma, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * KAMA 配置变更
+     */
+    updateKAMAConfig(config: Partial<KAMASchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.kamaPaneId = paneId
+        }
+        this.configSnapshot.kama = { ...this.configSnapshot.kama, ...config }
+        this.configVersion++
+        this.triggerRecompute()
+    }
+
+    /**
+     * SAR 配置变更
+     */
+    updateSARConfig(config: Partial<SARSchedulerConfig>, paneId?: string): void {
+        if (paneId !== undefined) {
+            this.configSnapshot.sarPaneId = paneId
+        }
+        this.configSnapshot.sar = { ...this.configSnapshot.sar, ...config }
         this.configVersion++
         this.triggerRecompute()
     }
