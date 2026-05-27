@@ -62,7 +62,7 @@ export class PaneRenderer {
         if (!this.contexts) {
             this.contexts = {
                 mainCtx: this.dom.mainCanvas.getContext('2d'),
-                overlayCtx: this.dom.overlayCanvas.getContext('2d', { desynchronized: true }),
+                overlayCtx: this.dom.overlayCanvas.getContext('2d'),
                 yAxisCtx: this.dom.yAxisCanvas.getContext('2d'),
             }
         }

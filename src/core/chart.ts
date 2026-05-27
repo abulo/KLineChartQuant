@@ -544,6 +544,14 @@ export class Chart {
             const widthChanged = this.observedSize.width !== prevWidth
             const heightChanged = this.observedSize.height !== prevHeight
             const dprChanged = this.preciseDpr !== prevDpr
+            if ((import.meta as any).env?.MODE !== 'production') {
+                console.log(
+                    `[Chart] resize observer: ` +
+                    `size ${prevWidth}x${prevHeight} -> ${this.observedSize.width}x${this.observedSize.height} ` +
+                    `dpr ${prevDpr} -> ${this.preciseDpr} ` +
+                    `changed: ${widthChanged || heightChanged ? 'size' : ''}${widthChanged || heightChanged && dprChanged ? '+' : ''}${dprChanged ? 'dpr' : ''}`
+                )
+            }
             if (widthChanged || heightChanged || dprChanged) {
                 this.resize()
             }
@@ -1499,6 +1507,7 @@ export class Chart {
         if (!vp || vp.viewWidth < 10 || vp.viewHeight < 10) {
             return
         }
+        this.cachedDrawFrame = null
         this.layoutPanes()
         this.emitPaneLayoutChange()
         this.scheduleDraw()

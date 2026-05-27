@@ -131,7 +131,10 @@ import {
 import { getPhysicalKLineConfig } from '@/core/utils/klineConfig'
 import { createCandleRenderer } from '@/core/renderers/candle'
 import { createGridLinesRendererPlugin } from '@/core/renderers/gridLines'
-import { createLastPriceLineRendererPlugin, createLastPriceLabelRegistrarPlugin } from '@/core/renderers/lastPrice'
+import {
+  createLastPriceLineRendererPlugin,
+  createLastPriceLabelRegistrarPlugin,
+} from '@/core/renderers/lastPrice'
 import {
   createMARendererPlugin,
   createBOLLRendererPlugin,
@@ -140,7 +143,10 @@ import {
   createMainIndicatorLegendRendererPlugin,
   type SubIndicatorType,
 } from '@/core/renderers/Indicator'
-import { SUB_PANE_INDICATOR_CONFIGS, SUB_PANE_INDICATORS } from '@/core/renderers/Indicator/subPaneConfig'
+import {
+  SUB_PANE_INDICATOR_CONFIGS,
+  SUB_PANE_INDICATORS,
+} from '@/core/renderers/Indicator/subPaneConfig'
 import { createYAxisRendererPlugin } from '@/core/renderers/yAxis'
 import { createMacdScaleRendererPlugin } from '@/core/renderers/Indicator/scale/macd_scale'
 import { createVolumeScaleRendererPlugin } from '@/core/renderers/Indicator/scale/volume_scale'
@@ -155,13 +161,10 @@ import { createTimeAxisRendererPlugin } from '@/core/renderers/timeAxis'
 import { createCrosshairRendererPlugin } from '@/core/renderers/crosshair'
 import { createPaneTitleRendererPlugin, type TitleInfo } from '@/core/renderers/paneTitle'
 import type { InteractionSnapshot } from '@/core/controller/interaction'
-import type { DrawingObject, DrawingStyle } from '@/plugin'
+import type { DrawingStyle } from '@/plugin'
 import LeftToolbar from './LeftToolbar.vue'
 import { DrawingInteractionController, type DrawingToolId } from '@/core/drawing'
 import type {
-  BOLLSchedulerConfig,
-  EXPMASchedulerConfig,
-  ENESchedulerConfig,
   RSISchedulerConfig,
   CCISchedulerConfig,
   STOCHSchedulerConfig,
@@ -570,8 +573,6 @@ interface SubPaneSlot {
 
 // 副图槽位数组（支持多副图）
 const subPanes = ref<SubPaneSlot[]>([])
-
-
 
 // 最大副图数量
 const maxSubPanes = 4
@@ -1002,7 +1003,11 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
   }
 
   if (SUB_PANE_INDICATORS.includes(indicatorId as SubIndicatorType)) {
-    pushSubPaneSchedulerConfig(indicatorId as SubIndicatorType, params as Record<string, number | boolean>, `sub_${indicatorId}`)
+    pushSubPaneSchedulerConfig(
+      indicatorId as SubIndicatorType,
+      params as Record<string, number | boolean>,
+      `sub_${indicatorId}`,
+    )
     subPanes.value
       .filter((p) => p.indicatorId === indicatorId)
       .forEach((pane) => {
