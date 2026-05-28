@@ -66,6 +66,7 @@ export function createMainIndicatorLegendRendererPlugin(options: {
     debugName: '主图指标图例',
     paneId: 'main',
     priority: RENDERER_PRIORITY.FOREGROUND,
+    layer: 'overlay',
     enabled: true,
 
     onInstall(host: PluginHost): void {
@@ -77,18 +78,18 @@ export function createMainIndicatorLegendRendererPlugin(options: {
     },
 
     draw(context: RenderContext) {
-      const { ctx, data, range, crosshairIndex } = context
+      const { overlayCtx, data, range, crosshairIndex } = context
       const klineData = data as KLineData[]
-      if (!klineData.length) return
+      if (!klineData.length || !overlayCtx) return
 
       const fontSize = 12
       const lineHeight = fontSize + 6
       const legendX = 12
       const gap = 10
 
-      ctx.save()
-      setCanvasFont(ctx, getFont(fontSize))
-      ctx.textAlign = 'left'
+      overlayCtx.save()
+      setCanvasFont(overlayCtx, getFont(fontSize))
+      overlayCtx.textAlign = 'left'
 
       const targetIndex = crosshairIndex ?? Math.min(range.end - 1, klineData.length - 1)
       const rows: Array<{ draw: (rowIndex: number) => void }> = []
@@ -118,16 +119,16 @@ export function createMainIndicatorLegendRendererPlugin(options: {
               let x = legendX
               const y = config.yPaddingPx / 2 + fontSize + rowIndex * lineHeight
 
-              ctx.fillStyle = PRICE_COLORS.NEUTRAL
-              ctx.fillText('MA', x, y)
-              x += measureTextWidth(ctx, 'MA') + gap
+              overlayCtx.fillStyle = PRICE_COLORS.NEUTRAL
+              overlayCtx.fillText('MA', x, y)
+              x += measureTextWidth(overlayCtx, 'MA') + gap
 
               for (const it of items) {
                 const valText = typeof it.value === 'number' ? ` ${it.value.toFixed(2)}` : ''
                 const text = `${it.label}${valText}`
-                ctx.fillStyle = it.color
-                ctx.fillText(text, x, y)
-                x += measureTextWidth(ctx, text) + gap
+                overlayCtx.fillStyle = it.color
+                overlayCtx.fillText(text, x, y)
+                x += measureTextWidth(overlayCtx, text) + gap
               }
             }
           }
@@ -147,24 +148,24 @@ export function createMainIndicatorLegendRendererPlugin(options: {
             const y = config.yPaddingPx / 2 + fontSize + rowIndex * lineHeight
             const titleText = `BOLL(${period},${multiplier})`
 
-            ctx.fillStyle = PRICE_COLORS.NEUTRAL
-            ctx.fillText(titleText, x, y)
-            x += measureTextWidth(ctx, titleText) + gap
+            overlayCtx.fillStyle = PRICE_COLORS.NEUTRAL
+            overlayCtx.fillText(titleText, x, y)
+            x += measureTextWidth(overlayCtx, titleText) + gap
 
             if (boll) {
               const upperText = `上轨:${boll.upper.toFixed(2)}`
-              ctx.fillStyle = BOLL_COLORS.UPPER
-              ctx.fillText(upperText, x, y)
-              x += measureTextWidth(ctx, upperText) + gap
+              overlayCtx.fillStyle = BOLL_COLORS.UPPER
+              overlayCtx.fillText(upperText, x, y)
+              x += measureTextWidth(overlayCtx, upperText) + gap
 
               const middleText = `中轨:${boll.middle.toFixed(2)}`
-              ctx.fillStyle = BOLL_COLORS.MIDDLE
-              ctx.fillText(middleText, x, y)
-              x += measureTextWidth(ctx, middleText) + gap
+              overlayCtx.fillStyle = BOLL_COLORS.MIDDLE
+              overlayCtx.fillText(middleText, x, y)
+              x += measureTextWidth(overlayCtx, middleText) + gap
 
               const lowerText = `下轨:${boll.lower.toFixed(2)}`
-              ctx.fillStyle = BOLL_COLORS.LOWER
-              ctx.fillText(lowerText, x, y)
+              overlayCtx.fillStyle = BOLL_COLORS.LOWER
+              overlayCtx.fillText(lowerText, x, y)
             }
           }
         })
@@ -183,19 +184,19 @@ export function createMainIndicatorLegendRendererPlugin(options: {
             const y = config.yPaddingPx / 2 + fontSize + rowIndex * lineHeight
             const titleText = `EXPMA(${fastPeriod},${slowPeriod})`
 
-            ctx.fillStyle = PRICE_COLORS.NEUTRAL
-            ctx.fillText(titleText, x, y)
-            x += measureTextWidth(ctx, titleText) + gap
+            overlayCtx.fillStyle = PRICE_COLORS.NEUTRAL
+            overlayCtx.fillText(titleText, x, y)
+            x += measureTextWidth(overlayCtx, titleText) + gap
 
             if (expma) {
               const fastText = `快:${expma.fast.toFixed(2)}`
-              ctx.fillStyle = EXPMA_COLORS.FAST
-              ctx.fillText(fastText, x, y)
-              x += measureTextWidth(ctx, fastText) + gap
+              overlayCtx.fillStyle = EXPMA_COLORS.FAST
+              overlayCtx.fillText(fastText, x, y)
+              x += measureTextWidth(overlayCtx, fastText) + gap
 
               const slowText = `慢:${expma.slow.toFixed(2)}`
-              ctx.fillStyle = EXPMA_COLORS.SLOW
-              ctx.fillText(slowText, x, y)
+              overlayCtx.fillStyle = EXPMA_COLORS.SLOW
+              overlayCtx.fillText(slowText, x, y)
             }
           }
         })
@@ -214,31 +215,31 @@ export function createMainIndicatorLegendRendererPlugin(options: {
             const y = config.yPaddingPx / 2 + fontSize + rowIndex * lineHeight
             const titleText = `ENE(${period},${deviation})`
 
-            ctx.fillStyle = PRICE_COLORS.NEUTRAL
-            ctx.fillText(titleText, x, y)
-            x += measureTextWidth(ctx, titleText) + gap
+            overlayCtx.fillStyle = PRICE_COLORS.NEUTRAL
+            overlayCtx.fillText(titleText, x, y)
+            x += measureTextWidth(overlayCtx, titleText) + gap
 
             if (ene) {
               const upperText = `上轨:${ene.upper.toFixed(2)}`
-              ctx.fillStyle = ENE_COLORS.UPPER
-              ctx.fillText(upperText, x, y)
-              x += measureTextWidth(ctx, upperText) + gap
+              overlayCtx.fillStyle = ENE_COLORS.UPPER
+              overlayCtx.fillText(upperText, x, y)
+              x += measureTextWidth(overlayCtx, upperText) + gap
 
               const middleText = `中轨:${ene.middle.toFixed(2)}`
-              ctx.fillStyle = ENE_COLORS.MIDDLE
-              ctx.fillText(middleText, x, y)
-              x += measureTextWidth(ctx, middleText) + gap
+              overlayCtx.fillStyle = ENE_COLORS.MIDDLE
+              overlayCtx.fillText(middleText, x, y)
+              x += measureTextWidth(overlayCtx, middleText) + gap
 
               const lowerText = `下轨:${ene.lower.toFixed(2)}`
-              ctx.fillStyle = ENE_COLORS.LOWER
-              ctx.fillText(lowerText, x, y)
+              overlayCtx.fillStyle = ENE_COLORS.LOWER
+              overlayCtx.fillText(lowerText, x, y)
             }
           }
         })
       }
 
       rows.forEach((row, index) => row.draw(index))
-      ctx.restore()
+      overlayCtx.restore()
     },
 
     getConfig() {

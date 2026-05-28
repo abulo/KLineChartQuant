@@ -72,35 +72,36 @@ export function createPaneTitleRendererPlugin(options: PaneTitleOptions): Render
         debugName: '面板标题',
         paneId: options.paneId,
         priority: RENDERER_PRIORITY.FOREGROUND,
+        layer: 'overlay',
 
         draw(context: RenderContext) {
-            const { ctx, pane } = context
-            if (pane.id !== currentOptions.paneId) return
+            const { overlayCtx, pane, paneWidth } = context
+            if (pane.id !== currentOptions.paneId || !overlayCtx) return
 
             const fontSize = 12
             const x = 12
             const y = currentOptions.yOffset ?? fontSize
             const gap = 8
 
-            ctx.save()
-            setCanvasFont(ctx, getFont(fontSize))
-            ctx.textAlign = 'left'
-            ctx.textBaseline = 'top'
+            overlayCtx.save()
+            setCanvasFont(overlayCtx, getFont(fontSize))
+            overlayCtx.textAlign = 'left'
+            overlayCtx.textBaseline = 'top'
 
             const titleInfo = currentOptions.getTitleInfo?.()
 
             if (titleInfo) {
                 let currentX = x
 
-                ctx.fillStyle = TEXT_COLORS.PRIMARY
-                ctx.fillText(titleInfo.name, currentX, y)
-                currentX += measureTextWidth(ctx, titleInfo.name)
+                overlayCtx.fillStyle = TEXT_COLORS.PRIMARY
+                overlayCtx.fillText(titleInfo.name, currentX, y)
+                currentX += measureTextWidth(overlayCtx, titleInfo.name)
 
                 if (titleInfo.params && titleInfo.params.length > 0) {
                     const paramText = `(${titleInfo.params.join(',')})`
-                    ctx.fillStyle = TEXT_COLORS.TERTIARY
-                    ctx.fillText(paramText, currentX, y)
-                    currentX += measureTextWidth(ctx, paramText) + gap
+                    overlayCtx.fillStyle = TEXT_COLORS.TERTIARY
+                    overlayCtx.fillText(paramText, currentX, y)
+                    currentX += measureTextWidth(overlayCtx, paramText) + gap
                 } else {
                     currentX += gap
                 }
@@ -108,23 +109,23 @@ export function createPaneTitleRendererPlugin(options: PaneTitleOptions): Render
                 if (titleInfo.values && titleInfo.values.length > 0) {
                     for (const item of titleInfo.values) {
                         const valueText = `${item.label} ${item.value.toFixed(3)}`
-                        ctx.fillStyle = item.color
-                        ctx.fillText(valueText, currentX, y)
-                        currentX += measureTextWidth(ctx, valueText) + gap
+                        overlayCtx.fillStyle = item.color
+                        overlayCtx.fillText(valueText, currentX, y)
+                        currentX += measureTextWidth(overlayCtx, valueText) + gap
                     }
                 }
             } else {
-                ctx.fillStyle = TEXT_COLORS.PRIMARY
-                ctx.fillText(currentOptions.title, x, y)
+                overlayCtx.fillStyle = TEXT_COLORS.PRIMARY
+                overlayCtx.fillText(currentOptions.title, x, y)
 
                 if (currentOptions.description) {
-                    const titleWidth = measureTextWidth(ctx, currentOptions.title)
-                    ctx.fillStyle = TEXT_COLORS.WEAK
-                    ctx.fillText(` - ${currentOptions.description}`, x + titleWidth, y)
+                    const titleWidth = measureTextWidth(overlayCtx, currentOptions.title)
+                    overlayCtx.fillStyle = TEXT_COLORS.WEAK
+                    overlayCtx.fillText(` - ${currentOptions.description}`, x + titleWidth, y)
                 }
             }
 
-            ctx.restore()
+            overlayCtx.restore()
         },
 
         setConfig(config: Record<string, unknown>) {

@@ -976,7 +976,7 @@ export class Chart {
             }
 
             const shouldUpdateMain = level === UpdateLevel.Main || level === UpdateLevel.All
-            const shouldUpdateOverlay = (level === UpdateLevel.Overlay || level === UpdateLevel.All) && (hasCrosshair || this.overlayHadCrosshair)
+            const shouldUpdateOverlay = level === UpdateLevel.All || (level === UpdateLevel.Overlay && (hasCrosshair || this.overlayHadCrosshair))
 
             if (shouldUpdateMain && mainCtx) {
                 mainCtx.setTransform(1, 0, 0, 1, 0, 0)
