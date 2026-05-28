@@ -48,6 +48,7 @@ const ENABLE_WEBGL_DEFAULT = getDeviceType() === 'desktop'
 
 /** 默认设置配置 */
 export const DEFAULT_SETTINGS = [
+  { key: 'showGridLines', label: '显示网格', type: 'boolean', default: true, group: 'main' },
   { key: 'showVolumePriceMarkers', label: '显示量价关系标记', type: 'boolean', default: false, group: 'main' },
   { key: 'logarithmicScale', label: '对数价格轴', type: 'boolean', default: false, group: 'main' },
   { key: 'disableMainPaneVerticalScroll', label: '主图纵轴刻度自适应调整', type: 'boolean', default: true, group: 'main' },

@@ -21,9 +21,10 @@ export function createGridLinesRendererPlugin(): RendererPlugin {
         priority: RENDERER_PRIORITY.GRID,
 
         draw(context: RenderContext) {
-            const { ctx, pane, data, range, scrollLeft, kWidth, dpr, kLinePositions } = context
+            const { ctx, pane, data, range, scrollLeft, kWidth, dpr, kLinePositions, settings } = context
             const klineData = data as KLineData[]
             if (!klineData.length) return
+            if (settings?.showGridLines === false) return
 
             ctx.save()
             ctx.fillStyle = GRID_COLORS.HORIZONTAL
