@@ -244,7 +244,7 @@ export class Chart {
     private activeMainIndicators: Set<string> = new Set()
 
     /** 主图指标参数配置 */
-    private mainIndicatorParams: Record<string, Record<string, number | boolean>> = {
+    private mainIndicatorParams: Record<string, Record<string, number | boolean | string>> = {
         MA: { ma5: true, ma10: true, ma20: true, ma30: true, ma60: true },
         BOLL: { period: 20, multiplier: 2, showUpper: true, showMiddle: true, showLower: true, showBand: true },
         EXPMA: { fastPeriod: 12, slowPeriod: 50 },
@@ -271,7 +271,7 @@ export class Chart {
      * @param params 可选的指标参数
      * @returns 是否成功启用
      */
-    enableMainIndicator(indicatorId: string, params?: Record<string, number | boolean>): boolean {
+    enableMainIndicator(indicatorId: string, params?: Record<string, number | boolean | string>): boolean {
         const id = indicatorId.toUpperCase()
         if (!['MA', 'BOLL', 'EXPMA', 'ENE', 'WMA', 'DEMA', 'TEMA', 'HMA', 'KAMA', 'SAR', 'SUPERTREND', 'KELTNER', 'DONCHIAN', 'ICHIMOKU', 'PIVOT', 'FIB', 'STRUCTURE', 'ZONES'].includes(id)) {
             console.warn(`[Chart] 未知的主图指标: ${indicatorId}`)
@@ -359,7 +359,7 @@ export class Chart {
      * @param indicatorId 指标ID
      * @param params 参数对象
      */
-    updateMainIndicatorParams(indicatorId: string, params: Record<string, number | boolean>): void {
+    updateMainIndicatorParams(indicatorId: string, params: Record<string, number | boolean | string>): void {
         const id = indicatorId.toUpperCase()
         if (!this.mainIndicatorParams[id]) {
             this.mainIndicatorParams[id] = {}
@@ -382,7 +382,7 @@ export class Chart {
      * 获取主图指标参数
      * @param indicatorId 指标ID
      */
-    getMainIndicatorParams(indicatorId: string): Record<string, number | boolean> | null {
+    getMainIndicatorParams(indicatorId: string): Record<string, number | boolean | string> | null {
         return this.mainIndicatorParams[indicatorId.toUpperCase()] ?? null
     }
 
@@ -1275,7 +1275,7 @@ export class Chart {
         this.applyPaneLayoutSpecs(this.opt.panes.filter((pane) => pane.id !== paneId))
     }
 
-    bindIndicatorToPane(paneId: string, indicatorId: SubIndicatorType, params?: Record<string, number | boolean>): void {
+    bindIndicatorToPane(paneId: string, indicatorId: SubIndicatorType, params?: Record<string, number | boolean | string>): void {
         const paneExists = this.opt.panes.some((pane) => pane.id === paneId)
         if (!paneExists) {
             this.upsertPane({ id: paneId, ratio: 1, visible: true, role: 'indicator' })
@@ -1476,7 +1476,7 @@ export class Chart {
      * @param params 指标参数
      * @returns 是否创建成功
      */
-    createSubPane(paneId: string, indicatorId: SubIndicatorType, params?: Record<string, number | boolean>): boolean {
+    createSubPane(paneId: string, indicatorId: SubIndicatorType, params?: Record<string, number | boolean | string>): boolean {
         // 调整 pane ratios：主图占 3，副图各占 1
         const visibleSpecs = this.opt.panes.filter((pane) => pane.visible !== false)
         const pricePanes = visibleSpecs.filter((pane, index) => this.resolvePaneRole(pane, index) === 'price')
@@ -1516,7 +1516,7 @@ export class Chart {
      * @param newIndicatorId 新的指标类型
      * @param params 新指标参数
      */
-    replaceSubPaneIndicator(paneId: string, newIndicatorId: SubIndicatorType, params?: Record<string, number | boolean>): void {
+    replaceSubPaneIndicator(paneId: string, newIndicatorId: SubIndicatorType, params?: Record<string, number | boolean | string>): void {
         this.subPaneManager.replaceIndicator(this, paneId, newIndicatorId, params ?? this.getDefaultSubPaneParams(newIndicatorId))
     }
 

@@ -21,11 +21,11 @@ import {
 } from '@/core/renderers/Indicator'
 
 export interface SubPaneIndicatorConfig {
-  defaultParams: Record<string, number | boolean>
+  defaultParams: Record<string, number | boolean | string>
   getTitleInfo: (
     data: any[],
     index: number | null,
-    params: Record<string, number | boolean>,
+    params: Record<string, number | boolean | string>,
     pluginHost: PluginHost,
     paneId: string,  // 新增：paneId 参数
   ) => TitleInfo | null

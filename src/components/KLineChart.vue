@@ -591,7 +591,7 @@ function buildPaneLayoutIntent(): PaneSpec[] {
 }
 
 // 获取指标默认参数
-function getDefaultParams(indicatorId: SubIndicatorType): Record<string, number | boolean> {
+function getDefaultParams(indicatorId: SubIndicatorType): Record<string, number | boolean | string> {
   return { ...SUB_PANE_INDICATOR_CONFIGS[indicatorId].defaultParams }
 }
 
@@ -628,7 +628,7 @@ function unmountSubPaneTitle(paneId: string): void {
 // 添加副图（使用 Chart API）
 function addSubPane(
   indicatorId: SubIndicatorType = 'VOLUME',
-  params?: Record<string, number | boolean>,
+  params?: Record<string, number | boolean | string>,
 ): boolean {
   if (subPanes.value.length >= maxSubPanes) {
     return false
@@ -711,7 +711,7 @@ function initIndicatorsFromConfig(): void {
         // 启用指标（Chart内部管理渲染器）
         chart.enableMainIndicator(
           indicator.type,
-          indicator.params as Record<string, number | boolean>,
+          indicator.params as Record<string, number | boolean | string>,
         )
       }
     }
@@ -929,7 +929,7 @@ function handleUpdateParams(indicatorId: string, params: Record<string, unknown>
   ) {
     chartRef.value?.updateMainIndicatorParams(
       indicatorId,
-      params as Record<string, number | boolean>,
+      params as Record<string, number | boolean | string>,
     )
     scheduleRender()
     return

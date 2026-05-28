@@ -36,7 +36,7 @@ describe('calcVMAData', () => {
         const out = calcVMAData(pureUptrend, period)
         for (let t = period - 1; t < out.length; t++) {
             let sum = 0
-            for (let k = 0; k < period; k++) sum += pureUptrend[t - k]!.volume
+            for (let k = 0; k < period; k++) sum += pureUptrend[t - k]!.volume ?? 0
             expect(out[t]!).toBeCloseTo(sum / period, 9)
         }
     })

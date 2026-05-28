@@ -30,7 +30,7 @@ describe('calcVolumeProfileData', () => {
     it('on pureUptrend: total volume = sum of bar volumes', () => {
         const result = calcVolumeProfileData(pureUptrend, 24, 0, 0.7)
         let expectedTotal = 0
-        for (const bar of pureUptrend) expectedTotal += bar.volume
+        for (const bar of pureUptrend) expectedTotal += bar.volume ?? 0
         expect(result.totalVolume).toBeCloseTo(expectedTotal, 6)
     })
 

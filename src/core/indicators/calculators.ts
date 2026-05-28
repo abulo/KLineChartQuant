@@ -1879,10 +1879,10 @@ export function calcVMAData(data: KLineData[], period: number): (number | undefi
     const result: (number | undefined)[] = new Array(n).fill(undefined)
     if (n === 0 || period <= 0 || n < period) return result
     let sum = 0
-    for (let i = 0; i < period; i++) sum += data[i]!.volume
+    for (let i = 0; i < period; i++) sum += data[i]!.volume ?? 0
     result[period - 1] = sum / period
     for (let t = period; t < n; t++) {
-        sum += data[t]!.volume - data[t - period]!.volume
+        sum += (data[t]!.volume ?? 0) - (data[t - period]!.volume ?? 0)
         result[t] = sum / period
     }
     return result
@@ -1909,8 +1909,8 @@ export function calcOBVData(data: KLineData[]): (number | undefined)[] {
     for (let t = 1; t < n; t++) {
         const cur = data[t]!
         const prev = data[t - 1]!
-        if (cur.close > prev.close) obv += cur.volume
-        else if (cur.close < prev.close) obv -= cur.volume
+        if (cur.close > prev.close) obv += cur.volume ?? 0
+        else if (cur.close < prev.close) obv -= cur.volume ?? 0
         result[t] = obv
     }
     return result
@@ -1938,7 +1938,7 @@ export function calcPVTData(data: KLineData[]): (number | undefined)[] {
             result[t] = pvt
             continue
         }
-        pvt += ((data[t]!.close - prevClose) / prevClose) * data[t]!.volume
+        pvt += ((data[t]!.close - prevClose) / prevClose) * (data[t]!.volume ?? 0)
         result[t] = pvt
     }
     return result
@@ -1978,8 +1978,8 @@ export function calcVWAPData(
             cumV = 0
         }
         const tp = (bar.high + bar.low + bar.close) / 3
-        cumPV += tp * bar.volume
-        cumV += bar.volume
+        cumPV += tp * (bar.volume ?? 0)
+        cumV += bar.volume ?? 0
         result[t] = cumV > 0 ? cumPV / cumV : tp
         prevTs = bar.timestamp
     }
@@ -2014,20 +2014,20 @@ export function calcCMFData(data: KLineData[], period: number): (number | undefi
         const bar = data[i]!
         const range = bar.high - bar.low
         const mfm = range > 0 ? ((bar.close - bar.low) - (bar.high - bar.close)) / range : 0
-        mfv[i] = mfm * bar.volume
+        mfv[i] = mfm * (bar.volume ?? 0)
     }
 
     let sumMFV = 0
     let sumV = 0
     for (let i = 0; i < period; i++) {
         sumMFV += mfv[i]!
-        sumV += data[i]!.volume
+        sumV += data[i]!.volume ?? 0
     }
     result[period - 1] = sumV > 0 ? sumMFV / sumV : 0
 
     for (let t = period; t < n; t++) {
         sumMFV += mfv[t]! - mfv[t - period]!
-        sumV += data[t]!.volume - data[t - period]!.volume
+        sumV += (data[t]!.volume ?? 0) - (data[t - period]!.volume ?? 0)
         result[t] = sumV > 0 ? sumMFV / sumV : 0
     }
     return result
@@ -2061,7 +2061,7 @@ export function calcMFIData(data: KLineData[], period: number): (number | undefi
     pmfArr[0] = 0
     nmfArr[0] = 0
     for (let i = 1; i < n; i++) {
-        const rmf = tp[i]! * data[i]!.volume
+        const rmf = tp[i]! * (data[i]!.volume ?? 0)
         if (tp[i]! > tp[i - 1]!) {
             pmfArr[i] = rmf
             nmfArr[i] = 0
@@ -2525,10 +2525,10 @@ export function calcVolumeProfileData(
         const barRange = bar.high - bar.low
         if (barRange <= 0) {
             const binIdx = Math.min(bins - 1, Math.max(0, Math.floor((bar.close - priceMin) / binWidth)))
-            binVolumes[binIdx]! += bar.volume
+            binVolumes[binIdx]! += bar.volume ?? 0
             continue
         }
-        const volPerPrice = bar.volume / barRange
+        const volPerPrice = (bar.volume ?? 0) / barRange
         const startBin = Math.max(0, Math.floor((bar.low - priceMin) / binWidth))
         const endBin = Math.min(bins - 1, Math.floor((bar.high - priceMin) / binWidth))
         for (let b = startBin; b <= endBin; b++) {

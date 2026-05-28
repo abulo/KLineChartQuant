@@ -77,7 +77,7 @@ export class SubPaneManager {
         const existingRenderer = chart.getRenderer(rendererName)
         if (!existingRenderer) {
             const renderer = createSubIndicatorRenderer({ indicatorId, paneId })
-            chart.useRenderer(renderer, params as Record<string, number | boolean>)
+            chart.useRenderer(renderer, params as Record<string, number | boolean | string>)
         }
 
         this.mountScaleRenderer(chart, paneId, indicatorId, scaleRendererName)
@@ -122,7 +122,7 @@ export class SubPaneManager {
         const newScaleRendererName = `${newIndicatorId.toLowerCase()}_scale_${paneId}`
 
         const renderer = createSubIndicatorRenderer({ indicatorId: newIndicatorId, paneId })
-        chart.useRenderer(renderer, newParams as Record<string, number | boolean>)
+        chart.useRenderer(renderer, newParams as Record<string, number | boolean | string>)
 
         this.mountScaleRenderer(chart, paneId, newIndicatorId, newScaleRendererName)
 
