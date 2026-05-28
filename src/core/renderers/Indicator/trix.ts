@@ -17,8 +17,8 @@ export function createTRIXRendererPlugin(options: TRIXRendererOptions = {}): Ren
 
     return {
         name: `trix_${paneId}`,
-        version: '1.0.0',
-        description: 'TRIX 三重指数平滑振荡器渲染器',
+        version: '1.1.0',
+        description: 'TRIX 三重指数平滑振荡器渲染器（WebGL + Canvas2D 回退）',
         debugName: 'TRIX',
         paneId,
         priority: RENDERER_PRIORITY.MAIN,
@@ -27,7 +27,7 @@ export function createTRIXRendererPlugin(options: TRIXRendererOptions = {}): Ren
         getDeclaredNamespaces() { return [STATE_KEY] },
 
         draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, kLineCenters } = context
+            const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
             const state = pluginHost?.getSharedState<TRIXRenderState>(STATE_KEY)
             if (!state || state.visibleMin > state.visibleMax) return
             const { showTRIX, showSignal } = state.params
@@ -36,14 +36,17 @@ export function createTRIXRendererPlugin(options: TRIXRendererOptions = {}): Ren
             const { valueMin, valueMax, series, signalSeries } = state
             const displayRange = pane.yAxis.getDisplayRange({ minPrice: valueMin, maxPrice: valueMax })
             const displayMin = displayRange.minPrice
-            const displayValueRange = (displayRange.maxPrice - displayMin) || 1
-            const toY = (v: number) => pane.height - (v - displayMin) / displayValueRange * pane.height
-
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
+            const displayMax = displayRange.maxPrice
+            const displayValueRange = displayMax - displayMin || 1
+            const paneH = pane.height
+            const invRange = paneH / displayValueRange
+            const rangeStart = range.start
+            const toY = (v: number) => paneH - (v - displayMin) * invRange
 
             // Zero line
             const zeroY = toY(0)
+            ctx.save()
+            ctx.translate(-scrollLeft, 0)
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
             ctx.lineWidth = 1
             ctx.setLineDash([4, 4])
@@ -52,14 +55,13 @@ export function createTRIXRendererPlugin(options: TRIXRendererOptions = {}): Ren
             ctx.lineTo(scrollLeft + context.paneWidth, zeroY)
             ctx.stroke()
             ctx.setLineDash([])
-            ctx.lineJoin = 'round'
-            ctx.lineCap = 'round'
+            ctx.restore()
 
             const trixPts: Point[] = []
             const sigPts: Point[] = []
             const drawEnd = Math.min(range.end, series.length)
             for (let i = range.start; i < drawEnd; i++) {
-                const centerX = kLineCenters[i - range.start]
+                const centerX = kLineCenters[i - rangeStart]
                 if (centerX === undefined) continue
                 if (showTRIX) {
                     const v = series[i]
@@ -71,6 +73,29 @@ export function createTRIXRendererPlugin(options: TRIXRendererOptions = {}): Ren
                 }
             }
 
+            if (trixPts.length < 2 && sigPts.length < 2) return
+
+            const lines: Array<{ points: Point[]; width: number; color: string }> = []
+            if (trixPts.length >= 2) lines.push({ points: trixPts, width: 1, color: TRIX_COLOR })
+            if (sigPts.length >= 2) lines.push({ points: sigPts, width: 1, color: SIGNAL_COLOR })
+
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGL = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                const allOk = lines.length > 0 && lineWebGLSurface.drawLineStrips(lines, scrollLeft)
+                if (allOk) {
+                    usedWebGL = true
+                    lineWebGLSurface.compositeTo(ctx, { imageSmoothingEnabled: false })
+                }
+            }
+
+            if (usedWebGL) return
+
+            ctx.save()
+            ctx.translate(-scrollLeft, 0)
+            ctx.lineWidth = 1
+            ctx.lineJoin = 'round'
+            ctx.lineCap = 'round'
             drawLine(ctx, trixPts, TRIX_COLOR)
             drawLine(ctx, sigPts, SIGNAL_COLOR)
             ctx.restore()

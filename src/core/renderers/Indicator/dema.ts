@@ -5,6 +5,8 @@ import { createDEMAStateKey } from '@/core/indicators/demaState'
 
 const DEMA_COLOR = '#6366f1'
 
+type Point = { x: number; y: number }
+
 export interface DEMARendererOptions {
     paneId?: string
 }
@@ -16,8 +18,8 @@ export function createDEMARendererPlugin(options: DEMARendererOptions = {}): Ren
 
     return {
         name: `dema_${paneId}`,
-        version: '1.0.0',
-        description: 'DEMA 双重指数移动均线渲染器',
+        version: '1.1.0',
+        description: 'DEMA 双重指数移动均线渲染器（WebGL + Canvas2D 回退）',
         debugName: 'DEMA',
         paneId,
         priority: RENDERER_PRIORITY.MAIN,
@@ -31,12 +33,40 @@ export function createDEMARendererPlugin(options: DEMARendererOptions = {}): Ren
         },
 
         draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, kLineCenters } = context
+            const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
 
             const state = pluginHost?.getSharedState<DEMARenderState>(STATE_KEY)
             if (!state || !state.params.showDEMA || state.visibleMin > state.visibleMax) return
 
             const { series } = state
+            const drawEnd = Math.min(range.end, series.length)
+            const rangeStart = range.start
+
+            const points: Point[] = []
+            for (let i = range.start; i < drawEnd; i++) {
+                const value = series[i]
+                if (value === undefined) continue
+                const centerX = kLineCenters[i - rangeStart]
+                if (centerX === undefined) continue
+                points.push({ x: centerX, y: pane.yAxis.priceToY(value) })
+            }
+
+            if (points.length < 2) return
+
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGL = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                const allOk = lineWebGLSurface.drawLineStrips(
+                    [{ points, width: 1, color: DEMA_COLOR }],
+                    scrollLeft,
+                )
+                if (allOk) {
+                    usedWebGL = true
+                    lineWebGLSurface.compositeTo(ctx, { imageSmoothingEnabled: false })
+                }
+            }
+
+            if (usedWebGL) return
 
             ctx.save()
             ctx.translate(-scrollLeft, 0)
@@ -44,24 +74,12 @@ export function createDEMARendererPlugin(options: DEMARendererOptions = {}): Ren
             ctx.lineWidth = 1
             ctx.lineJoin = 'round'
             ctx.lineCap = 'round'
-
-            const drawEnd = Math.min(range.end, series.length)
-            let started = false
-            for (let i = range.start; i < drawEnd; i++) {
-                const value = series[i]
-                if (value === undefined) continue
-                const centerX = kLineCenters[i - range.start]
-                if (centerX === undefined) continue
-                const y = pane.yAxis.priceToY(value)
-                if (!started) {
-                    ctx.beginPath()
-                    ctx.moveTo(centerX, y)
-                    started = true
-                } else {
-                    ctx.lineTo(centerX, y)
-                }
+            ctx.beginPath()
+            ctx.moveTo(points[0]!.x, points[0]!.y)
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i]!.x, points[i]!.y)
             }
-            if (started) ctx.stroke()
+            ctx.stroke()
             ctx.restore()
         },
 

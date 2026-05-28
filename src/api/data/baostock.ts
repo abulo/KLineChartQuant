@@ -211,7 +211,6 @@ export async function getKlineDataBaoStock(
     (window.location.hostname.includes('github.io')
       || window.location.hostname.includes('localhost')
       || window.location.hostname.includes('127.0.0.1'))) {
-    console.log("aaa" + await loadMockKLineData())
     return await loadMockKLineData()
   }
 

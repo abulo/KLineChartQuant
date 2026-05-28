@@ -24,8 +24,8 @@ export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = 
 
     return {
         name: `ichimoku_${paneId}`,
-        version: '1.0.0',
-        description: '一目均衡表渲染器（转换线/基准线/先行带 A·B/迟行线 + 云图填充）',
+        version: '1.1.0',
+        description: '一目均衡表渲染器（WebGL 线 + Canvas2D 云图）',
         debugName: 'Ichimoku',
         paneId,
         priority: RENDERER_PRIORITY.MAIN,
@@ -34,26 +34,26 @@ export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = 
         getDeclaredNamespaces() { return [STATE_KEY] },
 
         draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, kLineCenters } = context
+            const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
             const state = pluginHost?.getSharedState<IchimokuRenderState>(STATE_KEY)
             if (!state || state.visibleMin > state.visibleMax) return
             const { params, series } = state
 
             const toY = (price: number) => pane.yAxis.priceToY(price)
+            const rangeStart = range.start
 
             const tenkanPts: Point[] = []
             const kijunPts: Point[] = []
             const spanAPts: Point[] = []
             const spanBPts: Point[] = []
             const chikouPts: Point[] = []
-            // For cloud fill: collect aligned (x, spanA, spanB) tuples
             const cloudSegs: { x: number; ya: number; yb: number; bull: boolean }[] = []
 
             const drawEnd = Math.min(range.end, series.length)
             for (let i = range.start; i < drawEnd; i++) {
                 const p = series[i]
                 if (!p) continue
-                const centerX = kLineCenters[i - range.start]
+                const centerX = kLineCenters[i - rangeStart]
                 if (centerX === undefined) continue
                 if (params.showTenkan && p.tenkan !== undefined) tenkanPts.push({ x: centerX, y: toY(p.tenkan) })
                 if (params.showKijun && p.kijun !== undefined) kijunPts.push({ x: centerX, y: toY(p.kijun) })
@@ -65,14 +65,36 @@ export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = 
                 }
             }
 
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
-
-            // Cloud first (background)
+            // Cloud fill (Canvas2D only)
             if (params.showCloud && cloudSegs.length >= 2) {
+                ctx.save()
+                ctx.translate(-scrollLeft, 0)
                 fillCloud(ctx, cloudSegs)
+                ctx.restore()
             }
 
+            // Lines (WebGL + Canvas2D fallback)
+            const lines: Array<{ points: Point[]; width: number; color: string }> = []
+            if (tenkanPts.length >= 2) lines.push({ points: tenkanPts, width: 1, color: TENKAN_COLOR })
+            if (kijunPts.length >= 2) lines.push({ points: kijunPts, width: 1, color: KIJUN_COLOR })
+            if (spanAPts.length >= 2) lines.push({ points: spanAPts, width: 1, color: SPAN_A_COLOR })
+            if (spanBPts.length >= 2) lines.push({ points: spanBPts, width: 1, color: SPAN_B_COLOR })
+            if (chikouPts.length >= 2) lines.push({ points: chikouPts, width: 1, color: CHIKOU_COLOR })
+
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGL = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                const allOk = lines.length > 0 && lineWebGLSurface.drawLineStrips(lines, scrollLeft)
+                if (allOk) {
+                    usedWebGL = true
+                    lineWebGLSurface.compositeTo(ctx, { imageSmoothingEnabled: false })
+                }
+            }
+
+            if (usedWebGL) return
+
+            ctx.save()
+            ctx.translate(-scrollLeft, 0)
             ctx.lineWidth = 1
             ctx.lineJoin = 'round'
             ctx.lineCap = 'round'
@@ -105,7 +127,6 @@ function fillCloud(
     ctx: CanvasRenderingContext2D,
     segs: { x: number; ya: number; yb: number; bull: boolean }[],
 ): void {
-    // 简化策略：按相邻 bar 之间的状态绘制小四边形。状态翻转处分段。
     let i = 0
     while (i < segs.length - 1) {
         const startBull = segs[i]!.bull

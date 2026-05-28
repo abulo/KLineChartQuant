@@ -21,27 +21,28 @@ export function createFibRendererPlugin(options: { paneId?: string } = {}): Rend
     let pluginHost: PluginHost | null = null
     return {
         name: `fib_${paneId}`,
-        version: '1.0.0',
-        description: '斐波那契回撤线渲染器（滚动窗口锚点）',
+        version: '1.1.0',
+        description: '斐波那契回撤线渲染器（WebGL + Canvas2D 回退）',
         debugName: 'Fib',
         paneId,
         priority: RENDERER_PRIORITY.MAIN,
         onInstall(host) { pluginHost = host },
         getDeclaredNamespaces() { return [STATE_KEY] },
         draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, kLineCenters } = context
+            const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
             const state = pluginHost?.getSharedState<FibRenderState>(STATE_KEY)
             if (!state || !state.params.showLevels || state.visibleMin > state.visibleMax) return
 
             const { series } = state
             const toY = (v: number) => pane.yAxis.priceToY(v)
+            const rangeStart = range.start
 
             const collectors: Record<string, Point[]> = { high: [], low: [], l236: [], l382: [], l500: [], l618: [], l786: [] }
             const drawEnd = Math.min(range.end, series.length)
             for (let i = range.start; i < drawEnd; i++) {
                 const pt = series[i]
                 if (!pt) continue
-                const centerX = kLineCenters[i - range.start]
+                const centerX = kLineCenters[i - rangeStart]
                 if (centerX === undefined) continue
                 collectors.high!.push({ x: centerX, y: toY(pt.high) })
                 collectors.low!.push({ x: centerX, y: toY(pt.low) })
@@ -51,6 +52,25 @@ export function createFibRendererPlugin(options: { paneId?: string } = {}): Rend
                 collectors.l618!.push({ x: centerX, y: toY(pt.level618) })
                 collectors.l786!.push({ x: centerX, y: toY(pt.level786) })
             }
+
+            const lines: Array<{ points: Point[]; width: number; color: string }> = []
+            for (const [key, pts] of Object.entries(collectors)) {
+                if (pts.length >= 2) {
+                    lines.push({ points: pts, width: 1, color: FIB_COLORS[key as keyof typeof FIB_COLORS] })
+                }
+            }
+
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGL = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                const allOk = lines.length > 0 && lineWebGLSurface.drawLineStrips(lines, scrollLeft)
+                if (allOk) {
+                    usedWebGL = true
+                    lineWebGLSurface.compositeTo(ctx, { imageSmoothingEnabled: false })
+                }
+            }
+
+            if (usedWebGL) return
 
             ctx.save()
             ctx.translate(-scrollLeft, 0)

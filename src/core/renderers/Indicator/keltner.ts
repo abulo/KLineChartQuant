@@ -18,8 +18,8 @@ export function createKeltnerRendererPlugin(options: KeltnerRendererOptions = {}
 
     return {
         name: `keltner_${paneId}`,
-        version: '1.0.0',
-        description: 'Keltner Channel 渲染器（EMA ± k·ATR）',
+        version: '1.1.0',
+        description: 'Keltner Channel 渲染器（WebGL + Canvas2D 回退）',
         debugName: 'Keltner',
         paneId,
         priority: RENDERER_PRIORITY.MAIN,
@@ -28,15 +28,16 @@ export function createKeltnerRendererPlugin(options: KeltnerRendererOptions = {}
         getDeclaredNamespaces() { return [STATE_KEY] },
 
         draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, kLineCenters } = context
+            const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
             const state = pluginHost?.getSharedState<KeltnerRenderState>(STATE_KEY)
             if (!state || state.visibleMin > state.visibleMax) return
             const { showUpper, showMiddle, showLower } = state.params
             if (!showUpper && !showMiddle && !showLower) return
 
             const { series } = state
-
             const toY = (v: number) => pane.yAxis.priceToY(v)
+            const rangeStart = range.start
+
             const upperPts: Point[] = []
             const middlePts: Point[] = []
             const lowerPts: Point[] = []
@@ -44,12 +45,29 @@ export function createKeltnerRendererPlugin(options: KeltnerRendererOptions = {}
             for (let i = range.start; i < drawEnd; i++) {
                 const point = series[i]
                 if (!point) continue
-                const centerX = kLineCenters[i - range.start]
+                const centerX = kLineCenters[i - rangeStart]
                 if (centerX === undefined) continue
                 if (showUpper) upperPts.push({ x: centerX, y: toY(point.upper) })
                 if (showMiddle) middlePts.push({ x: centerX, y: toY(point.middle) })
                 if (showLower) lowerPts.push({ x: centerX, y: toY(point.lower) })
             }
+
+            const lines: Array<{ points: Point[]; width: number; color: string }> = []
+            if (upperPts.length >= 2) lines.push({ points: upperPts, width: 1, color: KELTNER_UPPER_COLOR })
+            if (middlePts.length >= 2) lines.push({ points: middlePts, width: 1, color: KELTNER_MIDDLE_COLOR })
+            if (lowerPts.length >= 2) lines.push({ points: lowerPts, width: 1, color: KELTNER_LOWER_COLOR })
+
+            const enableWebGL = context.settings?.enableWebGLRendering !== false
+            let usedWebGL = false
+            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+                const allOk = lines.length > 0 && lineWebGLSurface.drawLineStrips(lines, scrollLeft)
+                if (allOk) {
+                    usedWebGL = true
+                    lineWebGLSurface.compositeTo(ctx, { imageSmoothingEnabled: false })
+                }
+            }
+
+            if (usedWebGL) return
 
             ctx.save()
             ctx.translate(-scrollLeft, 0)
