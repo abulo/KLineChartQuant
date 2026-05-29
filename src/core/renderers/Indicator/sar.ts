@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { SARRenderState } from '@/core/indicators/sarState'
 import { createSARStateKey } from '@/core/indicators/sarState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const SAR_UP_COLOR = '#22c55e'
 const SAR_DOWN_COLOR = '#ef4444'
@@ -12,10 +15,27 @@ export interface SARRendererOptions {
     paneId?: string
 }
 
+function getSARStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[SARRenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('sar')
+    if (!meta) {
+        console.warn('[SARRenderer] Indicator metadata for \'sar\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createSARRendererPlugin(options: SARRendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createSARStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getSARStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `sar_${paneId}`,
@@ -30,13 +50,16 @@ export function createSARRendererPlugin(options: SARRendererOptions = {}): Rende
         },
 
         getDeclaredNamespaces() {
-            return [STATE_KEY]
+            const key = resolveKey()
+            return key ? [key] : []
         },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters } = context
 
-            const state = pluginHost?.getSharedState<SARRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<SARRenderState>(stateKey)
             if (!state || !state.params.showSAR || state.visibleMin > state.visibleMax) return
 
             const { series } = state
@@ -61,7 +84,9 @@ export function createSARRendererPlugin(options: SARRendererOptions = {}): Rende
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<SARRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<SARRenderState>(stateKey)
             return state?.params ?? {}
         },
 
@@ -69,4 +94,15 @@ export function createSARRendererPlugin(options: SARRendererOptions = {}): Rende
             // no-op
         },
     }
+}
+
+@Indicator({
+    name: 'sar',
+    displayName: 'SAR',
+    category: 'main',
+    stateKey: createSARStateKey,
+    defaultPaneId: 'main',
+})
+class SARDefinition {
+    static rendererFactory = createSARRendererPlugin
 }

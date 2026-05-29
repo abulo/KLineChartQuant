@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { WMARenderState } from '@/core/indicators/wmaState'
 import { createWMAStateKey } from '@/core/indicators/wmaState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const WMA_COLOR = '#10b981'
 
@@ -11,10 +14,27 @@ export interface WMARendererOptions {
     paneId?: string
 }
 
+function getWMAStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[WMARenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('wma')
+    if (!meta) {
+        console.warn('[WMARenderer] Indicator metadata for \'wma\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createWMARendererPlugin(options: WMARendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createWMAStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getWMAStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `wma_${paneId}`,
@@ -29,13 +49,16 @@ export function createWMARendererPlugin(options: WMARendererOptions = {}): Rende
         },
 
         getDeclaredNamespaces() {
-            return [STATE_KEY]
+            const key = resolveKey()
+            return key ? [key] : []
         },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
 
-            const state = pluginHost?.getSharedState<WMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<WMARenderState>(stateKey)
             if (!state || !state.params.showWMA || state.visibleMin > state.visibleMax) return
 
             const { series } = state
@@ -84,7 +107,9 @@ export function createWMARendererPlugin(options: WMARendererOptions = {}): Rende
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<WMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<WMARenderState>(stateKey)
             return state?.params ?? {}
         },
 
@@ -92,4 +117,15 @@ export function createWMARendererPlugin(options: WMARendererOptions = {}): Rende
             // no-op
         },
     }
+}
+
+@Indicator({
+    name: 'wma',
+    displayName: 'WMA',
+    category: 'main',
+    stateKey: createWMAStateKey,
+    defaultPaneId: 'main',
+})
+class WMADefinition {
+    static rendererFactory = createWMARendererPlugin
 }

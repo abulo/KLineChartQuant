@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { KAMARenderState } from '@/core/indicators/kamaState'
 import { createKAMAStateKey } from '@/core/indicators/kamaState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const KAMA_COLOR = '#0ea5e9'
 
@@ -11,10 +14,27 @@ export interface KAMARendererOptions {
     paneId?: string
 }
 
+function getKAMAStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[KAMARenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('kama')
+    if (!meta) {
+        console.warn('[KAMARenderer] Indicator metadata for \'kama\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createKAMARendererPlugin(options: KAMARendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createKAMAStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getKAMAStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `kama_${paneId}`,
@@ -29,13 +49,16 @@ export function createKAMARendererPlugin(options: KAMARendererOptions = {}): Ren
         },
 
         getDeclaredNamespaces() {
-            return [STATE_KEY]
+            const key = resolveKey()
+            return key ? [key] : []
         },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
 
-            const state = pluginHost?.getSharedState<KAMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<KAMARenderState>(stateKey)
             if (!state || !state.params.showKAMA || state.visibleMin > state.visibleMax) return
 
             const { series } = state
@@ -84,7 +107,9 @@ export function createKAMARendererPlugin(options: KAMARendererOptions = {}): Ren
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<KAMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<KAMARenderState>(stateKey)
             return state?.params ?? {}
         },
 
@@ -92,4 +117,15 @@ export function createKAMARendererPlugin(options: KAMARendererOptions = {}): Ren
             // no-op
         },
     }
+}
+
+@Indicator({
+    name: 'kama',
+    displayName: 'KAMA',
+    category: 'main',
+    stateKey: createKAMAStateKey,
+    defaultPaneId: 'main',
+})
+class KAMADefinition {
+    static rendererFactory = createKAMARendererPlugin
 }

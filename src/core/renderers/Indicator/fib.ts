@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { FibRenderState } from '@/core/indicators/fibState'
 import { createFibStateKey } from '@/core/indicators/fibState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const FIB_COLORS = {
     high: '#94a3b8',
@@ -15,10 +18,28 @@ const FIB_COLORS = {
 
 type Point = { x: number; y: number }
 
+function getFibStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[FibRenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('fib')
+    if (!meta) {
+        console.warn('[FibRenderer] Indicator metadata for \'fib\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createFibRendererPlugin(options: { paneId?: string } = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createFibStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getFibStateKey(pluginHost, paneId)
+    }
+
     return {
         name: `fib_${paneId}`,
         version: '1.1.0',
@@ -27,10 +48,15 @@ export function createFibRendererPlugin(options: { paneId?: string } = {}): Rend
         paneId,
         priority: RENDERER_PRIORITY.MAIN,
         onInstall(host) { pluginHost = host },
-        getDeclaredNamespaces() { return [STATE_KEY] },
+        getDeclaredNamespaces() {
+            const key = resolveKey()
+            return key ? [key] : []
+        },
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
-            const state = pluginHost?.getSharedState<FibRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<FibRenderState>(stateKey)
             if (!state || !state.params.showLevels || state.visibleMin > state.visibleMax) return
 
             const { series } = state
@@ -80,7 +106,11 @@ export function createFibRendererPlugin(options: { paneId?: string } = {}): Rend
             }
             ctx.restore()
         },
-        getConfig() { return pluginHost?.getSharedState<FibRenderState>(STATE_KEY)?.params ?? {} },
+        getConfig() {
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            return pluginHost?.getSharedState<FibRenderState>(stateKey)?.params ?? {}
+        },
         setConfig() {},
     }
 }
@@ -92,4 +122,15 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     ctx.moveTo(pts[0]!.x, pts[0]!.y)
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]!.x, pts[i]!.y)
     ctx.stroke()
+}
+
+@Indicator({
+    name: 'fib',
+    displayName: 'Fib',
+    category: 'main',
+    stateKey: createFibStateKey,
+    defaultPaneId: 'main',
+})
+class FibDefinition {
+    static rendererFactory = createFibRendererPlugin
 }

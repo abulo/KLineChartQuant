@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { TEMARenderState } from '@/core/indicators/temaState'
 import { createTEMAStateKey } from '@/core/indicators/temaState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const TEMA_COLOR = '#d946ef'
 
@@ -11,10 +14,27 @@ export interface TEMARendererOptions {
     paneId?: string
 }
 
+function getTEMAStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[TEMARenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('tema')
+    if (!meta) {
+        console.warn('[TEMARenderer] Indicator metadata for \'tema\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createTEMARendererPlugin(options: TEMARendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createTEMAStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getTEMAStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `tema_${paneId}`,
@@ -29,13 +49,16 @@ export function createTEMARendererPlugin(options: TEMARendererOptions = {}): Ren
         },
 
         getDeclaredNamespaces() {
-            return [STATE_KEY]
+            const key = resolveKey()
+            return key ? [key] : []
         },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
 
-            const state = pluginHost?.getSharedState<TEMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<TEMARenderState>(stateKey)
             if (!state || !state.params.showTEMA || state.visibleMin > state.visibleMax) return
 
             const { series } = state
@@ -84,7 +107,9 @@ export function createTEMARendererPlugin(options: TEMARendererOptions = {}): Ren
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<TEMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<TEMARenderState>(stateKey)
             return state?.params ?? {}
         },
 
@@ -92,4 +117,15 @@ export function createTEMARendererPlugin(options: TEMARendererOptions = {}): Ren
             // no-op
         },
     }
+}
+
+@Indicator({
+    name: 'tema',
+    displayName: 'TEMA',
+    category: 'main',
+    stateKey: createTEMAStateKey,
+    defaultPaneId: 'main',
+})
+class TEMADefinition {
+    static rendererFactory = createTEMARendererPlugin
 }

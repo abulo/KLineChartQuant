@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { IchimokuRenderState } from '@/core/indicators/ichimokuState'
 import { createIchimokuStateKey } from '@/core/indicators/ichimokuState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const TENKAN_COLOR = '#dc2626'
 const KIJUN_COLOR = '#2563eb'
@@ -17,10 +20,27 @@ export interface IchimokuRendererOptions {
     paneId?: string
 }
 
+function getIchimokuStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[IchimokuRenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('ichimoku')
+    if (!meta) {
+        console.warn('[IchimokuRenderer] Indicator metadata for \'ichimoku\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createIchimokuStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getIchimokuStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `ichimoku_${paneId}`,
@@ -31,11 +51,13 @@ export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = 
         priority: RENDERER_PRIORITY.MAIN,
 
         onInstall(host: PluginHost) { pluginHost = host },
-        getDeclaredNamespaces() { return [STATE_KEY] },
+        getDeclaredNamespaces() { const key = resolveKey(); return key ? [key] : [] },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
-            const state = pluginHost?.getSharedState<IchimokuRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<IchimokuRenderState>(stateKey)
             if (!state || state.visibleMin > state.visibleMax) return
             const { params, series } = state
 
@@ -107,7 +129,9 @@ export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = 
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<IchimokuRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<IchimokuRenderState>(stateKey)
             return state?.params ?? {}
         },
         setConfig() {},
@@ -139,4 +163,15 @@ function fillCloud(
         ctx.closePath()
         ctx.fill()
     }
+}
+
+@Indicator({
+    name: 'ichimoku',
+    displayName: 'Ichimoku',
+    category: 'main',
+    stateKey: createIchimokuStateKey,
+    defaultPaneId: 'main',
+})
+class IchimokuDefinition {
+    static rendererFactory = createIchimokuRendererPlugin
 }

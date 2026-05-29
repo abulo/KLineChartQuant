@@ -3,7 +3,8 @@ import { RENDERER_PRIORITY } from '@/plugin'
 import type { KLineData } from '@/types/price'
 import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 import { ENE_COLORS } from '@/core/theme/colors'
-import type { ENERenderState } from '@/core/indicators/eneState'
+import { ENE_STATE_KEY, type ENERenderState } from '@/core/indicators/eneState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
 import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
@@ -251,4 +252,15 @@ export function createENERendererPlugin(): RendererPluginWithHost {
             // 外部控制器应调用 chart.getIndicatorScheduler().updateENEConfig()
         },
     }
+}
+
+@Indicator({
+    name: 'ene',
+    displayName: 'ENE',
+    category: 'main',
+    stateKey: ENE_STATE_KEY,
+    defaultPaneId: 'main',
+})
+class ENEDefinition {
+    static rendererFactory = createENERendererPlugin
 }

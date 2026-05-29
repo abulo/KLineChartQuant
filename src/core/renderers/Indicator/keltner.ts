@@ -2,6 +2,9 @@ import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { KeltnerRenderState } from '@/core/indicators/keltnerState'
 import { createKeltnerStateKey } from '@/core/indicators/keltnerState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const KELTNER_UPPER_COLOR = '#7c3aed'
 const KELTNER_MIDDLE_COLOR = '#f59e0b'
@@ -11,10 +14,27 @@ type Point = { x: number; y: number }
 
 export interface KeltnerRendererOptions { paneId?: string }
 
+function getKeltnerStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[KeltnerRenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('keltner')
+    if (!meta) {
+        console.warn(`[KeltnerRenderer] Indicator metadata for 'keltner' not found, skip rendering`)
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createKeltnerRendererPlugin(options: KeltnerRendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createKeltnerStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getKeltnerStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `keltner_${paneId}`,
@@ -25,11 +45,13 @@ export function createKeltnerRendererPlugin(options: KeltnerRendererOptions = {}
         priority: RENDERER_PRIORITY.MAIN,
 
         onInstall(host: PluginHost) { pluginHost = host },
-        getDeclaredNamespaces() { return [STATE_KEY] },
+        getDeclaredNamespaces() { const key = resolveKey(); return key ? [key] : [] },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
-            const state = pluginHost?.getSharedState<KeltnerRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<KeltnerRenderState>(stateKey)
             if (!state || state.visibleMin > state.visibleMax) return
             const { showUpper, showMiddle, showLower } = state.params
             if (!showUpper && !showMiddle && !showLower) return
@@ -81,7 +103,9 @@ export function createKeltnerRendererPlugin(options: KeltnerRendererOptions = {}
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<KeltnerRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<KeltnerRenderState>(stateKey)
             return state?.params ?? {}
         },
         setConfig() {},
@@ -95,4 +119,15 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     ctx.moveTo(pts[0]!.x, pts[0]!.y)
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]!.x, pts[i]!.y)
     ctx.stroke()
+}
+
+@Indicator({
+    name: 'keltner',
+    displayName: 'Keltner',
+    category: 'main',
+    stateKey: createKeltnerStateKey,
+    defaultPaneId: 'main',
+})
+class KeltnerDefinition {
+    static rendererFactory = createKeltnerRendererPlugin
 }

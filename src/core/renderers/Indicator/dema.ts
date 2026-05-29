@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { DEMARenderState } from '@/core/indicators/demaState'
 import { createDEMAStateKey } from '@/core/indicators/demaState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const DEMA_COLOR = '#6366f1'
 
@@ -11,10 +14,27 @@ export interface DEMARendererOptions {
     paneId?: string
 }
 
+function getDEMAStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[DEMARenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('dema')
+    if (!meta) {
+        console.warn('[DEMARenderer] Indicator metadata for \'dema\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createDEMARendererPlugin(options: DEMARendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createDEMAStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getDEMAStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `dema_${paneId}`,
@@ -29,13 +49,16 @@ export function createDEMARendererPlugin(options: DEMARendererOptions = {}): Ren
         },
 
         getDeclaredNamespaces() {
-            return [STATE_KEY]
+            const key = resolveKey()
+            return key ? [key] : []
         },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
 
-            const state = pluginHost?.getSharedState<DEMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<DEMARenderState>(stateKey)
             if (!state || !state.params.showDEMA || state.visibleMin > state.visibleMax) return
 
             const { series } = state
@@ -84,7 +107,9 @@ export function createDEMARendererPlugin(options: DEMARendererOptions = {}): Ren
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<DEMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<DEMARenderState>(stateKey)
             return state?.params ?? {}
         },
 
@@ -92,4 +117,15 @@ export function createDEMARendererPlugin(options: DEMARendererOptions = {}): Ren
             // no-op
         },
     }
+}
+
+@Indicator({
+    name: 'dema',
+    displayName: 'DEMA',
+    category: 'main',
+    stateKey: createDEMAStateKey,
+    defaultPaneId: 'main',
+})
+class DEMADefinition {
+    static rendererFactory = createDEMARendererPlugin
 }

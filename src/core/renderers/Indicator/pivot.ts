@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { PivotRenderState } from '@/core/indicators/pivotState'
 import { createPivotStateKey } from '@/core/indicators/pivotState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const PP_COLOR = '#94a3b8'
 const R_COLOR = '#dc2626'
@@ -9,10 +12,28 @@ const S_COLOR = '#16a34a'
 
 type Point = { x: number; y: number }
 
+function getPivotStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[PivotRenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('pivot')
+    if (!meta) {
+        console.warn('[PivotRenderer] Indicator metadata for \'pivot\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createPivotRendererPlugin(options: { paneId?: string } = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createPivotStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getPivotStateKey(pluginHost, paneId)
+    }
+
     return {
         name: `pivot_${paneId}`,
         version: '1.0.0',
@@ -21,10 +42,15 @@ export function createPivotRendererPlugin(options: { paneId?: string } = {}): Re
         paneId,
         priority: RENDERER_PRIORITY.MAIN,
         onInstall(host) { pluginHost = host },
-        getDeclaredNamespaces() { return [STATE_KEY] },
+        getDeclaredNamespaces() {
+            const key = resolveKey()
+            return key ? [key] : []
+        },
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters } = context
-            const state = pluginHost?.getSharedState<PivotRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<PivotRenderState>(stateKey)
             if (!state || state.visibleMin > state.visibleMax) return
             const p = state.params
             if (!(p.showPP || p.showR1 || p.showR2 || p.showR3 || p.showS1 || p.showS2 || p.showS3)) return
@@ -66,7 +92,11 @@ export function createPivotRendererPlugin(options: { paneId?: string } = {}): Re
             drawStep(ctx, s3Pts, S_COLOR)
             ctx.restore()
         },
-        getConfig() { return pluginHost?.getSharedState<PivotRenderState>(STATE_KEY)?.params ?? {} },
+        getConfig() {
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            return pluginHost?.getSharedState<PivotRenderState>(stateKey)?.params ?? {}
+        },
         setConfig() {},
     }
 }
@@ -82,4 +112,15 @@ function drawStep(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
         ctx.lineTo(pts[i]!.x, pts[i]!.y)
     }
     ctx.stroke()
+}
+
+@Indicator({
+    name: 'pivot',
+    displayName: 'Pivot',
+    category: 'main',
+    stateKey: createPivotStateKey,
+    defaultPaneId: 'main',
+})
+class PivotDefinition {
+    static rendererFactory = createPivotRendererPlugin
 }

@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { DonchianRenderState } from '@/core/indicators/donchianState'
 import { createDonchianStateKey } from '@/core/indicators/donchianState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const DONCHIAN_UPPER_COLOR = '#0891b2'
 const DONCHIAN_MIDDLE_COLOR = '#94a3b8'
@@ -11,10 +14,27 @@ type Point = { x: number; y: number }
 
 export interface DonchianRendererOptions { paneId?: string }
 
+function getDonchianStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[DonchianRenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('donchian')
+    if (!meta) {
+        console.warn('[DonchianRenderer] Indicator metadata for \'donchian\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createDonchianRendererPlugin(options: DonchianRendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createDonchianStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getDonchianStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `donchian_${paneId}`,
@@ -25,11 +45,13 @@ export function createDonchianRendererPlugin(options: DonchianRendererOptions = 
         priority: RENDERER_PRIORITY.MAIN,
 
         onInstall(host: PluginHost) { pluginHost = host },
-        getDeclaredNamespaces() { return [STATE_KEY] },
+        getDeclaredNamespaces() { const key = resolveKey(); return key ? [key] : [] },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
-            const state = pluginHost?.getSharedState<DonchianRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<DonchianRenderState>(stateKey)
             if (!state || state.visibleMin > state.visibleMax) return
             const { showUpper, showMiddle, showLower } = state.params
             if (!showUpper && !showMiddle && !showLower) return
@@ -81,7 +103,9 @@ export function createDonchianRendererPlugin(options: DonchianRendererOptions = 
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<DonchianRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<DonchianRenderState>(stateKey)
             return state?.params ?? {}
         },
         setConfig() {},
@@ -95,4 +119,15 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     ctx.moveTo(pts[0]!.x, pts[0]!.y)
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]!.x, pts[i]!.y)
     ctx.stroke()
+}
+
+@Indicator({
+    name: 'donchian',
+    displayName: 'Donchian',
+    category: 'main',
+    stateKey: createDonchianStateKey,
+    defaultPaneId: 'main',
+})
+class DonchianDefinition {
+    static rendererFactory = createDonchianRendererPlugin
 }

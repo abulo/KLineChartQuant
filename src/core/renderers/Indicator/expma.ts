@@ -3,7 +3,8 @@ import { RENDERER_PRIORITY } from '@/plugin'
 import type { KLineData } from '@/types/price'
 import { alignToPhysicalPixelCenter } from '@/core/draw/pixelAlign'
 import { EXPMA_COLORS } from '@/core/theme/colors'
-import type { EXPMARenderState } from '@/core/indicators/expmaState'
+import { EXPMA_STATE_KEY, type EXPMARenderState } from '@/core/indicators/expmaState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
 import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
@@ -176,4 +177,15 @@ export function createEXPMARendererPlugin(): RendererPluginWithHost {
         setConfig(_newConfig: Record<string, unknown>) {
         },
     }
+}
+
+@Indicator({
+    name: 'expma',
+    displayName: 'EXPMA',
+    category: 'main',
+    stateKey: EXPMA_STATE_KEY,
+    defaultPaneId: 'main',
+})
+class EXPMADefinition {
+    static rendererFactory = createEXPMARendererPlugin
 }

@@ -1,17 +1,37 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { ZonesRenderState } from '@/core/indicators/zonesState'
 import { createZonesStateKey } from '@/core/indicators/zonesState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const FVG_BULL_FILL = 'rgba(34, 197, 94, 0.12)'
 const FVG_BEAR_FILL = 'rgba(239, 68, 68, 0.12)'
 const OB_BULL_FILL = 'rgba(34, 197, 94, 0.25)'
 const OB_BEAR_FILL = 'rgba(239, 68, 68, 0.25)'
 
+function getZonesStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[ZonesRenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('zones')
+    if (!meta) {
+        console.warn('[ZonesRenderer] Indicator metadata for \'zones\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createZonesRendererPlugin(options: { paneId?: string } = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createZonesStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getZonesStateKey(pluginHost, paneId)
+    }
     return {
         name: `zones_${paneId}`,
         version: '1.0.0',
@@ -20,10 +40,12 @@ export function createZonesRendererPlugin(options: { paneId?: string } = {}): Re
         paneId,
         priority: RENDERER_PRIORITY.MAIN,
         onInstall(host) { pluginHost = host },
-        getDeclaredNamespaces() { return [STATE_KEY] },
+        getDeclaredNamespaces() { const key = resolveKey(); return key ? [key] : [] },
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters } = context
-            const state = pluginHost?.getSharedState<ZonesRenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<ZonesRenderState>(stateKey)
             if (!state) return
             const { showFVG, showOB, showFilledZones } = state.params
             if (!showFVG && !showOB) return
@@ -60,7 +82,22 @@ export function createZonesRendererPlugin(options: { paneId?: string } = {}): Re
 
             ctx.restore()
         },
-        getConfig() { return pluginHost?.getSharedState<ZonesRenderState>(STATE_KEY)?.params ?? {} },
+        getConfig() {
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            return pluginHost?.getSharedState<ZonesRenderState>(stateKey)?.params ?? {}
+        },
         setConfig() {},
     }
+}
+
+@Indicator({
+    name: 'zones',
+    displayName: 'Zones',
+    category: 'main',
+    stateKey: createZonesStateKey,
+    defaultPaneId: 'main',
+})
+class ZonesDefinition {
+    static rendererFactory = createZonesRendererPlugin
 }

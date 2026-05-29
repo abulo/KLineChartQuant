@@ -1,7 +1,10 @@
-import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
+﻿import type { RendererPluginWithHost, RenderContext, PluginHost } from '@/plugin'
 import { RENDERER_PRIORITY } from '@/plugin'
 import type { HMARenderState } from '@/core/indicators/hmaState'
 import { createHMAStateKey } from '@/core/indicators/hmaState'
+import { Indicator } from '@/core/indicators/indicatorDefinitionRegistry'
+import { resolveStateKey } from '@/core/indicators/indicatorMetadata'
+import type { IndicatorScheduler } from '@/core/indicators/scheduler'
 
 const HMA_COLOR = '#f43f5e'
 
@@ -11,10 +14,27 @@ export interface HMARendererOptions {
     paneId?: string
 }
 
+function getHMAStateKey(host: PluginHost | null, paneId: string): string | null {
+    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+    if (!scheduler) {
+        console.warn('[HMARenderer] Scheduler not available via service locator')
+        return null
+    }
+    const meta = scheduler.getIndicatorMetadata('hma')
+    if (!meta) {
+        console.warn('[HMARenderer] Indicator metadata for \'hma\' not found, skip rendering')
+        return null
+    }
+    return resolveStateKey(meta.stateKey, paneId)
+}
+
 export function createHMARendererPlugin(options: HMARendererOptions = {}): RendererPluginWithHost {
     const { paneId = 'main' } = options
-    const STATE_KEY = createHMAStateKey(paneId)
     let pluginHost: PluginHost | null = null
+
+    function resolveKey(): string | null {
+        return getHMAStateKey(pluginHost, paneId)
+    }
 
     return {
         name: `hma_${paneId}`,
@@ -29,13 +49,16 @@ export function createHMARendererPlugin(options: HMARendererOptions = {}): Rende
         },
 
         getDeclaredNamespaces() {
-            return [STATE_KEY]
+            const key = resolveKey()
+            return key ? [key] : []
         },
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
 
-            const state = pluginHost?.getSharedState<HMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return
+            const state = pluginHost?.getSharedState<HMARenderState>(stateKey)
             if (!state || !state.params.showHMA || state.visibleMin > state.visibleMax) return
 
             const { series } = state
@@ -84,7 +107,9 @@ export function createHMARendererPlugin(options: HMARendererOptions = {}): Rende
         },
 
         getConfig() {
-            const state = pluginHost?.getSharedState<HMARenderState>(STATE_KEY)
+            const stateKey = resolveKey()
+            if (!stateKey) return {}
+            const state = pluginHost?.getSharedState<HMARenderState>(stateKey)
             return state?.params ?? {}
         },
 
@@ -92,4 +117,15 @@ export function createHMARendererPlugin(options: HMARendererOptions = {}): Rende
             // no-op
         },
     }
+}
+
+@Indicator({
+    name: 'hma',
+    displayName: 'HMA',
+    category: 'main',
+    stateKey: createHMAStateKey,
+    defaultPaneId: 'main',
+})
+class HMADefinition {
+    static rendererFactory = createHMARendererPlugin
 }
