@@ -128,6 +128,10 @@ export function createChaikinVolRendererPlugin(options: { paneId?: string } = {}
     category: 'oscillator',
     stateKey: createChaikinVolStateKey,
     defaultPaneId: 'sub_ChaikinVol',
+    paneIdField: 'chaikinVolPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createChaikinVolStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class ChaikinVolIndicatorDefinition {
     static rendererFactory = createChaikinVolRendererPlugin

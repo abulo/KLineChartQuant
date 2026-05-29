@@ -374,6 +374,10 @@ export function getRSITitleInfo(
     category: 'oscillator',
     stateKey: createRSIStateKey,
     defaultPaneId: 'sub_RSI',
+    paneIdField: 'rsiPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createRSIStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class RSIIndicatorDefinition {
     static rendererFactory = createRSIRendererPlugin

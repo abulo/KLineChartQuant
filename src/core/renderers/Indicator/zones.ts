@@ -97,6 +97,11 @@ export function createZonesRendererPlugin(options: { paneId?: string } = {}): Re
     category: 'main',
     stateKey: createZonesStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'zonesPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createZonesStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class ZonesDefinition {
     static rendererFactory = createZonesRendererPlugin

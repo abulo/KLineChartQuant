@@ -114,6 +114,10 @@ export function createVMARendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createVMAStateKey,
     defaultPaneId: 'sub_VMA',
+    paneIdField: 'vmaPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createVMAStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class VMAIndicatorDefinition {
     static rendererFactory = createVMARendererPlugin

@@ -300,6 +300,10 @@ export function getFASTKTitleInfo(
     category: 'oscillator',
     stateKey: createFASTKStateKey,
     defaultPaneId: 'sub_FASTK',
+    paneIdField: 'fastkPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createFASTKStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class FASTKIndicatorDefinition {
     static rendererFactory = createFASTKRendererPlugin

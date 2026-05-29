@@ -185,6 +185,9 @@ export function createEXPMARendererPlugin(): RendererPluginWithHost {
     category: 'main',
     stateKey: EXPMA_STATE_KEY,
     defaultPaneId: 'main',
+    applyResult: (host, state, _paneId) => {
+        host.setSharedState(EXPMA_STATE_KEY, state as any, 'indicator_scheduler')
+    },
 })
 class EXPMADefinition {
     static rendererFactory = createEXPMARendererPlugin

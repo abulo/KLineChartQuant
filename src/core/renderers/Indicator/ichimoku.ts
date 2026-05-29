@@ -171,6 +171,11 @@ function fillCloud(
     category: 'main',
     stateKey: createIchimokuStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'ichimokuPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createIchimokuStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class IchimokuDefinition {
     static rendererFactory = createIchimokuRendererPlugin

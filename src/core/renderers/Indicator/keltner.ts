@@ -127,6 +127,11 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     category: 'main',
     stateKey: createKeltnerStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'keltnerPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createKeltnerStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class KeltnerDefinition {
     static rendererFactory = createKeltnerRendererPlugin

@@ -148,6 +148,10 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     category: 'oscillator',
     stateKey: createTRIXStateKey,
     defaultPaneId: 'sub_TRIX',
+    paneIdField: 'trixPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createTRIXStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class TRIXIndicatorDefinition {
     static rendererFactory = createTRIXRendererPlugin

@@ -114,6 +114,10 @@ export function createParkinsonRendererPlugin(options: { paneId?: string } = {})
     category: 'oscillator',
     stateKey: createParkinsonStateKey,
     defaultPaneId: 'sub_Parkinson',
+    paneIdField: 'parkinsonPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createParkinsonStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class ParkinsonIndicatorDefinition {
     static rendererFactory = createParkinsonRendererPlugin

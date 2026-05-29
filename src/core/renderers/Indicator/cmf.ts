@@ -127,6 +127,10 @@ export function createCMFRendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createCMFStateKey,
     defaultPaneId: 'sub_CMF',
+    paneIdField: 'cmfPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createCMFStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class CMFIndicatorDefinition {
     static rendererFactory = createCMFRendererPlugin

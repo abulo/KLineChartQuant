@@ -127,6 +127,9 @@ function getBOLLStateKey(host: PluginHost | null): string | null {
     category: 'main',
     stateKey: BOLL_STATE_KEY,
     defaultPaneId: 'main',
+    applyResult: (host, state, _paneId) => {
+        host.setSharedState(BOLL_STATE_KEY, state as any, 'indicator_scheduler')
+    },
 })
 class BOLLDefinition {
     static rendererFactory = createBOLLRendererPlugin

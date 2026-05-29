@@ -113,6 +113,10 @@ export function createOBVRendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createOBVStateKey,
     defaultPaneId: 'sub_OBV',
+    paneIdField: 'obvPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createOBVStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class OBVIndicatorDefinition {
     static rendererFactory = createOBVRendererPlugin

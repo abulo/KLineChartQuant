@@ -132,6 +132,10 @@ export function createMFIRendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createMFIStateKey,
     defaultPaneId: 'sub_MFI',
+    paneIdField: 'mfiPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createMFIStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class MFIIndicatorDefinition {
     static rendererFactory = createMFIRendererPlugin

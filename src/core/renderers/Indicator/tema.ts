@@ -125,6 +125,11 @@ export function createTEMARendererPlugin(options: TEMARendererOptions = {}): Ren
     category: 'main',
     stateKey: createTEMAStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'temaPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createTEMAStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class TEMADefinition {
     static rendererFactory = createTEMARendererPlugin

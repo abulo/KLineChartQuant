@@ -125,6 +125,11 @@ export function createDEMARendererPlugin(options: DEMARendererOptions = {}): Ren
     category: 'main',
     stateKey: createDEMAStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'demaPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createDEMAStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class DEMADefinition {
     static rendererFactory = createDEMARendererPlugin

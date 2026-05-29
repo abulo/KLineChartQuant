@@ -113,6 +113,10 @@ export function createPVTRendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createPVTStateKey,
     defaultPaneId: 'sub_PVT',
+    paneIdField: 'pvtPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createPVTStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class PVTIndicatorDefinition {
     static rendererFactory = createPVTRendererPlugin

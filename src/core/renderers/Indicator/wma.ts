@@ -125,6 +125,11 @@ export function createWMARendererPlugin(options: WMARendererOptions = {}): Rende
     category: 'main',
     stateKey: createWMAStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'wmaPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createWMAStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class WMADefinition {
     static rendererFactory = createWMARendererPlugin

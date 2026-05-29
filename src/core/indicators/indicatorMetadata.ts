@@ -5,7 +5,7 @@
  * 每个指标通过 metadata 描述其状态 key、渲染器工厂等元信息
  */
 
-import type { RendererPluginWithHost } from '@/plugin'
+import type { PluginHost, RendererPluginWithHost } from '@/plugin'
 import type { IndicatorConfigSnapshot } from './workerProtocol'
 
 /**
@@ -76,6 +76,21 @@ export interface IndicatorMetadata<T = unknown> {
      * 用于副图指标根据配置决定是否参与计算
      */
     isEnabled?: (config: IndicatorConfigSnapshot) => boolean
+
+    /**
+     * 将指标计算结果写入 StateStore
+     * @param host - PluginHost
+     * @param state - 计算结果（由 composeRenderStates 或 composeVisibleSubIndicatorStates 产出）
+     * @param paneId - 目标 pane ID（从 configSnapshot 读取）
+     */
+    applyResult?: (host: PluginHost, state: unknown, paneId: string) => void
+
+    /**
+     * 是否允许在主图显示（部分副图指标可切换至主图）
+     * - true：指标可放置在主图（如 WMA/SAR/Pivot 等叠加类指标）
+     * - false/undefined：仅限副图显示
+     */
+    allowMainPane?: boolean
 }
 
 /**

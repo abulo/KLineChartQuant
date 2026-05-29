@@ -133,6 +133,10 @@ export function createROCRendererPlugin(options: ROCRendererOptions = {}): Rende
     category: 'oscillator',
     stateKey: createROCStateKey,
     defaultPaneId: 'sub_ROC',
+    paneIdField: 'rocPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createROCStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class ROCIndicatorDefinition {
     static rendererFactory = createROCRendererPlugin

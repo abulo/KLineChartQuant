@@ -62,109 +62,35 @@ import type {
     IndicatorSeriesBundle,
 } from './workerProtocol'
 import type { MAFlags } from './calculators'
-
-// 注册表
 import { IndicatorRegistry } from './indicatorRegistry'
-import type { IndicatorMetadata, StateKey } from './indicatorMetadata'
+import type { IndicatorMetadata } from './indicatorMetadata'
+import type { BaseIndicatorState } from '@/plugin'
 
-import type { MARenderState } from './maState'
-import { MA_STATE_KEY } from './maState'
-import type { BOLLRenderState } from './bollState'
-import { BOLL_STATE_KEY } from './bollState'
-import type { EXPMARenderState } from './expmaState'
-import { EXPMA_STATE_KEY } from './expmaState'
-import type { ENERenderState } from './eneState'
-import { ENE_STATE_KEY } from './eneState'
-import type { RSIRenderState } from './rsiState'
-import { createRSIStateKey } from './rsiState'
-import type { CCIRenderState } from './cciState'
-import { createCCIStateKey } from './cciState'
-import type { STOCHRenderState } from './stochState'
-import { createSTOCHStateKey } from './stochState'
-import type { MOMRenderState } from './momState'
-import { createMOMStateKey } from './momState'
-import type { WMSRRenderState } from './wmsrState'
-import { createWMSRStateKey } from './wmsrState'
-import type { KSTRenderState } from './kstState'
-import { createKSTStateKey } from './kstState'
-import type { FASTKRenderState } from './fastkState'
-import { createFASTKStateKey } from './fastkState'
-import type { MACDRenderState } from './macdState'
-import { createMACDStateKey } from './macdState'
-import type { ATRRenderState } from './atrState'
-import { createATRStateKey, DEFAULT_ATR_PERIOD } from './atrState'
-import type { WMARenderState } from './wmaState'
-import { createWMAStateKey, DEFAULT_WMA_PERIOD } from './wmaState'
-import type { DEMARenderState } from './demaState'
-import { createDEMAStateKey, DEFAULT_DEMA_PERIOD } from './demaState'
-import type { TEMARenderState } from './temaState'
-import { createTEMAStateKey, DEFAULT_TEMA_PERIOD } from './temaState'
-import type { HMARenderState } from './hmaState'
-import { createHMAStateKey, DEFAULT_HMA_PERIOD } from './hmaState'
-import type { KAMARenderState } from './kamaState'
-import { createKAMAStateKey, DEFAULT_KAMA_PERIOD, DEFAULT_KAMA_FAST_PERIOD, DEFAULT_KAMA_SLOW_PERIOD } from './kamaState'
-import type { SARRenderState } from './sarState'
-import { createSARStateKey, DEFAULT_SAR_STEP, DEFAULT_SAR_MAX_STEP } from './sarState'
-import type { SuperTrendRenderState } from './supertrendState'
-import {
-    createSuperTrendStateKey,
-    DEFAULT_SUPERTREND_ATR_PERIOD,
-    DEFAULT_SUPERTREND_MULTIPLIER,
-} from './supertrendState'
-import type { KeltnerRenderState } from './keltnerState'
-import {
-    createKeltnerStateKey,
-    DEFAULT_KELTNER_EMA_PERIOD,
-    DEFAULT_KELTNER_ATR_PERIOD,
-    DEFAULT_KELTNER_MULTIPLIER,
-} from './keltnerState'
-import type { DonchianRenderState } from './donchianState'
-import { createDonchianStateKey, DEFAULT_DONCHIAN_PERIOD } from './donchianState'
-import type { IchimokuRenderState } from './ichimokuState'
-import {
-    createIchimokuStateKey,
-    DEFAULT_ICHIMOKU_TENKAN,
-    DEFAULT_ICHIMOKU_KIJUN,
-    DEFAULT_ICHIMOKU_SPAN_B,
-    DEFAULT_ICHIMOKU_DISPLACEMENT,
-} from './ichimokuState'
-import type { ROCRenderState } from './rocState'
-import { createROCStateKey, DEFAULT_ROC_PERIOD } from './rocState'
-import type { TRIXRenderState } from './trixState'
-import { createTRIXStateKey, DEFAULT_TRIX_PERIOD, DEFAULT_TRIX_SIGNAL_PERIOD } from './trixState'
-import type { HVRenderState } from './hvState'
-import { createHVStateKey, DEFAULT_HV_PERIOD, DEFAULT_HV_ANNUALIZATION } from './hvState'
-import type { ParkinsonRenderState } from './parkinsonState'
-import { createParkinsonStateKey, DEFAULT_PARKINSON_PERIOD, DEFAULT_PARKINSON_ANNUALIZATION } from './parkinsonState'
-import type { ChaikinVolRenderState } from './chaikinVolState'
-import { createChaikinVolStateKey, DEFAULT_CHAIKIN_VOL_EMA_PERIOD, DEFAULT_CHAIKIN_VOL_ROC_PERIOD } from './chaikinVolState'
-import type { VMARenderState } from './vmaState'
-import { createVMAStateKey, DEFAULT_VMA_PERIOD } from './vmaState'
-import type { OBVRenderState } from './obvState'
-import { createOBVStateKey } from './obvState'
-import type { PVTRenderState } from './pvtState'
-import { createPVTStateKey } from './pvtState'
-import type { VWAPRenderState } from './vwapState'
-import { createVWAPStateKey, DEFAULT_VWAP_SESSION_GAP_MS } from './vwapState'
-import type { CMFRenderState } from './cmfState'
-import { createCMFStateKey, DEFAULT_CMF_PERIOD } from './cmfState'
-import type { MFIRenderState } from './mfiState'
-import { createMFIStateKey, DEFAULT_MFI_PERIOD } from './mfiState'
-import type { PivotRenderState } from './pivotState'
-import { createPivotStateKey } from './pivotState'
-import type { FibRenderState } from './fibState'
-import { createFibStateKey, DEFAULT_FIB_PERIOD } from './fibState'
-import type { StructureRenderState } from './structureState'
-import { createStructureStateKey, DEFAULT_STRUCTURE_LEFT, DEFAULT_STRUCTURE_RIGHT } from './structureState'
-import type { ZonesRenderState } from './zonesState'
-import { createZonesStateKey, DEFAULT_ZONES_OB_LOOKBACK } from './zonesState'
-import type { VolumeProfileRenderState } from './volumeProfileState'
-import {
-    createVolumeProfileStateKey,
-    DEFAULT_VP_BINS,
-    DEFAULT_VP_LOOKBACK,
-    DEFAULT_VP_VALUE_AREA,
-} from './volumeProfileState'
+// Default constants for default config
+import { DEFAULT_ATR_PERIOD } from './atrState'
+import { DEFAULT_WMA_PERIOD } from './wmaState'
+import { DEFAULT_DEMA_PERIOD } from './demaState'
+import { DEFAULT_TEMA_PERIOD } from './temaState'
+import { DEFAULT_HMA_PERIOD } from './hmaState'
+import { DEFAULT_KAMA_PERIOD, DEFAULT_KAMA_FAST_PERIOD, DEFAULT_KAMA_SLOW_PERIOD } from './kamaState'
+import { DEFAULT_SAR_STEP, DEFAULT_SAR_MAX_STEP } from './sarState'
+import { DEFAULT_SUPERTREND_ATR_PERIOD, DEFAULT_SUPERTREND_MULTIPLIER } from './supertrendState'
+import { DEFAULT_KELTNER_EMA_PERIOD, DEFAULT_KELTNER_ATR_PERIOD, DEFAULT_KELTNER_MULTIPLIER } from './keltnerState'
+import { DEFAULT_DONCHIAN_PERIOD } from './donchianState'
+import { DEFAULT_ICHIMOKU_TENKAN, DEFAULT_ICHIMOKU_KIJUN, DEFAULT_ICHIMOKU_SPAN_B, DEFAULT_ICHIMOKU_DISPLACEMENT } from './ichimokuState'
+import { DEFAULT_ROC_PERIOD } from './rocState'
+import { DEFAULT_TRIX_PERIOD, DEFAULT_TRIX_SIGNAL_PERIOD } from './trixState'
+import { DEFAULT_HV_PERIOD, DEFAULT_HV_ANNUALIZATION } from './hvState'
+import { DEFAULT_PARKINSON_PERIOD, DEFAULT_PARKINSON_ANNUALIZATION } from './parkinsonState'
+import { DEFAULT_CHAIKIN_VOL_EMA_PERIOD, DEFAULT_CHAIKIN_VOL_ROC_PERIOD } from './chaikinVolState'
+import { DEFAULT_VMA_PERIOD } from './vmaState'
+import { DEFAULT_VWAP_SESSION_GAP_MS } from './vwapState'
+import { DEFAULT_CMF_PERIOD } from './cmfState'
+import { DEFAULT_MFI_PERIOD } from './mfiState'
+import { DEFAULT_FIB_PERIOD } from './fibState'
+import { DEFAULT_STRUCTURE_LEFT, DEFAULT_STRUCTURE_RIGHT } from './structureState'
+import { DEFAULT_ZONES_OB_LOOKBACK } from './zonesState'
+import { DEFAULT_VP_BINS, DEFAULT_VP_LOOKBACK, DEFAULT_VP_VALUE_AREA } from './volumeProfileState'
 
 /**
  * 可见范围
@@ -172,44 +98,6 @@ import {
 interface VisibleRange {
     start: number
     end: number
-}
-
-type VisibleSubIndicatorMask = {
-    rsi: boolean
-    cci: boolean
-    stoch: boolean
-    mom: boolean
-    wmsr: boolean
-    kst: boolean
-    fastk: boolean
-    macd: boolean
-    atr: boolean
-    wma: boolean
-    dema: boolean
-    tema: boolean
-    hma: boolean
-    kama: boolean
-    sar: boolean
-    supertrend: boolean
-    keltner: boolean
-    donchian: boolean
-    ichimoku: boolean
-    roc: boolean
-    trix: boolean
-    hv: boolean
-    parkinson: boolean
-    chaikinVol: boolean
-    vma: boolean
-    obv: boolean
-    pvt: boolean
-    vwap: boolean
-    cmf: boolean
-    mfi: boolean
-    pivot: boolean
-    fib: boolean
-    structure: boolean
-    zones: boolean
-    volumeProfile: boolean
 }
 
 // 重新导出配置类型（保持向后兼容）
@@ -252,7 +140,7 @@ export type {
     StructureSchedulerConfig,
     ZonesSchedulerConfig,
     VolumeProfileSchedulerConfig,
-}
+} from './workerProtocol'
 
 /**
  * IndicatorScheduler - 主线程 facade
@@ -690,6 +578,7 @@ export class IndicatorScheduler {
         }
     }
 
+    /** 遍历注册表中的所有指标，通过 applyResult 回调写入 StateStore */
     private applyResults(bundle: IndicatorSeriesBundle): void {
         if (!this.pluginHost) return
 
@@ -697,276 +586,27 @@ export class IndicatorScheduler {
         const timestamp = Date.now()
         const states = composeRenderStates(bundle, this.visibleRange, timestamp)
 
-        // MA（空状态也需要写入，渲染器依赖 sentinel 判断）
-        if (changed.has('ma')) {
-            this.checkVisibleExtremes(states.ma, 'MA')
-            this.pluginHost.setSharedState<MARenderState>(MA_STATE_KEY, states.ma, 'ma_scheduler')
-        }
+        for (const meta of this.registry.getAll()) {
+            if (!changed.has(meta.name)) continue
+            if (!meta.applyResult) continue
 
-        // BOLL
-        if (changed.has('boll')) {
-            this.checkVisibleExtremes(states.boll, 'BOLL')
-            this.pluginHost.setSharedState<BOLLRenderState>(BOLL_STATE_KEY, states.boll, 'indicator_scheduler')
-        }
+            const state = (states as Record<string, unknown>)[meta.name]
+            if (!state) continue
 
-        // EXPMA
-        if (changed.has('expma')) {
-            this.checkVisibleExtremes(states.expma, 'EXPMA')
-            this.pluginHost.setSharedState<EXPMARenderState>(EXPMA_STATE_KEY, states.expma, 'indicator_scheduler')
-        }
+            this.checkVisibleExtremes(
+                state as { visibleMin: number; visibleMax: number },
+                meta.displayName,
+            )
 
-        // ENE
-        if (changed.has('ene')) {
-            this.checkVisibleExtremes(states.ene, 'ENE')
-            this.pluginHost.setSharedState<ENERenderState>(ENE_STATE_KEY, states.ene, 'indicator_scheduler')
-        }
+            const paneId = meta.paneIdField
+                ? (this.configSnapshot as unknown as Record<string, string>)[meta.paneIdField as string]
+                : meta.defaultPaneId
 
-        // RSI
-        if (changed.has('rsi')) {
-            this.checkVisibleExtremes(states.rsi, 'RSI')
-            const rsiKey = createRSIStateKey(this.configSnapshot.rsiPaneId)
-            this.pluginHost.setSharedState<RSIRenderState>(rsiKey, states.rsi, 'indicator_scheduler')
-        }
-
-        // CCI
-        if (changed.has('cci')) {
-            this.checkVisibleExtremes(states.cci, 'CCI')
-            const cciKey = createCCIStateKey(this.configSnapshot.cciPaneId)
-            this.pluginHost.setSharedState<CCIRenderState>(cciKey, states.cci, 'indicator_scheduler')
-        }
-
-        // STOCH
-        if (changed.has('stoch')) {
-            this.checkVisibleExtremes(states.stoch, 'STOCH')
-            const stochKey = createSTOCHStateKey(this.configSnapshot.stochPaneId)
-            this.pluginHost.setSharedState<STOCHRenderState>(stochKey, states.stoch, 'indicator_scheduler')
-        }
-
-        // MOM
-        if (changed.has('mom')) {
-            this.checkVisibleExtremes(states.mom, 'MOM')
-            const momKey = createMOMStateKey(this.configSnapshot.momPaneId)
-            this.pluginHost.setSharedState<MOMRenderState>(momKey, states.mom, 'indicator_scheduler')
-        }
-
-        // WMSR
-        if (changed.has('wmsr')) {
-            this.checkVisibleExtremes(states.wmsr, 'WMSR')
-            const wmsrKey = createWMSRStateKey(this.configSnapshot.wmsrPaneId)
-            this.pluginHost.setSharedState<WMSRRenderState>(wmsrKey, states.wmsr, 'indicator_scheduler')
-        }
-
-        // KST
-        if (changed.has('kst')) {
-            this.checkVisibleExtremes(states.kst, 'KST')
-            const kstKey = createKSTStateKey(this.configSnapshot.kstPaneId)
-            this.pluginHost.setSharedState<KSTRenderState>(kstKey, states.kst, 'indicator_scheduler')
-        }
-
-        // FASTK
-        if (changed.has('fastk')) {
-            this.checkVisibleExtremes(states.fastk, 'FASTK')
-            const fastkKey = createFASTKStateKey(this.configSnapshot.fastkPaneId)
-            this.pluginHost.setSharedState<FASTKRenderState>(fastkKey, states.fastk, 'indicator_scheduler')
-        }
-
-        // MACD
-        if (changed.has('macd')) {
-            this.checkVisibleExtremes(states.macd, 'MACD')
-            const macdKey = createMACDStateKey(this.configSnapshot.macdPaneId)
-            this.pluginHost.setSharedState<MACDRenderState>(macdKey, states.macd, 'indicator_scheduler')
-        }
-
-        // ATR
-        if (changed.has('atr')) {
-            this.checkVisibleExtremes(states.atr, 'ATR')
-            const atrKey = createATRStateKey(this.configSnapshot.atrPaneId)
-            this.pluginHost.setSharedState<ATRRenderState>(atrKey, states.atr, 'indicator_scheduler')
-        }
-
-        // WMA
-        if (changed.has('wma')) {
-            this.checkVisibleExtremes(states.wma, 'WMA')
-            const wmaKey = createWMAStateKey(this.configSnapshot.wmaPaneId)
-            this.pluginHost.setSharedState<WMARenderState>(wmaKey, states.wma, 'indicator_scheduler')
-        }
-
-        // DEMA
-        if (changed.has('dema')) {
-            this.checkVisibleExtremes(states.dema, 'DEMA')
-            const demaKey = createDEMAStateKey(this.configSnapshot.demaPaneId)
-            this.pluginHost.setSharedState<DEMARenderState>(demaKey, states.dema, 'indicator_scheduler')
-        }
-
-        // TEMA
-        if (changed.has('tema')) {
-            this.checkVisibleExtremes(states.tema, 'TEMA')
-            const temaKey = createTEMAStateKey(this.configSnapshot.temaPaneId)
-            this.pluginHost.setSharedState<TEMARenderState>(temaKey, states.tema, 'indicator_scheduler')
-        }
-
-        // HMA
-        if (changed.has('hma')) {
-            this.checkVisibleExtremes(states.hma, 'HMA')
-            const hmaKey = createHMAStateKey(this.configSnapshot.hmaPaneId)
-            this.pluginHost.setSharedState<HMARenderState>(hmaKey, states.hma, 'indicator_scheduler')
-        }
-
-        // KAMA
-        if (changed.has('kama')) {
-            this.checkVisibleExtremes(states.kama, 'KAMA')
-            const kamaKey = createKAMAStateKey(this.configSnapshot.kamaPaneId)
-            this.pluginHost.setSharedState<KAMARenderState>(kamaKey, states.kama, 'indicator_scheduler')
-        }
-
-        // SAR
-        if (changed.has('sar')) {
-            this.checkVisibleExtremes(states.sar, 'SAR')
-            const sarKey = createSARStateKey(this.configSnapshot.sarPaneId)
-            this.pluginHost.setSharedState<SARRenderState>(sarKey, states.sar, 'indicator_scheduler')
-        }
-
-        // SuperTrend
-        if (changed.has('supertrend')) {
-            this.checkVisibleExtremes(states.supertrend, 'SuperTrend')
-            const stKey = createSuperTrendStateKey(this.configSnapshot.supertrendPaneId)
-            this.pluginHost.setSharedState<SuperTrendRenderState>(stKey, states.supertrend, 'indicator_scheduler')
-        }
-
-        // Keltner
-        if (changed.has('keltner')) {
-            this.checkVisibleExtremes(states.keltner, 'Keltner')
-            const kKey = createKeltnerStateKey(this.configSnapshot.keltnerPaneId)
-            this.pluginHost.setSharedState<KeltnerRenderState>(kKey, states.keltner, 'indicator_scheduler')
-        }
-
-        // Donchian
-        if (changed.has('donchian')) {
-            this.checkVisibleExtremes(states.donchian, 'Donchian')
-            const dKey = createDonchianStateKey(this.configSnapshot.donchianPaneId)
-            this.pluginHost.setSharedState<DonchianRenderState>(dKey, states.donchian, 'indicator_scheduler')
-        }
-
-        // Ichimoku
-        if (changed.has('ichimoku')) {
-            this.checkVisibleExtremes(states.ichimoku, 'Ichimoku')
-            const iKey = createIchimokuStateKey(this.configSnapshot.ichimokuPaneId)
-            this.pluginHost.setSharedState<IchimokuRenderState>(iKey, states.ichimoku, 'indicator_scheduler')
-        }
-
-        // ROC
-        if (changed.has('roc')) {
-            this.checkVisibleExtremes(states.roc, 'ROC')
-            const rKey = createROCStateKey(this.configSnapshot.rocPaneId)
-            this.pluginHost.setSharedState<ROCRenderState>(rKey, states.roc, 'indicator_scheduler')
-        }
-
-        // TRIX
-        if (changed.has('trix')) {
-            this.checkVisibleExtremes(states.trix, 'TRIX')
-            const tKey = createTRIXStateKey(this.configSnapshot.trixPaneId)
-            this.pluginHost.setSharedState<TRIXRenderState>(tKey, states.trix, 'indicator_scheduler')
-        }
-
-        // HV
-        if (changed.has('hv')) {
-            this.checkVisibleExtremes(states.hv, 'HV')
-            const hKey = createHVStateKey(this.configSnapshot.hvPaneId)
-            this.pluginHost.setSharedState<HVRenderState>(hKey, states.hv, 'indicator_scheduler')
-        }
-
-        // Parkinson
-        if (changed.has('parkinson')) {
-            this.checkVisibleExtremes(states.parkinson, 'Parkinson')
-            const pKey = createParkinsonStateKey(this.configSnapshot.parkinsonPaneId)
-            this.pluginHost.setSharedState<ParkinsonRenderState>(pKey, states.parkinson, 'indicator_scheduler')
-        }
-
-        // ChaikinVol
-        if (changed.has('chaikinVol')) {
-            this.checkVisibleExtremes(states.chaikinVol, 'ChaikinVol')
-            const cKey = createChaikinVolStateKey(this.configSnapshot.chaikinVolPaneId)
-            this.pluginHost.setSharedState<ChaikinVolRenderState>(cKey, states.chaikinVol, 'indicator_scheduler')
-        }
-
-        // VMA
-        if (changed.has('vma')) {
-            this.checkVisibleExtremes(states.vma, 'VMA')
-            const vmaKey = createVMAStateKey(this.configSnapshot.vmaPaneId)
-            this.pluginHost.setSharedState<VMARenderState>(vmaKey, states.vma, 'indicator_scheduler')
-        }
-
-        // OBV
-        if (changed.has('obv')) {
-            this.checkVisibleExtremes(states.obv, 'OBV')
-            const obvKey = createOBVStateKey(this.configSnapshot.obvPaneId)
-            this.pluginHost.setSharedState<OBVRenderState>(obvKey, states.obv, 'indicator_scheduler')
-        }
-
-        // PVT
-        if (changed.has('pvt')) {
-            this.checkVisibleExtremes(states.pvt, 'PVT')
-            const pvtKey = createPVTStateKey(this.configSnapshot.pvtPaneId)
-            this.pluginHost.setSharedState<PVTRenderState>(pvtKey, states.pvt, 'indicator_scheduler')
-        }
-
-        // VWAP
-        if (changed.has('vwap')) {
-            this.checkVisibleExtremes(states.vwap, 'VWAP')
-            const vwapKey = createVWAPStateKey(this.configSnapshot.vwapPaneId)
-            this.pluginHost.setSharedState<VWAPRenderState>(vwapKey, states.vwap, 'indicator_scheduler')
-        }
-
-        // CMF
-        if (changed.has('cmf')) {
-            this.checkVisibleExtremes(states.cmf, 'CMF')
-            const cmfKey = createCMFStateKey(this.configSnapshot.cmfPaneId)
-            this.pluginHost.setSharedState<CMFRenderState>(cmfKey, states.cmf, 'indicator_scheduler')
-        }
-
-        // MFI
-        if (changed.has('mfi')) {
-            this.checkVisibleExtremes(states.mfi, 'MFI')
-            const mfiKey = createMFIStateKey(this.configSnapshot.mfiPaneId)
-            this.pluginHost.setSharedState<MFIRenderState>(mfiKey, states.mfi, 'indicator_scheduler')
-        }
-
-        // Pivot
-        if (changed.has('pivot')) {
-            this.checkVisibleExtremes(states.pivot, 'Pivot')
-            const pivotKey = createPivotStateKey(this.configSnapshot.pivotPaneId)
-            this.pluginHost.setSharedState<PivotRenderState>(pivotKey, states.pivot, 'indicator_scheduler')
-        }
-
-        // Fib
-        if (changed.has('fib')) {
-            this.checkVisibleExtremes(states.fib, 'Fib')
-            const fibKey = createFibStateKey(this.configSnapshot.fibPaneId)
-            this.pluginHost.setSharedState<FibRenderState>(fibKey, states.fib, 'indicator_scheduler')
-        }
-
-        // Structure
-        if (changed.has('structure')) {
-            this.checkVisibleExtremes(states.structure, 'Structure')
-            const sKey = createStructureStateKey(this.configSnapshot.structurePaneId)
-            this.pluginHost.setSharedState<StructureRenderState>(sKey, states.structure, 'indicator_scheduler')
-        }
-
-        // Zones
-        if (changed.has('zones')) {
-            this.checkVisibleExtremes(states.zones, 'Zones')
-            const zKey = createZonesStateKey(this.configSnapshot.zonesPaneId)
-            this.pluginHost.setSharedState<ZonesRenderState>(zKey, states.zones, 'indicator_scheduler')
-        }
-
-        // Volume Profile
-        if (changed.has('volumeProfile')) {
-            this.checkVisibleExtremes(states.volumeProfile, 'VolumeProfile')
-            const vpKey = createVolumeProfileStateKey(this.configSnapshot.volumeProfilePaneId)
-            this.pluginHost.setSharedState<VolumeProfileRenderState>(vpKey, states.volumeProfile, 'indicator_scheduler')
+            meta.applyResult(this.pluginHost, state as BaseIndicatorState, paneId)
         }
     }
 
+    /** 仅副图：重算可见范围极值并回调 applyResult（视口变更时同步更新，不走 Worker） */
     private updateVisibleStatesOnly(): void {
         if (!this.pluginHost || !this.latestResult) return
 
@@ -974,242 +614,55 @@ export class IndicatorScheduler {
         const activeMask = this.buildActiveSubIndicatorMask()
         const states = composeVisibleSubIndicatorStates(this.latestResult, this.visibleRange, timestamp, activeMask)
 
-        // RSI
-        this.checkVisibleExtremes(states.rsi, 'RSI')
-        const rsiKey = createRSIStateKey(this.configSnapshot.rsiPaneId)
-        this.pluginHost.setSharedState<RSIRenderState>(rsiKey, states.rsi, 'indicator_scheduler')
+        for (const meta of this.registry.getAll()) {
+            if (!meta.applyResult) continue
+            if (!meta.paneIdField && meta.category === 'main') continue
 
-        // CCI
-        this.checkVisibleExtremes(states.cci, 'CCI')
-        const cciKey = createCCIStateKey(this.configSnapshot.cciPaneId)
-        this.pluginHost.setSharedState<CCIRenderState>(cciKey, states.cci, 'indicator_scheduler')
+            const state = (states as Record<string, unknown>)[meta.name]
+            if (state === undefined) continue
 
-        // STOCH
-        this.checkVisibleExtremes(states.stoch, 'STOCH')
-        const stochKey = createSTOCHStateKey(this.configSnapshot.stochPaneId)
-        this.pluginHost.setSharedState<STOCHRenderState>(stochKey, states.stoch, 'indicator_scheduler')
+            this.checkVisibleExtremes(
+                state as { visibleMin: number; visibleMax: number },
+                meta.displayName,
+            )
 
-        // MOM
-        this.checkVisibleExtremes(states.mom, 'MOM')
-        const momKey = createMOMStateKey(this.configSnapshot.momPaneId)
-        this.pluginHost.setSharedState<MOMRenderState>(momKey, states.mom, 'indicator_scheduler')
+            const paneId = meta.paneIdField
+                ? (this.configSnapshot as unknown as Record<string, string>)[meta.paneIdField as string]
+                : meta.defaultPaneId
 
-        // WMSR
-        this.checkVisibleExtremes(states.wmsr, 'WMSR')
-        const wmsrKey = createWMSRStateKey(this.configSnapshot.wmsrPaneId)
-        this.pluginHost.setSharedState<WMSRRenderState>(wmsrKey, states.wmsr, 'indicator_scheduler')
-
-        // KST
-        this.checkVisibleExtremes(states.kst, 'KST')
-        const kstKey = createKSTStateKey(this.configSnapshot.kstPaneId)
-        this.pluginHost.setSharedState<KSTRenderState>(kstKey, states.kst, 'indicator_scheduler')
-
-        // FASTK
-        this.checkVisibleExtremes(states.fastk, 'FASTK')
-        const fastkKey = createFASTKStateKey(this.configSnapshot.fastkPaneId)
-        this.pluginHost.setSharedState<FASTKRenderState>(fastkKey, states.fastk, 'indicator_scheduler')
-
-        // MACD
-        this.checkVisibleExtremes(states.macd, 'MACD')
-        const macdKey = createMACDStateKey(this.configSnapshot.macdPaneId)
-        this.pluginHost.setSharedState<MACDRenderState>(macdKey, states.macd, 'indicator_scheduler')
-
-        // ATR
-        this.checkVisibleExtremes(states.atr, 'ATR')
-        const atrKey = createATRStateKey(this.configSnapshot.atrPaneId)
-        this.pluginHost.setSharedState<ATRRenderState>(atrKey, states.atr, 'indicator_scheduler')
-
-        // WMA
-        this.checkVisibleExtremes(states.wma, 'WMA')
-        const wmaKey = createWMAStateKey(this.configSnapshot.wmaPaneId)
-        this.pluginHost.setSharedState<WMARenderState>(wmaKey, states.wma, 'indicator_scheduler')
-
-        // DEMA
-        this.checkVisibleExtremes(states.dema, 'DEMA')
-        const demaKey = createDEMAStateKey(this.configSnapshot.demaPaneId)
-        this.pluginHost.setSharedState<DEMARenderState>(demaKey, states.dema, 'indicator_scheduler')
-
-        // TEMA
-        this.checkVisibleExtremes(states.tema, 'TEMA')
-        const temaKey = createTEMAStateKey(this.configSnapshot.temaPaneId)
-        this.pluginHost.setSharedState<TEMARenderState>(temaKey, states.tema, 'indicator_scheduler')
-
-        // HMA
-        this.checkVisibleExtremes(states.hma, 'HMA')
-        const hmaKey = createHMAStateKey(this.configSnapshot.hmaPaneId)
-        this.pluginHost.setSharedState<HMARenderState>(hmaKey, states.hma, 'indicator_scheduler')
-
-        // KAMA
-        this.checkVisibleExtremes(states.kama, 'KAMA')
-        const kamaKey = createKAMAStateKey(this.configSnapshot.kamaPaneId)
-        this.pluginHost.setSharedState<KAMARenderState>(kamaKey, states.kama, 'indicator_scheduler')
-
-        // SAR
-        this.checkVisibleExtremes(states.sar, 'SAR')
-        const sarKey = createSARStateKey(this.configSnapshot.sarPaneId)
-        this.pluginHost.setSharedState<SARRenderState>(sarKey, states.sar, 'indicator_scheduler')
-
-        // SuperTrend
-        this.checkVisibleExtremes(states.supertrend, 'SuperTrend')
-        const stKey = createSuperTrendStateKey(this.configSnapshot.supertrendPaneId)
-        this.pluginHost.setSharedState<SuperTrendRenderState>(stKey, states.supertrend, 'indicator_scheduler')
-
-        // Keltner
-        this.checkVisibleExtremes(states.keltner, 'Keltner')
-        const kKey = createKeltnerStateKey(this.configSnapshot.keltnerPaneId)
-        this.pluginHost.setSharedState<KeltnerRenderState>(kKey, states.keltner, 'indicator_scheduler')
-
-        // Donchian
-        this.checkVisibleExtremes(states.donchian, 'Donchian')
-        const dKey = createDonchianStateKey(this.configSnapshot.donchianPaneId)
-        this.pluginHost.setSharedState<DonchianRenderState>(dKey, states.donchian, 'indicator_scheduler')
-
-        // Ichimoku
-        this.checkVisibleExtremes(states.ichimoku, 'Ichimoku')
-        const iKey = createIchimokuStateKey(this.configSnapshot.ichimokuPaneId)
-        this.pluginHost.setSharedState<IchimokuRenderState>(iKey, states.ichimoku, 'indicator_scheduler')
-
-        // ROC
-        this.checkVisibleExtremes(states.roc, 'ROC')
-        const rKey = createROCStateKey(this.configSnapshot.rocPaneId)
-        this.pluginHost.setSharedState<ROCRenderState>(rKey, states.roc, 'indicator_scheduler')
-
-        // TRIX
-        this.checkVisibleExtremes(states.trix, 'TRIX')
-        const tKey = createTRIXStateKey(this.configSnapshot.trixPaneId)
-        this.pluginHost.setSharedState<TRIXRenderState>(tKey, states.trix, 'indicator_scheduler')
-
-        // HV
-        this.checkVisibleExtremes(states.hv, 'HV')
-        const hKey = createHVStateKey(this.configSnapshot.hvPaneId)
-        this.pluginHost.setSharedState<HVRenderState>(hKey, states.hv, 'indicator_scheduler')
-
-        // Parkinson
-        this.checkVisibleExtremes(states.parkinson, 'Parkinson')
-        const pKey = createParkinsonStateKey(this.configSnapshot.parkinsonPaneId)
-        this.pluginHost.setSharedState<ParkinsonRenderState>(pKey, states.parkinson, 'indicator_scheduler')
-
-        // ChaikinVol
-        this.checkVisibleExtremes(states.chaikinVol, 'ChaikinVol')
-        const cKey = createChaikinVolStateKey(this.configSnapshot.chaikinVolPaneId)
-        this.pluginHost.setSharedState<ChaikinVolRenderState>(cKey, states.chaikinVol, 'indicator_scheduler')
-
-        // VMA
-        this.checkVisibleExtremes(states.vma, 'VMA')
-        const vmaKey = createVMAStateKey(this.configSnapshot.vmaPaneId)
-        this.pluginHost.setSharedState<VMARenderState>(vmaKey, states.vma, 'indicator_scheduler')
-
-        // OBV
-        this.checkVisibleExtremes(states.obv, 'OBV')
-        const obvKey = createOBVStateKey(this.configSnapshot.obvPaneId)
-        this.pluginHost.setSharedState<OBVRenderState>(obvKey, states.obv, 'indicator_scheduler')
-
-        // PVT
-        this.checkVisibleExtremes(states.pvt, 'PVT')
-        const pvtKey = createPVTStateKey(this.configSnapshot.pvtPaneId)
-        this.pluginHost.setSharedState<PVTRenderState>(pvtKey, states.pvt, 'indicator_scheduler')
-
-        // VWAP
-        this.checkVisibleExtremes(states.vwap, 'VWAP')
-        const vwapKey = createVWAPStateKey(this.configSnapshot.vwapPaneId)
-        this.pluginHost.setSharedState<VWAPRenderState>(vwapKey, states.vwap, 'indicator_scheduler')
-
-        // CMF
-        this.checkVisibleExtremes(states.cmf, 'CMF')
-        const cmfKey = createCMFStateKey(this.configSnapshot.cmfPaneId)
-        this.pluginHost.setSharedState<CMFRenderState>(cmfKey, states.cmf, 'indicator_scheduler')
-
-        // MFI
-        this.checkVisibleExtremes(states.mfi, 'MFI')
-        const mfiKey = createMFIStateKey(this.configSnapshot.mfiPaneId)
-        this.pluginHost.setSharedState<MFIRenderState>(mfiKey, states.mfi, 'indicator_scheduler')
-
-        // Pivot
-        this.checkVisibleExtremes(states.pivot, 'Pivot')
-        const pivotKey = createPivotStateKey(this.configSnapshot.pivotPaneId)
-        this.pluginHost.setSharedState<PivotRenderState>(pivotKey, states.pivot, 'indicator_scheduler')
-
-        // Fib
-        this.checkVisibleExtremes(states.fib, 'Fib')
-        const fibKey = createFibStateKey(this.configSnapshot.fibPaneId)
-        this.pluginHost.setSharedState<FibRenderState>(fibKey, states.fib, 'indicator_scheduler')
-
-        // Structure
-        this.checkVisibleExtremes(states.structure, 'Structure')
-        const sKey = createStructureStateKey(this.configSnapshot.structurePaneId)
-        this.pluginHost.setSharedState<StructureRenderState>(sKey, states.structure, 'indicator_scheduler')
-
-        // Zones
-        this.checkVisibleExtremes(states.zones, 'Zones')
-        const zKey = createZonesStateKey(this.configSnapshot.zonesPaneId)
-        this.pluginHost.setSharedState<ZonesRenderState>(zKey, states.zones, 'indicator_scheduler')
-
-        // Volume Profile
-        this.checkVisibleExtremes(states.volumeProfile, 'VolumeProfile')
-        const vpKey = createVolumeProfileStateKey(this.configSnapshot.volumeProfilePaneId)
-        this.pluginHost.setSharedState<VolumeProfileRenderState>(vpKey, states.volumeProfile, 'indicator_scheduler')
-    }
-
-    private buildActiveSubIndicatorMask(): VisibleSubIndicatorMask {
-        const activeIds = this.getActiveSubPaneIds?.() ?? []
-        const isOnMain = (id: string) => id === 'main'
-        return {
-            rsi: activeIds.includes(this.configSnapshot.rsiPaneId),
-            cci: activeIds.includes(this.configSnapshot.cciPaneId),
-            stoch: activeIds.includes(this.configSnapshot.stochPaneId),
-            mom: activeIds.includes(this.configSnapshot.momPaneId),
-            wmsr: activeIds.includes(this.configSnapshot.wmsrPaneId),
-            kst: activeIds.includes(this.configSnapshot.kstPaneId),
-            fastk: activeIds.includes(this.configSnapshot.fastkPaneId),
-            macd: activeIds.includes(this.configSnapshot.macdPaneId),
-            atr: activeIds.includes(this.configSnapshot.atrPaneId),
-            wma: activeIds.includes(this.configSnapshot.wmaPaneId) || isOnMain(this.configSnapshot.wmaPaneId),
-            dema: activeIds.includes(this.configSnapshot.demaPaneId) || isOnMain(this.configSnapshot.demaPaneId),
-            tema: activeIds.includes(this.configSnapshot.temaPaneId) || isOnMain(this.configSnapshot.temaPaneId),
-            hma: activeIds.includes(this.configSnapshot.hmaPaneId) || isOnMain(this.configSnapshot.hmaPaneId),
-            kama: activeIds.includes(this.configSnapshot.kamaPaneId) || isOnMain(this.configSnapshot.kamaPaneId),
-            sar: activeIds.includes(this.configSnapshot.sarPaneId) || isOnMain(this.configSnapshot.sarPaneId),
-            supertrend: activeIds.includes(this.configSnapshot.supertrendPaneId) || isOnMain(this.configSnapshot.supertrendPaneId),
-            keltner: activeIds.includes(this.configSnapshot.keltnerPaneId) || isOnMain(this.configSnapshot.keltnerPaneId),
-            donchian: activeIds.includes(this.configSnapshot.donchianPaneId) || isOnMain(this.configSnapshot.donchianPaneId),
-            ichimoku: activeIds.includes(this.configSnapshot.ichimokuPaneId) || isOnMain(this.configSnapshot.ichimokuPaneId),
-            roc: activeIds.includes(this.configSnapshot.rocPaneId),
-            trix: activeIds.includes(this.configSnapshot.trixPaneId),
-            hv: activeIds.includes(this.configSnapshot.hvPaneId),
-            parkinson: activeIds.includes(this.configSnapshot.parkinsonPaneId),
-            chaikinVol: activeIds.includes(this.configSnapshot.chaikinVolPaneId),
-            vma: activeIds.includes(this.configSnapshot.vmaPaneId),
-            obv: activeIds.includes(this.configSnapshot.obvPaneId),
-            pvt: activeIds.includes(this.configSnapshot.pvtPaneId),
-            vwap: activeIds.includes(this.configSnapshot.vwapPaneId),
-            cmf: activeIds.includes(this.configSnapshot.cmfPaneId),
-            mfi: activeIds.includes(this.configSnapshot.mfiPaneId),
-            pivot: activeIds.includes(this.configSnapshot.pivotPaneId) || isOnMain(this.configSnapshot.pivotPaneId),
-            fib: activeIds.includes(this.configSnapshot.fibPaneId) || isOnMain(this.configSnapshot.fibPaneId),
-            structure: activeIds.includes(this.configSnapshot.structurePaneId) || isOnMain(this.configSnapshot.structurePaneId),
-            zones: activeIds.includes(this.configSnapshot.zonesPaneId) || isOnMain(this.configSnapshot.zonesPaneId),
-            volumeProfile: activeIds.includes(this.configSnapshot.volumeProfilePaneId),
+            meta.applyResult(this.pluginHost, state as BaseIndicatorState, paneId)
         }
     }
 
-    /** 仅保留活跃副图的配置，后端只算这些 */
+    /** 遍历注册表，标记当前可见副图，仅这些指标参与计算 */
+    private buildActiveSubIndicatorMask(): Record<string, boolean> {
+        const activeIds = this.getActiveSubPaneIds?.() ?? []
+        const mask: Record<string, boolean> = {}
+        for (const meta of this.registry.getAll()) {
+            if (!meta.paneIdField) continue
+            const paneId = (this.configSnapshot as unknown as Record<string, string>)[meta.paneIdField as string] ?? meta.defaultPaneId
+            mask[meta.name] = activeIds.includes(paneId) || !!(meta.allowMainPane && paneId === 'main')
+        }
+        return mask
+    }
+
+    /** 遍历注册表，禁用非活跃副图指标的 show* 字段，后端只算活跃指标 */
     private buildActiveConfig(): IndicatorConfigSnapshot {
         const activeIds = this.getActiveSubPaneIds?.() ?? []
         if (activeIds.length === 0) return { ...this.configSnapshot }
 
         const cfg: Record<string, unknown> = { ...this.configSnapshot }
-        const subKeys = ['rsi', 'cci', 'stoch', 'mom', 'wmsr', 'kst', 'fastk', 'macd', 'atr', 'wma', 'dema', 'tema', 'hma', 'kama', 'sar', 'supertrend', 'keltner', 'donchian', 'ichimoku', 'roc', 'trix', 'hv', 'parkinson', 'chaikinVol', 'vma', 'obv', 'pvt', 'vwap', 'cmf', 'mfi', 'pivot', 'fib', 'structure', 'zones', 'volumeProfile'] as const
-        for (const key of subKeys) {
-            const paneIdKey = `${key}PaneId`
-            const paneId = cfg[paneIdKey] as string
+        for (const meta of this.registry.getAll()) {
+            if (!meta.paneIdField) continue
+            const paneId = cfg[meta.paneIdField] as string
             if (!activeIds.includes(paneId) && paneId !== 'main') {
-                const subCfg = { ...(cfg[key] as Record<string, unknown>) }
+                const subCfg = { ...(cfg[meta.name] as Record<string, unknown>) }
                 for (const k of Object.keys(subCfg)) {
                     if (k.startsWith('show')) {
                         subCfg[k] = false
                     }
                 }
-                cfg[key] = subCfg
+                cfg[meta.name] = subCfg
             }
         }
         return cfg as unknown as IndicatorConfigSnapshot

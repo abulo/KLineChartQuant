@@ -286,6 +286,10 @@ export function getKSTTitleInfo(
     category: 'oscillator',
     stateKey: createKSTStateKey,
     defaultPaneId: 'sub_KST',
+    paneIdField: 'kstPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createKSTStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class KSTIndicatorDefinition {
     static rendererFactory = createKSTRendererPlugin

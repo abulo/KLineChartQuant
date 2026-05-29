@@ -102,6 +102,11 @@ export function createSARRendererPlugin(options: SARRendererOptions = {}): Rende
     category: 'main',
     stateKey: createSARStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'sarPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createSARStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class SARDefinition {
     static rendererFactory = createSARRendererPlugin

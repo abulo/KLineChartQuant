@@ -125,6 +125,11 @@ export function createHMARendererPlugin(options: HMARendererOptions = {}): Rende
     category: 'main',
     stateKey: createHMAStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'hmaPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createHMAStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class HMADefinition {
     static rendererFactory = createHMARendererPlugin

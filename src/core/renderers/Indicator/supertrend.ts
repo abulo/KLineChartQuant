@@ -107,6 +107,11 @@ export function createSuperTrendRendererPlugin(options: SuperTrendRendererOption
     category: 'oscillator',
     stateKey: createSuperTrendStateKey,
     defaultPaneId: 'sub_SuperTrend',
+    paneIdField: 'supertrendPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createSuperTrendStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class SuperTrendIndicatorDefinition {
     static rendererFactory = createSuperTrendRendererPlugin

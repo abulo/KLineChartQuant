@@ -127,6 +127,11 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     category: 'main',
     stateKey: createDonchianStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'donchianPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createDonchianStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class DonchianDefinition {
     static rendererFactory = createDonchianRendererPlugin

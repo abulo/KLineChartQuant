@@ -120,6 +120,11 @@ function drawStep(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     category: 'main',
     stateKey: createPivotStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'pivotPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createPivotStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class PivotDefinition {
     static rendererFactory = createPivotRendererPlugin

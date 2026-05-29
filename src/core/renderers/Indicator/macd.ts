@@ -458,6 +458,10 @@ export function getMACDTitleInfo(
   category: 'oscillator',
   stateKey: createMACDStateKey,
   defaultPaneId: 'sub_MACD',
+  paneIdField: 'macdPaneId',
+  applyResult: (host, state, paneId) => {
+    host.setSharedState(createMACDStateKey(paneId), state as any, 'indicator_scheduler')
+  },
 })
 class MACDIndicatorDefinition {
   static rendererFactory = createMACDRendererPlugin

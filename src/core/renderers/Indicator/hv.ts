@@ -114,6 +114,10 @@ export function createHVRendererPlugin(options: { paneId?: string } = {}): Rende
     category: 'oscillator',
     stateKey: createHVStateKey,
     defaultPaneId: 'sub_HV',
+    paneIdField: 'hvPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createHVStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class HVIndicatorDefinition {
     static rendererFactory = createHVRendererPlugin

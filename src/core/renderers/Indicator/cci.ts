@@ -259,6 +259,10 @@ export function getCCITitleInfo(
     category: 'oscillator',
     stateKey: createCCIStateKey,
     defaultPaneId: 'sub_CCI',
+    paneIdField: 'cciPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createCCIStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class CCIIndicatorDefinition {
     static rendererFactory = createCCIRendererPlugin

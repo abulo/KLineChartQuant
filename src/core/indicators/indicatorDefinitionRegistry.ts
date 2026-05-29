@@ -1,4 +1,5 @@
 import type { IndicatorMetadata, IndicatorCategory, StateKey, RendererFactory } from './indicatorMetadata'
+import type { PluginHost } from '@/plugin'
 
 export interface IndicatorDefinitionConfig {
     name: string
@@ -6,6 +7,9 @@ export interface IndicatorDefinitionConfig {
     category: IndicatorCategory
     stateKey: StateKey
     defaultPaneId: string
+    paneIdField?: keyof import('./workerProtocol').IndicatorConfigSnapshot
+    allowMainPane?: boolean
+    applyResult?: (host: PluginHost, state: unknown, paneId: string) => void
 }
 
 type IndicatorDefinitionClass = {
@@ -35,6 +39,9 @@ export function Indicator(config: IndicatorDefinitionConfig) {
             indicatorDefinitions.set(config.name, {
                 ...config,
                 rendererFactory,
+                paneIdField: config.paneIdField,
+                allowMainPane: config.allowMainPane,
+                applyResult: config.applyResult,
             })
         })
 

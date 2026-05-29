@@ -343,6 +343,10 @@ export function getSTOCHTitleInfo(
     category: 'oscillator',
     stateKey: createSTOCHStateKey,
     defaultPaneId: 'sub_STOCH',
+    paneIdField: 'stochPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createSTOCHStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class STOCHIndicatorDefinition {
     static rendererFactory = createSTOCHRendererPlugin

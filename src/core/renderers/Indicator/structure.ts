@@ -122,6 +122,11 @@ export function createStructureRendererPlugin(options: { paneId?: string } = {})
     category: 'sub',
     stateKey: createStructureStateKey,
     defaultPaneId: 'sub_Structure',
+    paneIdField: 'structurePaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createStructureStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class StructureIndicatorDefinition {
     static rendererFactory = createStructureRendererPlugin

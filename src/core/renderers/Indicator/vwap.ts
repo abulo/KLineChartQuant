@@ -113,6 +113,10 @@ export function createVWAPRendererPlugin(options: { paneId?: string } = {}): Ren
     category: 'volume',
     stateKey: createVWAPStateKey,
     defaultPaneId: 'sub_VWAP',
+    paneIdField: 'vwapPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createVWAPStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class VWAPIndicatorDefinition {
     static rendererFactory = createVWAPRendererPlugin

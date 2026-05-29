@@ -125,6 +125,11 @@ export function createKAMARendererPlugin(options: KAMARendererOptions = {}): Ren
     category: 'main',
     stateKey: createKAMAStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'kamaPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createKAMAStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class KAMADefinition {
     static rendererFactory = createKAMARendererPlugin

@@ -130,6 +130,11 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     category: 'main',
     stateKey: createFibStateKey,
     defaultPaneId: 'main',
+    paneIdField: 'fibPaneId',
+    allowMainPane: true,
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createFibStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class FibDefinition {
     static rendererFactory = createFibRendererPlugin

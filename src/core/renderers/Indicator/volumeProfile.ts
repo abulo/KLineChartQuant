@@ -115,6 +115,10 @@ export function createVolumeProfileRendererPlugin(options: { paneId?: string } =
     category: 'volume',
     stateKey: createVolumeProfileStateKey,
     defaultPaneId: 'sub_VolumeProfile',
+    paneIdField: 'volumeProfilePaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createVolumeProfileStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class VolumeProfileIndicatorDefinition {
     static rendererFactory = createVolumeProfileRendererPlugin

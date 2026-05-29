@@ -225,6 +225,10 @@ export function getATRTitleInfo(
     category: 'oscillator',
     stateKey: createATRStateKey,
     defaultPaneId: 'sub_ATR',
+    paneIdField: 'atrPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createATRStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class ATRIndicatorDefinition {
     static rendererFactory = createATRRendererPlugin

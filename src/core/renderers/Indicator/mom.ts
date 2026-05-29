@@ -294,6 +294,10 @@ export function getMOMTitleInfo(
     category: 'oscillator',
     stateKey: createMOMStateKey,
     defaultPaneId: 'sub_MOM',
+    paneIdField: 'momPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createMOMStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class MOMIndicatorDefinition {
     static rendererFactory = createMOMRendererPlugin

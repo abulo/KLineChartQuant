@@ -311,6 +311,10 @@ export function getWMSRTitleInfo(
     category: 'oscillator',
     stateKey: createWMSRStateKey,
     defaultPaneId: 'sub_WMSR',
+    paneIdField: 'wmsrPaneId',
+    applyResult: (host, state, paneId) => {
+        host.setSharedState(createWMSRStateKey(paneId), state as any, 'indicator_scheduler')
+    },
 })
 class WMSRIndicatorDefinition {
     static rendererFactory = createWMSRRendererPlugin
