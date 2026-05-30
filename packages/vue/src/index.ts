@@ -28,6 +28,7 @@ import type {
     ChartController,
     ChartControllerFactory,
     ChartMountOptions,
+    ChartViewport,
     IndicatorInstance,
     InteractionSnapshot,
     KLineData,
@@ -36,6 +37,7 @@ import type {
 export type {
     ChartController,
     ChartMountOptions,
+    ChartViewport,
 } from '@klinechart-quant/core'
 
 // ---------------------------------------------------------------------------
@@ -206,6 +208,36 @@ export function useInteractionState(
     return state
 }
 
+/**
+ * Bridge the Chart's paneRatios signal into a Vue shallowRef.
+ */
+export function usePaneRatios(
+    controller: ChartController,
+): Ref<Readonly<Record<string, number>>> {
+    const ratios = shallowRef(controller.paneRatios.peek()) as Ref<
+        Readonly<Record<string, number>>
+    >
+    const unsub = controller.paneRatios.subscribe(() => {
+        ratios.value = controller.paneRatios.peek()
+    })
+    onScopeDispose(unsub)
+    return ratios
+}
+
+/**
+ * Bridge the Chart's viewport signal into a Vue shallowRef.
+ */
+export function useViewport(
+    controller: ChartController,
+): Ref<ChartViewport> {
+    const vp = shallowRef(controller.viewport.peek()) as Ref<ChartViewport>
+    const unsub = controller.viewport.subscribe(() => {
+        vp.value = controller.viewport.peek()
+    })
+    onScopeDispose(unsub)
+    return vp
+}
+
 // ---------------------------------------------------------------------------
 // <KLineChart /> SFC-equivalent component
 //
@@ -290,6 +322,25 @@ export const KLineChart = defineComponent({
 
         expose({
             getController: (): ChartController | null => chart.value,
+            handlePointerEvent: (
+                e: PointerEvent,
+                drawingController?: Parameters<ChartController['handlePointerEvent']>[1],
+            ): boolean => chart.value?.handlePointerEvent(e, drawingController) ?? false,
+            handleWheelEvent: (e: WheelEvent): void => chart.value?.handleWheelEvent(e),
+            handleScrollEvent: (): void => chart.value?.handleScrollEvent(),
+            zoomToLevel: (level: number, anchorX?: number): void =>
+                chart.value?.zoomToLevel(level, anchorX),
+            zoomIn: (anchorX?: number): void => chart.value?.zoomIn(anchorX),
+            zoomOut: (anchorX?: number): void => chart.value?.zoomOut(anchorX),
+            addIndicator: (
+                definitionId: string,
+                role: 'main' | 'sub',
+                params?: Record<string, unknown>,
+            ): string | null => chart.value?.addIndicator(definitionId, role, params) ?? null,
+            removeIndicator: (instanceId: string): boolean =>
+                chart.value?.removeIndicator(instanceId) ?? false,
+            setTheme: (theme: 'light' | 'dark'): void => chart.value?.setTheme(theme),
+            setData: (next: ReadonlyArray<KLineData>): void => chart.value?.setData(next),
         })
 
         const setContainerRef = (el: unknown): void => {
