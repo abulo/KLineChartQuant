@@ -1178,26 +1178,11 @@ function registerRenderers(chart: Chart): void {
 }
 
 function setupChartCallbacks(chart: Chart): void {
-  chart.setOnViewportChange((vp) => {
+  // 注意：setOnViewportChange 已合并到 viewport signal 订阅者中
+  
+  chart.setOnPaneLayoutChange(() => {
+    // 分隔线位置计算（需要实际像素位置，保留在回调中）
     invalidateContainerRectCache()
-    if (store.state.viewportDpr !== vp.dpr) {
-      store.actions.setViewportDpr(vp.dpr)
-    }
-    if (store.state.viewWidth !== vp.plotWidth) {
-      store.actions.setViewWidth(vp.plotWidth)
-    }
-    // 注意：kWidth/kGap/zoomLevel 不再从这里同步
-    // 它们由 viewport signal 订阅者从 Chart 同步到 Vue store
-  })
-
-  chart.setOnPaneLayoutChange((panes) => {
-    invalidateContainerRectCache()
-    const next: Record<string, number> = {}
-    for (const pane of panes) {
-      next[pane.id] = pane.ratio
-    }
-    store.actions.setPaneRatios(next)
-
     const renderers = chart.getPaneRenderers()
     const borderTop = containerRef.value
       ? parseInt(getComputedStyle(containerRef.value).borderTopWidth) || 0
@@ -1211,14 +1196,26 @@ function setupChartCallbacks(chart: Chart): void {
     })
   })
 
-  chart.setOnDataChange((data) => {
-    store.actions.setDataLength(data.length)
-    store.actions.bumpDataVersion()
+  // 订阅 paneRatios signal，同步到 Vue store
+  const unsubscribePaneRatios = chart.paneRatios.subscribe(() => {
+    const ratios = chart.paneRatios.peek()
+    store.actions.setPaneRatios({ ...ratios })
   })
 
-  // 订阅 viewport signal，处理缩放后的 scrollLeft 更新
+  // 订阅 viewport signal，处理缩放、DPR、width 变化和 scrollLeft 更新
   const unsubscribeViewport = chart.viewport.subscribe(() => {
     const vp = chart.viewport.peek()
+    
+    // DPR 变化时同步到 store
+    if (store.state.viewportDpr !== vp.dpr) {
+      store.actions.setViewportDpr(vp.dpr)
+    }
+    
+    // ViewWidth 变化时同步到 store
+    if (store.state.viewWidth !== vp.plotWidth) {
+      store.actions.setViewWidth(vp.plotWidth)
+    }
+    
     // 完整同步 zoom state 到 Vue store（Chart 是 SSOT）
     if (store.state.zoomLevel !== vp.zoomLevel || store.state.kWidth !== vp.kWidth || store.state.kGap !== vp.kGap) {
       store.actions.setZoomState(vp.zoomLevel, vp.kWidth, vp.kGap)
@@ -1226,6 +1223,7 @@ function setupChartCallbacks(chart: Chart): void {
 
     // 在 nextTick 中应用 desiredScrollLeft
     if (vp.desiredScrollLeft !== undefined && vp.desiredScrollLeft !== containerRef.value?.scrollLeft) {
+      invalidateContainerRectCache()
       nextTick(() => {
         const c = containerRef.value
         if (!c) return
@@ -1237,9 +1235,18 @@ function setupChartCallbacks(chart: Chart): void {
     }
   })
 
+  // 订阅 data signal，替换 onDataChange 回调
+  const unsubscribeData = chart.data.subscribe(() => {
+    const data = chart.data.peek()
+    store.actions.setDataLength(data.length)
+    store.actions.bumpDataVersion()
+  })
+
   // 保存 unsubscribe 函数以便清理
   onUnmounted(() => {
     unsubscribeViewport()
+    unsubscribeData()
+    unsubscribePaneRatios()
   })
 }
 
@@ -1252,8 +1259,6 @@ function applyInitialSettings(chart: Chart): void {
     console.time('updateData-10k')
     chart.updateData(testData)
     console.timeEnd('updateData-10k')
-    store.actions.setDataLength(testData.length)
-    store.actions.bumpDataVersion()
   }
 }
 
@@ -1302,8 +1307,6 @@ function setupSemanticController(chart: Chart): void {
 
   // config:ready → Chart 侧已完成创建，Vue 回读状态
   semanticController.value.on('config:ready', () => {
-    store.actions.setDataLength(chart.getData()?.length ?? 0)
-    store.actions.bumpDataVersion()
     initIndicatorsFromConfig()
     syncSubPanesFromChart()
     nextTick(() => scrollToRight())

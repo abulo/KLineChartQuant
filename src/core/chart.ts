@@ -3,7 +3,7 @@ import type { ChartSettings } from '@/config/chartSettings'
 import { createSignal, type Signal } from '../../packages/core/src/reactivity/signal'
 import { getVisibleRange } from '@/core/viewport/viewport'
 import { Pane, type VisibleRange, UpdateLevel } from '@/core/layout/pane'
-import { InteractionController } from '@/core/controller/interaction'
+import { InteractionController, type InteractionSnapshot } from '@/core/controller/interaction'
 import { PaneRenderer } from '@/core/paneRenderer'
 import { SharedWebGLSurface } from '@/core/renderers/webgl/sharedWebGLSurface'
 import { MarkerManager, type CustomMarkerEntity } from './marker/registry'
@@ -1335,6 +1335,13 @@ export class Chart {
     }
 
     private emitPaneLayoutChange(): void {
+        // 同步 pane ratios 到 signal
+        const ratios: Record<string, number> = {}
+        this._internalPaneRatios.forEach((ratio, id) => {
+            ratios[id] = ratio
+        })
+        this._paneRatiosSignal.set(ratios)
+        
         this.onPaneLayoutChange?.(this.getPaneLayoutSpecs())
     }
 
@@ -1680,6 +1687,7 @@ export class Chart {
      */
     updateData(data: KLineData[]) {
         this._internalData = data ?? []
+        this._dataSignal.set([...this._internalData])
         this.onDataChange?.(this._internalData)
 
         // 重算 DOM scrollLeft 状态, 防止左右滚动超出数据长度范围
@@ -2180,6 +2188,22 @@ export class Chart {
     private _drawingToolSignal = createSignal<DrawingToolType | null>(null)
     private _drawingsSignal = createSignal<ReadonlyArray<DrawingObject>>([])
     private _paneRatiosSignal = createSignal<Readonly<Record<string, number>>>({})
+    private _interactionSignal = createSignal<InteractionSnapshot>({
+        crosshairPos: null,
+        crosshairIndex: null,
+        crosshairPrice: null,
+        hoveredIndex: null,
+        activePaneId: null,
+        tooltipPos: { x: 0, y: 0 },
+        tooltipAnchorPlacement: 'right-bottom',
+        hoveredMarkerData: null,
+        hoveredCustomMarker: null,
+        isDragging: false,
+        isResizingPaneBoundary: false,
+        isHoveringPaneBoundary: false,
+        hoveredPaneBoundaryId: null,
+        isHoveringRightAxis: false,
+    })
 
     /** 视口状态信号 */
     get viewport(): Signal<ViewportState> {
@@ -2219,6 +2243,11 @@ export class Chart {
     /** 面板比例信号 */
     get paneRatios(): Signal<Readonly<Record<string, number>>> {
         return this._paneRatiosSignal
+    }
+
+    /** 交互状态信号 */
+    get interactionState(): Signal<InteractionSnapshot> {
+        return this._interactionSignal
     }
 
     // ---------- Data ----------
