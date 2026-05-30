@@ -94,7 +94,7 @@ export function createPaneTitleRendererPlugin(options: PaneTitleOptions): Render
             if (titleInfo) {
                 let currentX = x
 
-                overlayCtx.fillStyle = TEXT_COLORS.PRIMARY
+                overlayCtx.fillStyle = colors.TEXT.PRIMARY
                 overlayCtx.fillText(titleInfo.name, currentX, y)
                 currentX += measureTextWidth(overlayCtx, titleInfo.name)
 
@@ -116,7 +116,7 @@ export function createPaneTitleRendererPlugin(options: PaneTitleOptions): Render
                     }
                 }
             } else {
-                overlayCtx.fillStyle = TEXT_COLORS.PRIMARY
+                overlayCtx.fillStyle = colors.TEXT.PRIMARY
                 overlayCtx.fillText(currentOptions.title, x, y)
 
                 if (currentOptions.description) {

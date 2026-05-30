@@ -34,6 +34,7 @@ export function createYAxisRendererPlugin(options: {
 
       if (pane.capabilities.showPriceAxisTicks) {
         drawScaleTicks({
+          colors,
           ctx: targetCtx,
           dpr,
           axisWidth,
