@@ -46,6 +46,7 @@ export default defineConfig({
             { find: /^@klinechart-quant\/core\/engine\/renderers\/paneTitle$/, replacement: r('engine/renderers/paneTitle.ts') },
             { find: /^@klinechart-quant\/core\/engine\/controller\/interaction$/, replacement: r('engine/controller/interaction.ts') },
             { find: /^@klinechart-quant\/core\/engine\/drawing$/, replacement: r('engine/drawing/index.ts') },
+            { find: /^@klinechart-quant\/core\/version$/, replacement: r('version.ts') },
             { find: /^@klinechart-quant\/core$/, replacement: r('index.ts') },
         ],
     },

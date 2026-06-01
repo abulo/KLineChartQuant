@@ -30,7 +30,8 @@
       "@klinechart-quant/core/engine/renderers/Indicator/indicatorData": ["../core/src/engine/renderers/Indicator/indicatorData.ts"],
       "@klinechart-quant/core/engine/renderers/paneTitle": ["../core/src/engine/renderers/paneTitle.ts"],
       "@klinechart-quant/core/engine/controller/interaction": ["../core/src/engine/controller/interaction.ts"],
-      "@klinechart-quant/core/engine/drawing": ["../core/src/engine/drawing/index.ts"]
+      "@klinechart-quant/core/engine/drawing": ["../core/src/engine/drawing/index.ts"],
+      "@klinechart-quant/core/version": ["../core/src/version.ts"]
     }
   },
   "include": ["src/**/*"],

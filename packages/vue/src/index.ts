@@ -399,3 +399,4 @@ export const KMapPlugin = {
 // ---------------------------------------------------------------------------
 import { createChartController } from '@klinechart-quant/core'
 __setControllerFactory(createChartController)
+export { VERSION, CORE_VERSION } from './version'

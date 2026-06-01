@@ -1,6 +1,6 @@
 {
   "name": "@klinechart-quant/core",
-  "version": "0.0.0",
+  "version": "0.7.2",
   "description": "Headless K-line chart engine + reactive controllers. Zero framework dependencies.",
   "license": "MIT",
   "type": "module",
@@ -76,6 +76,10 @@
     "./engine/drawing": {
       "types": "./src/engine/drawing/index.ts",
       "import": "./src/engine/drawing/index.ts"
+    },
+    "./version": {
+      "types": "./src/version.ts",
+      "import": "./src/version.ts"
     }
   },
   "files": [
