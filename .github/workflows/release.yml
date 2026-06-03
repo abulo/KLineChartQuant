@@ -37,10 +37,11 @@ jobs:
       - name: Build packages
         run: pnpm --filter @363045841yyt/klinechart-core --filter @363045841yyt/klinechart build
 
+      - name: Configure npm registry
+        run: npm config set registry https://registry.npmjs.org
+
       - name: Publish to npm
         run: pnpm --filter @363045841yyt/klinechart-core --filter @363045841yyt/klinechart publish --access public --no-git-checks --provenance
-        env:
-          NPM_CONFIG_REGISTRY: https://registry.npmjs.org
 
       - name: Generate release notes
         id: notes
