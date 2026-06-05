@@ -191,6 +191,10 @@ const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = co
             // ========== 优化1: 使用离屏 Canvas 缓存虚线背景线 ==========
             const paneWidth = context.paneWidth
             const paneHeight = pane.height
+            if (paneWidth <= 0 || paneHeight <= 0) {
+                clearLineCache()
+                return
+            }
             const dashedLinesKey = buildDashedLinesKey(paneWidth, paneHeight, displayMin, displayMax, dpr)
 
             if (cachedDashedLinesKey !== dashedLinesKey) {
