@@ -291,8 +291,12 @@ export class Chart {
         // 启用对应的渲染器
         this.enableMainIndicatorRenderer(id)
 
-        // 更新调度器配置
+        // 更新调度器配置（触发异步重算）
         this.updateIndicatorSchedulerConfig(id)
+
+        // 同步重算主图状态：latestResult 已有该指标的 series，只是没注册到 registry
+        // 补调 updateVisibleRange 使其走 updateVisibleStatesOnly，立即从 latestResult 合成极值
+        this.indicatorScheduler.updateVisibleRange(this.lastVisibleRange)
 
         this.scheduleDraw()
         return true
@@ -1574,6 +1578,24 @@ export class Chart {
 
         // 重置交互状态
         this.interaction.reset()
+
+        // 如果 visibleRange 还是 {0,0}，先从 viewport 算一个初步范围
+        // 避免 scheduler 第一次计算时用 {0,0} 产出 Infinity 极值
+        if (this.lastVisibleRange.start === 0 && this.lastVisibleRange.end === 0 && this._internalData.length > 0) {
+            const plotWidth = this.observedSize.width > 0
+                ? this.observedSize.width
+                : Math.max(1, Math.round(this.dom.container?.clientWidth ?? 800))
+            const dpr = this.getEffectiveDpr()
+            const { start, end } = getVisibleRange(
+                this.cachedScrollLeft,
+                plotWidth,
+                this.opt.kWidth,
+                this.opt.kGap,
+                this._internalData.length,
+                dpr,
+            )
+            this.lastVisibleRange = { start, end }
+        }
 
         // 触发指标计算（在 scheduleDraw 之前，确保渲染器读到最新状态）
         this.indicatorScheduler.update(this._internalData, this.lastVisibleRange)

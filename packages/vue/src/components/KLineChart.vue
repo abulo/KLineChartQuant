@@ -662,7 +662,11 @@ function initIndicatorsFromConfig(): void {
   if (mainIndicators) {
     for (const indicator of mainIndicators) {
       if (indicator.enabled) {
-        c.addIndicator(indicator.type, 'main', indicator.params as Record<string, number | boolean | string>)
+        const added = c.addIndicator(
+          indicator.type,
+          'main',
+          indicator.params as Record<string, number | boolean | string>,
+        )
       }
     }
   }
@@ -1054,11 +1058,20 @@ function setupSemanticController(ctrl: ChartController): void {
     nextTick(() => scrollToRight())
   })
   // 应用副图、主图配置
-  semanticController.value.applyConfig(props.semanticConfig).then((result) => {
+  if (chartSettings.value.performanceTest10kKlines) {
+    // 10k 性能测试模式：数据由外部（applyInitialSettings）提供，
+    // 语义控制器只注册指标和标记，不 fetch/updateData，避免数据跳变
+    const result = semanticController.value.applyIndicatorsOnly(props.semanticConfig)
     if (result && !result.success) {
       console.error('Semantic config apply failed:', result.errors)
     }
-  })
+  } else {
+    semanticController.value.applyConfig(props.semanticConfig).then((result) => {
+      if (result && !result.success) {
+        console.error('Semantic config apply failed:', result.errors)
+      }
+    })
+  }
 }
 
 onMounted(() => {
@@ -1081,6 +1094,11 @@ onMounted(() => {
 
   // 3) 信号回调
   setupChartCallbacks(ctrl)
+
+  // 3.5) 在任何 draw 之前注册主图指标（BOLL/MA 等）
+  //      initIndicatorsFromConfig 是同步的，读 props.semanticConfig 即可注册，
+  //      确保 scheduler 首次 applyResults 时 BOLL 已在 registry 里
+  initIndicatorsFromConfig()
 
   // 4) 工具栏初始设置
   applyInitialSettings(ctrl)

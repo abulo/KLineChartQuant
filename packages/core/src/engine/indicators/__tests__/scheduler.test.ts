@@ -209,6 +209,28 @@ describe('IndicatorScheduler', () => {
       expect(state!.visibleMin).toBe(Infinity)
       expect(state!.visibleMax).toBe(-Infinity)
     })
+
+    it('should refresh main indicator visible extremes when visible range changes', () => {
+      const data = createTestData(100, 100)
+      const invalidate = vi.fn()
+      scheduler.setInvalidateCallback(invalidate)
+
+      scheduler.update(data, { start: 0, end: 0 })
+      invalidate.mockClear()
+      const initialState = getStateFromMockCalls<BOLLRenderState>(mockHost, BOLL_STATE_KEY)
+      expect(initialState).toBeDefined()
+      expect(initialState!.visibleMin).toBe(Infinity)
+      expect(initialState!.visibleMax).toBe(-Infinity)
+
+      scheduler.updateVisibleRange({ start: 30, end: 60 })
+
+      const updatedState = getStateFromMockCalls<BOLLRenderState>(mockHost, BOLL_STATE_KEY)
+      expect(updatedState).toBeDefined()
+      expect(updatedState!.visibleMin).toBeLessThan(updatedState!.visibleMax)
+      expect(Number.isFinite(updatedState!.visibleMin)).toBe(true)
+      expect(Number.isFinite(updatedState!.visibleMax)).toBe(true)
+      expect(invalidate).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('MA config update', () => {

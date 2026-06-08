@@ -63,7 +63,7 @@ import type {
 } from './workerProtocol'
 import type { MAFlags } from './calculators'
 import { IndicatorRegistry } from './indicatorRegistry'
-import type { IndicatorMetadata } from './indicatorMetadata'
+import { resolveStateKey, type IndicatorMetadata } from './indicatorMetadata'
 import type { BaseIndicatorState } from '../../plugin'
 
 // Default constants for default config
@@ -519,8 +519,10 @@ export class IndicatorScheduler {
                 this.workerReady = true
                 this.useWorker = true
                 console.log('[IndicatorScheduler] Worker READY - using Worker backend')
-                // Worker 就绪后立即补算一次，确保后续走 Worker
-                this.triggerRecompute()
+                // Worker 就绪后补算一次，但仅在有数据时（避免空数据产出 Infinity 极值）
+                if (this.currentData.length > 0) {
+                    this.triggerRecompute()
+                }
                 break
 
             case 'seriesResult':
@@ -611,25 +613,49 @@ export class IndicatorScheduler {
         }
     }
 
-    /** 仅副图：重算可见范围极值并回调 applyResult（视口变更时同步更新，不走 Worker） */
-    private updateVisibleStatesOnly(): void {
-        if (!this.pluginHost || !this.latestResult) return
+    /** 重算可见范围极值并回调 applyResult（视口变更时同步更新，不走 Worker） */
+    private updateVisibleStatesOnly(): boolean {
+        if (!this.pluginHost || !this.latestResult) return false
 
         const timestamp = Date.now()
+        let mainStates: Record<string, unknown> | null = null
+        let mainStateUpdated = false
         const activeMask = this.buildActiveSubIndicatorMask()
-        const states = composeVisibleSubIndicatorStates(
+        const subStates = composeVisibleSubIndicatorStates(
             this.latestResult,
             this.visibleRange,
             timestamp,
             activeMask,
             (indicatorId) => this.registry.get(indicatorId),
-        )
+        ) as Record<string, unknown>
 
         for (const meta of this.registry.getAll()) {
             if (!meta.applyResult) continue
-            if (!meta.paneIdField && meta.category === 'main') continue
 
-            const state = (states as Record<string, unknown>)[meta.name]
+            let state: unknown
+            if (meta.category === 'main') {
+                const paneId = meta.paneIdField
+                    ? (this.configSnapshot as unknown as Record<string, string>)[meta.paneIdField as string]
+                    : meta.defaultPaneId
+                const current = this.pluginHost.getSharedState<BaseIndicatorState & { visibleMin?: number; visibleMax?: number }>(
+                    resolveStateKey(meta.stateKey, paneId),
+                )
+                const currentValid = current &&
+                    Number.isFinite(current.visibleMin) &&
+                    Number.isFinite(current.visibleMax) &&
+                    current.visibleMin! <= current.visibleMax!
+                if (currentValid) continue
+
+                mainStates ??= composeRenderStates(
+                    this.latestResult,
+                    this.visibleRange,
+                    timestamp,
+                    (indicatorId) => this.registry.get(indicatorId),
+                ) as Record<string, unknown>
+                state = mainStates[meta.name]
+            } else {
+                state = subStates[meta.name]
+            }
             if (state === undefined) continue
 
             this.checkVisibleExtremes(
@@ -642,7 +668,12 @@ export class IndicatorScheduler {
                 : meta.defaultPaneId
 
             meta.applyResult(this.pluginHost, state as BaseIndicatorState, paneId)
+            if (meta.category === 'main') {
+                mainStateUpdated = true
+            }
         }
+
+        return mainStateUpdated
     }
 
     /** 遍历注册表，标记当前可见副图，仅这些指标参与计算 */
@@ -707,7 +738,10 @@ export class IndicatorScheduler {
 
         // 基于缓存的 series 同步更新极值
         if (this.latestResult) {
-            this.updateVisibleStatesOnly()
+            const mainStateUpdated = this.updateVisibleStatesOnly()
+            if (mainStateUpdated) {
+                this.invalidateCallback?.()
+            }
         }
     }
 
@@ -1125,12 +1159,13 @@ export class IndicatorScheduler {
      */
     getMainIndicatorPriceRange(): { min: number; max: number } | null {
         if (!this.latestResult) return null
-        return computeMainIndicatorPriceRange(
+        const result = computeMainIndicatorPriceRange(
             this.latestResult,
             this.visibleRange,
             this.activeMainIndicators,
             (indicatorId) => this.registry.get(indicatorId),
         )
+        return result
     }
 
     /**
@@ -1151,6 +1186,7 @@ export class IndicatorScheduler {
     // ============================================================================
 
     private triggerRecompute(): void {
+        if (this.currentData.length === 0) return
         if (this.useWorker && this.worker && this.workerReady) {
             this.computeWithWorker()
         } else {

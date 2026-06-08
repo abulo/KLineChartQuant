@@ -62,6 +62,10 @@ async function getDataFetcher(): Promise<DataFetcher> {
 export interface SemanticChartAdapter {
   updateData(data: ReadonlyArray<KLineData>): void
   updateRendererConfig(name: string, config: Record<string, unknown>): void
+  addIndicator?(definitionId: string, role: 'main' | 'sub', params?: Record<string, unknown>): string | null
+  removeIndicator?(instanceId: string): boolean
+  enableMainIndicator?(indicatorId: string, params?: Record<string, number | boolean | string>): boolean
+  disableMainIndicator?(indicatorId: string): boolean
   clearSubPanes(): void
   createSubPane(paneId: string, indicatorId: CoreSubIndicatorType, params?: Record<string, unknown>): boolean
   clearCustomMarkers(): void
@@ -112,7 +116,35 @@ export class SemanticChartController {
     this.events.off(event, handler)
   }
 
+  /**
+   * 仅注册指标配置，不获取/更新数据。
+   * 用于 performanceTest10kKlines 等场景：数据由外部提供，语义控制器只管指标。
+   */
+  applyIndicatorsOnly(config: SemanticChartConfig): ApplyResult {
+    try {
+      if (config.indicators) {
+        this.applyIndicators(config.indicators.main, config.indicators.sub)
+      }
+      if (config.markers) {
+        this.applyMarkers(config.markers.customMarkers, config.data.period)
+      }
+      this.events.emit('config:ready', undefined)
+      return { success: true }
+    } catch (error) {
+      this.events.emit('config:error', error)
+      return {
+        success: false,
+        errors: [error instanceof Error ? error.message : String(error)],
+      }
+    }
+  }
+
   private async doApplyConfig(config: SemanticChartConfig): Promise<void> {
+    // 先注册指标（同步），确保 scheduler 首次 applyResults 时指标已在 registry
+    if (config.indicators) {
+      this.applyIndicators(config.indicators.main, config.indicators.sub)
+    }
+
     const fetcher = await getDataFetcher()
     const data = await fetcher(config.data.source, {
       symbol: config.data.symbol,
@@ -122,10 +154,6 @@ export class SemanticChartController {
       adjust: config.data.adjust,
     })
     this.chart.updateData(data)
-
-    if (config.indicators) {
-      this.applyIndicators(config.indicators.main, config.indicators.sub)
-    }
 
     if (config.markers) {
       this.applyMarkers(config.markers.customMarkers, config.data.period)
@@ -139,7 +167,23 @@ export class SemanticChartController {
   private applyIndicators(main?: MainIndicatorConfig[], sub?: SubIndicatorConfig[]): void {
     if (main) {
       for (const indicator of main) {
-        if (!indicator.enabled) continue
+        if (!indicator.enabled) {
+          if (!this.chart.removeIndicator?.(indicator.type)) {
+            this.chart.disableMainIndicator?.(indicator.type)
+          }
+          continue
+        }
+        const added = this.chart.addIndicator?.(indicator.type, 'main', indicator.params as Record<string, unknown>)
+        if (added) {
+          continue
+        }
+        const enabled = this.chart.enableMainIndicator?.(
+            indicator.type,
+            indicator.params as Record<string, number | boolean | string>,
+          )
+        if (enabled) {
+          continue
+        }
         getSemanticIndicatorDefinition(indicator.type)?.semantic?.apply?.(this.chart, indicator)
       }
     }
