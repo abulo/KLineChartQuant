@@ -144,30 +144,6 @@ export function createExtremaMarkersRendererPlugin(): RendererPlugin {
                 return kLineCenters[localIdx]!
             }
 
-            if (!context.yAxisLabels) context.yAxisLabels = []
-
-            context.yAxisLabels.push({
-                dataIndex: maxIndex,
-                price: max,
-                y: pane.yAxis.priceToY(max),
-                style: {
-                    bgColor: colors.lastPriceLabel.bg,
-                    borderColor: colors.price.lastPrice,
-                    textColor: colors.price.lastPrice,
-                }
-            })
-
-            context.yAxisLabels.push({
-                dataIndex: minIndex,
-                price: min,
-                y: pane.yAxis.priceToY(min),
-                style: {
-                    bgColor: colors.lastPriceLabel.bg,
-                    borderColor: colors.price.lastPrice,
-                    textColor: colors.price.lastPrice,
-                }
-            })
-
             // 收集所有 marker 数据
             const markers: MarkerData[] = []
 
