@@ -84,3 +84,7 @@ pnpm stockbao
 - **Viewport too large** may trigger `MAX_CANVAS_PIXELS`, causing DPR to be actively downgraded.
 - **Semantic renderer names** (e.g. `ma`, `boll`) are stringly-typed conventions — renaming requires sync in `semantic/controller.ts`.
 - **Web component build**: `pnpm build:wc` in packages/vue (cross-env BUILD_TARGET=web-component).
+
+## Quick Search
+
+- **Use CodeGraph**:  codegraph_codegraph_callees, codegraph_codegraph_callers, codegraph_codegraph_explore, codegraph_codegraph_files, codegraph_codegraph_impact, codegraph_codegraph_node, codegraph_codegraph_search, codegraph_codegraph_status tools can be used.
