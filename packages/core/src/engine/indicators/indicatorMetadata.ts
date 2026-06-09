@@ -7,6 +7,7 @@
 
 import type { PluginHost, RendererPluginWithHost } from '../../plugin'
 import type { IndicatorConfigSnapshot, IndicatorSeriesBundle } from './workerProtocol'
+import type { KLineData } from '../../types/price'
 
 export type IndicatorId = string
 
@@ -86,6 +87,27 @@ export type IndicatorVisibleStateComposer = (
 ) => unknown
 
 /**
+ * 指标计算描述符
+ * 描述每个指标的计算逻辑，供 IndicatorRuntime 驱动
+ *
+ * - 主线程：直接调用 compute
+ * - Worker：用 computeKey 从 calculators 模块映射到实际函数
+ * - 自定义运行时指标：无 computeKey，仅主线程 inline 运行
+ */
+export interface IndicatorRuntimeDescriptor<C = any> {
+    /** configSnapshot 中的 key，通常等于 name（如 'macd'） */
+    configKey: string
+    /** paneId 在 configSnapshot 中的 key（如 'macdPaneId'），可省略 */
+    paneIdKey?: string
+    /** 默认配置值 */
+    defaultConfig: C
+    /** 计算函数（主线程直接调用，Worker 用 computeKey 桥接） */
+    compute: (data: KLineData[], config: C) => unknown
+    /** Worker 端计算键名，映射到 calculators 模块的导出 */
+    computeKey: string
+}
+
+/**
  * 指标元数据接口
  */
 export interface IndicatorMetadata<T = unknown> {
@@ -121,7 +143,7 @@ export interface IndicatorMetadata<T = unknown> {
      * 在 configSnapshot 中的 paneId 字段名
      * 用于从配置中获取当前 pane ID
      */
-    paneIdField?: keyof IndicatorConfigSnapshot
+    paneIdField?: string
 
     /**
      * 渲染器工厂函数
@@ -189,6 +211,12 @@ export interface IndicatorMetadata<T = unknown> {
     visibleState?: {
         compose: IndicatorVisibleStateComposer
     }
+
+    /**
+     * 计算描述符（可选）
+     * 提供后，IndicatorRuntime 可据此自动调度计算，无需手写展开
+     */
+    runtime?: IndicatorRuntimeDescriptor
 
     /**
      * 语义配置应用入口。

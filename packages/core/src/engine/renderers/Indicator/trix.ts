@@ -7,6 +7,7 @@ import { createDualSparseVisibleStateComposer } from '../../indicators/visibleSt
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, TRIXSchedulerConfig } from '../../indicators/scheduler'
+import { calcTRIXData } from '../../indicators/calculators'
 
 const TRIX_COLOR = '#e11d48'
 const SIGNAL_COLOR = '#f59e0b'
@@ -150,15 +151,15 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
     category: 'oscillator',
     stateKey: createTRIXStateKey,
     defaultPaneId: 'sub_TRIX',
-    paneIdField: 'trixPaneId',
     scale: { indicatorKey: 'trix', label: 'TRIX', decimals: 6 },
     updateConfig: (scheduler, params, paneId) => {
-    (scheduler as IndicatorScheduler).updateTRIXConfig(params as Partial<TRIXSchedulerConfig>, paneId)
+    (scheduler as IndicatorScheduler).updateIndicatorConfig('trix', params, paneId)
   },
     visibleState: { compose: createDualSparseVisibleStateComposer('trix', EMPTY_TRIX_STATE) },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createTRIXStateKey(paneId), state as any, 'indicator_scheduler')
     },
+    runtime: { configKey:'trix', defaultConfig:{period:15,signalPeriod:9,showTRIX:true,showSignal:true}, computeKey:'calcTRIXData', compute:(data,c)=>calcTRIXData(data,c.period,c.signalPeriod) },
 })
 class TRIXIndicatorDefinition {
     static rendererFactory = createTRIXRendererPlugin

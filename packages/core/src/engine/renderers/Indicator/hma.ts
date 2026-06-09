@@ -6,6 +6,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import type { IndicatorScheduler, HMASchedulerConfig } from '../../indicators/scheduler'
+import { calcHMAData } from '../../indicators/calculators'
 
 const HMA_COLOR = '#f43f5e'
 
@@ -126,17 +127,17 @@ export function createHMARendererPlugin(options: HMARendererOptions = {}): Rende
     category: 'main',
     stateKey: createHMAStateKey,
     defaultPaneId: 'main',
-    paneIdField: 'hmaPaneId',
     allowMainPane: true,
     mainPane: { rendererName: 'hma_main', toActiveConfig: (params, active) => ({ ...params, showHMA: active }) },
     visibleState: { compose: createSparseVisibleStateComposer('hma', EMPTY_HMA_STATE) },
     scale: { indicatorKey: 'hma', label: 'HMA', decimals: 2 },
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updateHMAConfig(params as Partial<HMASchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('hma', params, paneId)
     },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createHMAStateKey(paneId), state as any, 'indicator_scheduler')
     },
+    runtime: { configKey:'hma', defaultConfig:{period:14,showHMA:true}, computeKey:'calcHMAData', compute:(data,c)=>calcHMAData(data,c.period) },
 })
 class HMADefinition {
     static rendererFactory = createHMARendererPlugin

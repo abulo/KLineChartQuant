@@ -277,9 +277,22 @@ export interface VolumeProfileSchedulerConfig {
 // Worker 请求类型
 // ============================================================================
 
+export interface SerializedRuntimeDescriptor {
+    configKey: string
+    paneIdKey?: string
+    defaultConfig: unknown
+    computeKey: string
+}
+
 export interface InitRequest {
     type: 'init'
     protocolVersion: number
+    descriptors?: SerializedRuntimeDescriptor[]
+}
+
+export interface AddDescriptorRequest {
+    type: 'addDescriptor'
+    descriptor: SerializedRuntimeDescriptor
 }
 
 export interface SetDataRequest {
@@ -308,6 +321,7 @@ export interface DisposeRequest {
 
 export type IndicatorWorkerRequest =
     | InitRequest
+    | AddDescriptorRequest
     | SetDataRequest
     | SetConfigRequest
     | ComputeSeriesRequest
@@ -390,42 +404,6 @@ export interface IndicatorConfigSnapshot {
     structure: StructureSchedulerConfig
     zones: ZonesSchedulerConfig
     volumeProfile: VolumeProfileSchedulerConfig
-    // pane IDs for sub-indicators
-    rsiPaneId: string
-    cciPaneId: string
-    stochPaneId: string
-    momPaneId: string
-    wmsrPaneId: string
-    kstPaneId: string
-    fastkPaneId: string
-    macdPaneId: string
-    atrPaneId: string
-    wmaPaneId: string
-    demaPaneId: string
-    temaPaneId: string
-    hmaPaneId: string
-    kamaPaneId: string
-    sarPaneId: string
-    supertrendPaneId: string
-    keltnerPaneId: string
-    donchianPaneId: string
-    ichimokuPaneId: string
-    rocPaneId: string
-    trixPaneId: string
-    hvPaneId: string
-    parkinsonPaneId: string
-    chaikinVolPaneId: string
-    vmaPaneId: string
-    obvPaneId: string
-    pvtPaneId: string
-    vwapPaneId: string
-    cmfPaneId: string
-    mfiPaneId: string
-    pivotPaneId: string
-    fibPaneId: string
-    structurePaneId: string
-    zonesPaneId: string
-    volumeProfilePaneId: string
 }
 
 // ============================================================================

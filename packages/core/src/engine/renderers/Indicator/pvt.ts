@@ -6,6 +6,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import type { IndicatorScheduler, PVTSchedulerConfig } from '../../indicators/scheduler'
+import { calcPVTData } from '../../indicators/calculators'
 
 const PVT_COLOR = '#a855f7'
 
@@ -114,14 +115,19 @@ export function createPVTRendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createPVTStateKey,
     defaultPaneId: 'sub_PVT',
-    paneIdField: 'pvtPaneId',
     visibleState: { compose: createSparseVisibleStateComposer('pvt', EMPTY_PVT_STATE) },
     scale: { indicatorKey: 'pvt', label: 'PVT', decimals: 0 },
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updatePVTConfig(params as Partial<PVTSchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('pvt', params, paneId)
     },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createPVTStateKey(paneId), state as any, 'indicator_scheduler')
+    },
+    runtime: {
+        configKey: 'pvt',
+        defaultConfig: { showPVT: true },
+        computeKey: 'calcPVTData',
+        compute: (data, c) => calcPVTData(data),
     },
 })
 class PVTIndicatorDefinition {

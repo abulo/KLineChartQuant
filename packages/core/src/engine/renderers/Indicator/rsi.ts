@@ -9,6 +9,7 @@ import { createFixedRangeRecordVisibleStateComposer } from '../../indicators/vis
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, RSISchedulerConfig } from '../../indicators/scheduler'
 import { createRsiScaleRendererPlugin } from './scale/rsi_scale'
+import { calcRSIData } from '../../indicators/calculators'
 
 type LinePoint = { x: number; y: number }
 
@@ -389,15 +390,15 @@ export function getRSITitleInfo(
     category: 'oscillator',
     stateKey: createRSIStateKey,
     defaultPaneId: 'sub_RSI',
-    paneIdField: 'rsiPaneId',
     visibleState: { compose: createFixedRangeRecordVisibleStateComposer('rsi', EMPTY_RSI_STATE) },
     scaleRendererFactory: createRsiScaleRendererPlugin,
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updateRSIConfig(params as Partial<RSISchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('rsi', params, paneId)
     },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createRSIStateKey(paneId), state as any, 'indicator_scheduler')
     },
+    runtime: { configKey:'rsi', defaultConfig:{period1:6,period2:12,period3:24,showRSI1:true,showRSI2:true,showRSI3:true}, computeKey:'calcRSIData', compute:(data,c)=>{const p=[c.period1,c.period2,c.period3];const s=[c.showRSI1,c.showRSI2,c.showRSI3];const r:Record<number,(number|undefined)[]>={};for(let i=0;i<3;i++){if(s[i])r[p[i]]=calcRSIData(data,p[i])}return r} },
 })
 class RSIIndicatorDefinition {
     static rendererFactory = createRSIRendererPlugin

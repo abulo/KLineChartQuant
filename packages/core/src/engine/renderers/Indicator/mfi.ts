@@ -6,6 +6,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { createFixedRangeSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, MFISchedulerConfig } from '../../indicators/scheduler'
+import { calcMFIData } from '../../indicators/calculators'
 
 const MFI_COLOR = '#fb923c'
 
@@ -133,14 +134,19 @@ export function createMFIRendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createMFIStateKey,
     defaultPaneId: 'sub_MFI',
-    paneIdField: 'mfiPaneId',
     visibleState: { compose: createFixedRangeSparseVisibleStateComposer('mfi', EMPTY_MFI_STATE) },
     scale: { indicatorKey: 'mfi', label: 'MFI', decimals: 2 },
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updateMFIConfig(params as Partial<MFISchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('mfi', params, paneId)
     },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createMFIStateKey(paneId), state as any, 'indicator_scheduler')
+    },
+    runtime: {
+        configKey: 'mfi',
+        defaultConfig: { period: 14, showMFI: true },
+        computeKey: 'calcMFIData',
+        compute: (data, c) => calcMFIData(data, c.period),
     },
 })
 class MFIIndicatorDefinition {

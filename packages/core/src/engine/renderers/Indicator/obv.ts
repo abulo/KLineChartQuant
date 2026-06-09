@@ -6,6 +6,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import type { IndicatorScheduler, OBVSchedulerConfig } from '../../indicators/scheduler'
+import { calcOBVData } from '../../indicators/calculators'
 
 const OBV_COLOR = '#16a34a'
 
@@ -114,14 +115,19 @@ export function createOBVRendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createOBVStateKey,
     defaultPaneId: 'sub_OBV',
-    paneIdField: 'obvPaneId',
     visibleState: { compose: createSparseVisibleStateComposer('obv', EMPTY_OBV_STATE) },
     scale: { indicatorKey: 'obv', label: 'OBV', decimals: 0 },
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updateOBVConfig(params as Partial<OBVSchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('obv', params, paneId)
     },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createOBVStateKey(paneId), state as any, 'indicator_scheduler')
+    },
+    runtime: {
+        configKey: 'obv',
+        defaultConfig: { showOBV: true },
+        computeKey: 'calcOBVData',
+        compute: (data, c) => calcOBVData(data),
     },
 })
 class OBVIndicatorDefinition {

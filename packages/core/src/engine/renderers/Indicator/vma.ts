@@ -7,6 +7,7 @@ import { createNonNegativeSparseVisibleStateComposer } from '../../indicators/vi
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, VMASchedulerConfig } from '../../indicators/scheduler'
+import { calcVMAData } from '../../indicators/calculators'
 
 const VMA_COLOR = '#0ea5e9'
 
@@ -116,14 +117,19 @@ export function createVMARendererPlugin(options: { paneId?: string } = {}): Rend
     category: 'volume',
     stateKey: createVMAStateKey,
     defaultPaneId: 'sub_VMA',
-    paneIdField: 'vmaPaneId',
     scale: { indicatorKey: 'vma', label: 'VMA', decimals: 0 },
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updateVMAConfig(params as Partial<VMASchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('vma', params, paneId)
     },
     visibleState: { compose: createNonNegativeSparseVisibleStateComposer('vma', EMPTY_VMA_STATE) },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createVMAStateKey(paneId), state as any, 'indicator_scheduler')
+    },
+    runtime: {
+        configKey: 'vma',
+        defaultConfig: { period: 5, showVMA: true },
+        computeKey: 'calcVMAData',
+        compute: (data, c) => calcVMAData(data, c.period),
     },
 })
 class VMAIndicatorDefinition {

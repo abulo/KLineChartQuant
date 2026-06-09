@@ -6,6 +6,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import type { IndicatorScheduler, TEMASchedulerConfig } from '../../indicators/scheduler'
+import { calcTEMAData } from '../../indicators/calculators'
 
 const TEMA_COLOR = '#d946ef'
 
@@ -126,17 +127,17 @@ export function createTEMARendererPlugin(options: TEMARendererOptions = {}): Ren
     category: 'main',
     stateKey: createTEMAStateKey,
     defaultPaneId: 'main',
-    paneIdField: 'temaPaneId',
     allowMainPane: true,
     mainPane: { rendererName: 'tema_main', toActiveConfig: (params, active) => ({ ...params, showTEMA: active }) },
     visibleState: { compose: createSparseVisibleStateComposer('tema', EMPTY_TEMA_STATE) },
     scale: { indicatorKey: 'tema', label: 'TEMA', decimals: 2 },
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updateTEMAConfig(params as Partial<TEMASchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('tema', params, paneId)
     },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createTEMAStateKey(paneId), state as any, 'indicator_scheduler')
     },
+    runtime: { configKey:'tema', defaultConfig:{period:14,showTEMA:true}, computeKey:'calcTEMAData', compute:(data,c)=>calcTEMAData(data,c.period) },
 })
 class TEMADefinition {
     static rendererFactory = createTEMARendererPlugin

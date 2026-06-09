@@ -6,6 +6,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import type { IndicatorScheduler, WMASchedulerConfig } from '../../indicators/scheduler'
+import { calcWMAData } from '../../indicators/calculators'
 
 const WMA_COLOR = '#10b981'
 
@@ -126,17 +127,17 @@ export function createWMARendererPlugin(options: WMARendererOptions = {}): Rende
     category: 'main',
     stateKey: createWMAStateKey,
     defaultPaneId: 'main',
-    paneIdField: 'wmaPaneId',
     allowMainPane: true,
     mainPane: { rendererName: 'wma_main', toActiveConfig: (params, active) => ({ ...params, showWMA: active }) },
     visibleState: { compose: createSparseVisibleStateComposer('wma', EMPTY_WMA_STATE) },
     scale: { indicatorKey: 'wma', label: 'WMA', decimals: 2 },
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updateWMAConfig(params as Partial<WMASchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('wma', params, paneId)
     },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createWMAStateKey(paneId), state as any, 'indicator_scheduler')
     },
+    runtime: { configKey:'wma', defaultConfig:{period:10,showWMA:true}, computeKey:'calcWMAData', compute:(data,c)=>calcWMAData(data,c.period) },
 })
 class WMADefinition {
     static rendererFactory = createWMARendererPlugin

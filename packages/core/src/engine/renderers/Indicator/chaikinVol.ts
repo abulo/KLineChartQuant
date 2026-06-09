@@ -6,6 +6,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import type { IndicatorScheduler, ChaikinVolSchedulerConfig } from '../../indicators/scheduler'
+import { calcChaikinVolData } from '../../indicators/calculators'
 
 const CHAIKIN_VOL_COLOR = '#f59e0b'
 
@@ -129,14 +130,19 @@ export function createChaikinVolRendererPlugin(options: { paneId?: string } = {}
     category: 'oscillator',
     stateKey: createChaikinVolStateKey,
     defaultPaneId: 'sub_ChaikinVol',
-    paneIdField: 'chaikinVolPaneId',
     visibleState: { compose: createSparseVisibleStateComposer('chaikinVol', EMPTY_CHAIKIN_VOL_STATE) },
     scale: { indicatorKey: 'chaikinVol', label: 'ChaikinVol', decimals: 2 },
     updateConfig: (scheduler, params, paneId) => {
-        (scheduler as IndicatorScheduler).updateChaikinVolConfig(params as Partial<ChaikinVolSchedulerConfig>, paneId)
+        (scheduler as IndicatorScheduler).updateIndicatorConfig('chaikinVol', params, paneId)
     },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createChaikinVolStateKey(paneId), state as any, 'indicator_scheduler')
+    },
+    runtime: {
+        configKey: 'chaikinVol',
+        defaultConfig: { emaPeriod: 10, rocPeriod: 10, showChaikinVol: true },
+        computeKey: 'calcChaikinVolData',
+        compute: (data, c) => calcChaikinVolData(data, c.emaPeriod, c.rocPeriod),
     },
 })
 class ChaikinVolIndicatorDefinition {

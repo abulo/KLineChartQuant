@@ -10,6 +10,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, MOMSchedulerConfig } from '../../indicators/scheduler'
 import { createMomScaleRendererPlugin } from './scale/mom_scale'
+import { calcMOMData } from '../../indicators/calculators'
 
 type LinePoint = { x: number; y: number }
 
@@ -305,14 +306,19 @@ export function getMOMTitleInfo(
     category: 'oscillator',
     stateKey: createMOMStateKey,
     defaultPaneId: 'sub_MOM',
-    paneIdField: 'momPaneId',
     scaleRendererFactory: createMomScaleRendererPlugin,
     updateConfig: (scheduler, params, paneId) => {
-    (scheduler as IndicatorScheduler).updateMOMConfig(params as Partial<MOMSchedulerConfig>, paneId)
+    (scheduler as IndicatorScheduler).updateIndicatorConfig('mom', params, paneId)
   },
     visibleState: { compose: createPaddedSparseVisibleStateComposer('mom', EMPTY_MOM_STATE) },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createMOMStateKey(paneId), state as any, 'indicator_scheduler')
+    },
+    runtime: {
+        configKey: 'mom',
+        defaultConfig: { period: 10, showMOM: true },
+        computeKey: 'calcMOMData',
+        compute: (data, c) => calcMOMData(data, c.period),
     },
 })
 class MOMIndicatorDefinition {

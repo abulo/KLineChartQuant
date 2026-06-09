@@ -6,6 +6,7 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import type { IndicatorScheduler, ROCSchedulerConfig } from '../../indicators/scheduler'
+import { calcROCData } from '../../indicators/calculators'
 
 const ROC_COLOR = '#0ea5e9'
 
@@ -134,14 +135,19 @@ export function createROCRendererPlugin(options: ROCRendererOptions = {}): Rende
     category: 'oscillator',
     stateKey: createROCStateKey,
     defaultPaneId: 'sub_ROC',
-    paneIdField: 'rocPaneId',
     visibleState: { compose: createSparseVisibleStateComposer('roc', EMPTY_ROC_STATE) },
     scale: { indicatorKey: 'roc', label: 'ROC', decimals: 2 },
     updateConfig: (scheduler, params, paneId) => {
-    (scheduler as IndicatorScheduler).updateROCConfig(params as Partial<ROCSchedulerConfig>, paneId)
+    (scheduler as IndicatorScheduler).updateIndicatorConfig('roc', params, paneId)
   },
     applyResult: (host, state, paneId) => {
         host.setSharedState(createROCStateKey(paneId), state as any, 'indicator_scheduler')
+    },
+    runtime: {
+        configKey: 'roc',
+        defaultConfig: { period: 12, showROC: true },
+        computeKey: 'calcROCData',
+        compute: (data, c) => calcROCData(data, c.period),
     },
 })
 class ROCIndicatorDefinition {

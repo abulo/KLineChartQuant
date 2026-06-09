@@ -5,6 +5,7 @@ import type {
     RendererFactory,
     ScaleRendererFactory,
     IndicatorConfigUpdater,
+    IndicatorRuntimeDescriptor,
 } from './indicatorMetadata'
 import type { PluginHost } from '../../plugin'
 
@@ -15,7 +16,7 @@ export type IndicatorDefinitionConfig<T = unknown> = {
     category: IndicatorCategory
     stateKey: StateKey
     defaultPaneId: string
-    paneIdField?: keyof import('./workerProtocol').IndicatorConfigSnapshot
+    paneIdField?: string
     allowMainPane?: boolean
     scaleRendererFactory?: ScaleRendererFactory
     scale?: IndicatorMetadata['scale']
@@ -23,6 +24,7 @@ export type IndicatorDefinitionConfig<T = unknown> = {
     applyResult?: (host: PluginHost, state: unknown, paneId: string) => void
     mainPane?: IndicatorMetadata['mainPane']
     visibleState?: IndicatorMetadata['visibleState']
+    runtime?: IndicatorRuntimeDescriptor
     semantic?: IndicatorMetadata<T>['semantic']
 }
 
