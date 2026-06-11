@@ -201,11 +201,10 @@ function onSymbolSelectorChange(item: SymbolItem) {
   white-space: nowrap;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 640px) {
   .overlay-symbol-button__text,
   .indicator-button__text {
     display: none;
   }
 }
-
 </style>
