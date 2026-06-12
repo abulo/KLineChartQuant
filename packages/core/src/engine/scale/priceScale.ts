@@ -31,6 +31,64 @@ export class PriceScale {
     /** 对数变换公式（动态计算，适配极小价格） */
     private logFormula: LogFormula = logFormulaForPriceRange(null)
 
+    /** 百分比轴基准价（visibleRange 第一根 K 线的 close） */
+    private basePrice: number | null = null
+
+    /** 获取百分比轴基准价 */
+    getBasePrice(): number | null {
+        return this.basePrice
+    }
+
+    /** 设置百分比轴基准价 */
+    setBasePrice(price: number | null): void {
+        this.basePrice = price
+    }
+
+    /** 价格 → 百分比空间 */
+    toPercent(price: number): number {
+        if (this.basePrice === null || this.basePrice === 0) return 0
+        return ((price - this.basePrice) / this.basePrice) * 100
+    }
+
+    /** 百分比空间 → 价格 */
+    fromPercent(pct: number): number {
+        if (this.basePrice === null || this.basePrice === 0) return 0
+        return this.basePrice * (1 + pct / 100)
+    }
+
+    /** 获取当前 displayRange 的百分比范围（用于 yAxis 刻度显示） */
+    getDisplayPercentRange(): { minPct: number; maxPct: number } {
+        const { maxPrice, minPrice } = this.getDisplayRange()
+        return {
+            minPct: this.toPercent(minPrice),
+            maxPct: this.toPercent(maxPrice),
+        }
+    }
+
+    private isPercent(): boolean {
+        return this.scaleType === 'percent' && this.basePrice !== null && this.basePrice > 0
+    }
+
+    private isLog(): boolean {
+        return this.scaleType === 'log' && this.range.minPrice > 0
+    }
+
+    private toNative(price: number): number {
+        if (this.isLog()) return toLog(price, this.logFormula)
+        if (this.isPercent()) return this.toPercent(price)
+        return price
+    }
+
+    private fromNative(n: number): number {
+        if (this.isLog()) return fromLog(n, this.logFormula)
+        if (this.isPercent()) return this.fromPercent(n)
+        return n
+    }
+
+    private nativeRange(): number {
+        return this.toNative(this.range.maxPrice) - this.toNative(this.range.minPrice)
+    }
+
     setRange(r: PriceRange) {
         this.range = r
         if (this.scaleType === 'log' && r.minPrice > 0) {
@@ -96,23 +154,19 @@ export class PriceScale {
         this.priceOffset = 0
     }
 
+    resetTransform(): void {
+        this.priceOffset = 0
+        this.verticalScale = 1
+    }
+
     /**
      * 根据当前 range 和 verticalScale 对 priceOffset 进行 clamp，
      * 防止视口完全离开数据范围。
      */
     private clampOffset(offset: number): number {
-        if (this.scaleType === 'log' && this.range.minPrice > 0) {
-            const logMin = toLog(this.range.minPrice, this.logFormula)
-            const logMax = toLog(this.range.maxPrice, this.logFormula)
-            const logRange = logMax - logMin
-            if (logRange <= 0) return 0
-            const maxOffset = logRange * (1 + 1 / this.verticalScale) / 2
-            return Math.max(-maxOffset, Math.min(maxOffset, offset))
-        }
-
-        const rangeSize = this.range.maxPrice - this.range.minPrice
-        if (rangeSize <= 0) return 0
-        const maxOffset = rangeSize * (1 + 1 / this.verticalScale) / 2
+        const nativeRange = this.nativeRange()
+        if (nativeRange <= 0) return 0
+        const maxOffset = nativeRange * (1 + 1 / this.verticalScale) / 2
         return Math.max(-maxOffset, Math.min(maxOffset, offset))
     }
 
@@ -138,25 +192,21 @@ export class PriceScale {
     setScaleType(type: ScaleType): void {
         if (type === this.scaleType) return
 
-        if (type === 'log' && this.range.minPrice > 0) {
-            // 线性 → 对数：把线性偏移转为 log 空间偏移
-            this.logFormula = logFormulaForPriceRange(this.range)
-            const baseCenter = (this.range.maxPrice + this.range.minPrice) / 2
-            const realCenter = baseCenter + this.priceOffset
-            this.priceOffset = toLog(realCenter, this.logFormula) - toLog(baseCenter, this.logFormula)
-            this.priceOffset = this.clampOffset(this.priceOffset)
-        } else if (type === 'linear' && this.scaleType === 'log') {
-            // 对数 → 线性：把 log 空间偏移转为线性偏移
-            const logMin = toLog(this.range.minPrice, this.logFormula)
-            const logMax = toLog(this.range.maxPrice, this.logFormula)
-            const logCenter = (logMax + logMin) / 2 + this.priceOffset
-            const realCenter = fromLog(logCenter, this.logFormula)
-            const baseCenter = (this.range.maxPrice + this.range.minPrice) / 2
-            this.priceOffset = realCenter - baseCenter
-            this.priceOffset = this.clampOffset(this.priceOffset)
-        }
+        const nativeMin = this.toNative(this.range.minPrice)
+        const nativeMax = this.toNative(this.range.maxPrice)
+        const nativeCenter = (nativeMax + nativeMin) / 2 + this.priceOffset
+        const realCenter = this.fromNative(nativeCenter)
 
         this.scaleType = type
+        if (type === 'log' && this.range.minPrice > 0) {
+            this.logFormula = logFormulaForPriceRange(this.range)
+        }
+
+        const newNativeMin = this.toNative(this.range.minPrice)
+        const newNativeMax = this.toNative(this.range.maxPrice)
+        const newBaseCenter = (newNativeMax + newNativeMin) / 2
+        this.priceOffset = this.toNative(realCenter) - newBaseCenter
+        this.priceOffset = this.clampOffset(this.priceOffset)
     }
 
     /**
@@ -177,26 +227,15 @@ export class PriceScale {
         const src = baseRange ?? this.range
         const { minPrice, maxPrice } = src
 
-        // 对数模式：在 log 空间计算
-        if (this.scaleType === 'log' && minPrice > 0) {
-            const logMin = toLog(minPrice, this.logFormula)
-            const logMax = toLog(maxPrice, this.logFormula)
-            const logRange = logMax - logMin || 1
-            const logCenter = (logMax + logMin) / 2 + this.priceOffset
-            const logHalfRange = logRange / (2 * this.verticalScale)
-            return {
-                maxPrice: fromLog(logCenter + logHalfRange, this.logFormula),
-                minPrice: fromLog(logCenter - logHalfRange, this.logFormula),
-            }
-        }
+        const nativeMin = this.toNative(minPrice)
+        const nativeMax = this.toNative(maxPrice)
+        const nativeRange = nativeMax - nativeMin || 1
+        const nativeCenter = (nativeMax + nativeMin) / 2 + this.priceOffset
+        const nativeHalfRange = nativeRange / (2 * this.verticalScale)
 
-        // 线性模式：原逻辑不变
-        const baseRangeSize = maxPrice - minPrice || 1
-        const centerPrice = (maxPrice + minPrice) / 2 + this.priceOffset
-        const halfRange = baseRangeSize / (2 * this.verticalScale)
         return {
-            maxPrice: centerPrice + halfRange,
-            minPrice: centerPrice - halfRange,
+            maxPrice: this.fromNative(nativeCenter + nativeHalfRange),
+            minPrice: this.fromNative(nativeCenter - nativeHalfRange),
         }
     }
 
@@ -208,18 +247,11 @@ export class PriceScale {
         const { maxPrice, minPrice } = this.getDisplayRange()
         const viewHeight = Math.max(1, this.height - this.paddingTop - this.paddingBottom)
 
-        let ratio: number
-        if (this.scaleType === 'log' && minPrice > 0) {
-            const logMin = toLog(minPrice, this.logFormula)
-            const logMax = toLog(maxPrice, this.logFormula)
-            const logPrice = toLog(price, this.logFormula)
-            ratio = (logPrice - logMin) / (logMax - logMin || 1)
-        } else {
-            ratio = (price - minPrice) / (maxPrice - minPrice || 1)
-        }
+        const nativeMin = this.toNative(minPrice)
+        const nativeMax = this.toNative(maxPrice)
+        const nativePrice = this.toNative(price)
+        const ratio = (nativePrice - nativeMin) / (nativeMax - nativeMin || 1)
 
-        // 注意：ratio = 0 对应 minPrice（底部），ratio = 1 对应 maxPrice（顶部）
-        // 但在屏幕上，y=0 是顶部，y=height 是底部
         return this.paddingTop + viewHeight * (1 - ratio)
     }
 
@@ -232,14 +264,10 @@ export class PriceScale {
         const viewHeight = Math.max(1, this.height - this.paddingTop - this.paddingBottom)
         const ratio = 1 - (y - this.paddingTop) / viewHeight
 
-        if (this.scaleType === 'log' && minPrice > 0) {
-            const logMin = toLog(minPrice, this.logFormula)
-            const logMax = toLog(maxPrice, this.logFormula)
-            const logPrice = logMin + ratio * (logMax - logMin)
-            return fromLog(logPrice, this.logFormula)
-        }
-
-        return minPrice + ratio * (maxPrice - minPrice)
+        const nativeMin = this.toNative(minPrice)
+        const nativeMax = this.toNative(maxPrice)
+        const nativePrice = nativeMin + ratio * (nativeMax - nativeMin)
+        return this.fromNative(nativePrice)
     }
 
     /**
@@ -251,14 +279,7 @@ export class PriceScale {
      */
     deltaYToPriceOffset(deltaY: number): number {
         const viewHeight = Math.max(1, this.height - this.paddingTop - this.paddingBottom)
-
-        if (this.scaleType === 'log' && this.range.minPrice > 0) {
-            const logMin = toLog(this.range.minPrice, this.logFormula)
-            const logMax = toLog(this.range.maxPrice, this.logFormula)
-            return deltaY * ((logMax - logMin) / viewHeight)
-        }
-
-        const range = this.range.maxPrice - this.range.minPrice || 1
-        return deltaY * (range / viewHeight)
+        const nativeRange = this.nativeRange() || 1
+        return deltaY * (nativeRange / viewHeight)
     }
 }

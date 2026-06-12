@@ -5,6 +5,7 @@ import type { SymbolSpec, DataFetcher } from '../controllers/types'
 import { DataBuffer } from '../data-fetchers/dataBuffer'
 import { getVisibleRange } from './viewport/viewport'
 import { Pane, type VisibleRange, UpdateLevel } from './layout/pane'
+import type { ScaleType } from './utils/tickPosition'
 import { InteractionController, type InteractionSnapshot } from './controller/interaction'
 export type { InteractionSnapshot }
 import { PaneRenderer } from './paneRenderer'
@@ -218,6 +219,9 @@ export class Chart {
      * TODO: 阶段5迁移为插件注册，Scheduler 通过事件监听 data/viewport 变更，Chart 不直接持有
      */
     private indicatorScheduler: IndicatorScheduler
+
+    /** 数据已更新但 Worker 指标尚未回写，期间避免用旧指标 state 绘制中间帧 */
+    private pendingIndicatorDataUpdate = false
 
     /** 上次可见范围（用于检测视口变化） */
     private lastVisibleRange: VisibleRange = { start: 0, end: 0 }
@@ -521,7 +525,10 @@ export class Chart {
         for (const definition of getBuiltinIndicatorDefinitions()) {
             this.indicatorScheduler.registerIndicator(definition)
         }
-        this.indicatorScheduler.setInvalidateCallback(() => this.scheduleDraw())
+        this.indicatorScheduler.setInvalidateCallback(() => {
+            this.pendingIndicatorDataUpdate = false
+            this.scheduleDraw()
+        })
 
         // 注册副图活跃列表提供者，调度器据此只计算启用的副图
         this.indicatorScheduler.setActiveSubPaneProvider(
@@ -728,10 +735,12 @@ export class Chart {
         this.settings = { ...settings }
         this.interaction.updateSettings(settings)
 
-        // 同步对数刻度设置到所有 pane
-        const scaleType = settings.logarithmicScale ? 'log' : 'linear'
+        // 同步刻度类型设置到所有 pane（百分比仅用于主图）
+        const axisType = (settings.axisType as ScaleType) ?? 'linear'
         for (const renderer of this.paneRenderers) {
-            renderer.getPane().yAxis.setScaleType(scaleType)
+            const pane = renderer.getPane()
+            const scaleType = axisType === 'percent' && pane.role !== 'price' ? 'linear' : axisType
+            pane.yAxis.setScaleType(scaleType)
         }
 
         this.scheduleDraw()
@@ -892,6 +901,9 @@ export class Chart {
             if (!useCachedFrame) {
                 const indicatorRange = pane.role === 'price' ? mainIndicatorRange : null
                 pane.updateRange(this._internalData, range, indicatorRange)
+                if (pane.id === 'main' && this.settings.disableMainPaneVerticalScroll) {
+                    pane.yAxis.resetTransform()
+                }
             }
 
             const shouldUpdateMain = level === UpdateLevel.Main || level === UpdateLevel.All
@@ -1007,6 +1019,10 @@ export class Chart {
                         getPriceOffset: () => 0,
                         getDisplayRange: (baseRange) => baseRange ?? { maxPrice: 0, minPrice: 0 },
                         getScaleType: () => 'linear' as const,
+                        getBasePrice: () => null,
+                        toPercent: () => 0,
+                        fromPercent: () => 0,
+                        getDisplayPercentRange: () => ({ minPct: 0, maxPct: 0 }),
                     },
                     priceRange: { maxPrice: 0, minPrice: 0 },
                 },
@@ -1577,6 +1593,13 @@ export class Chart {
         this.scheduleDraw()
     }
 
+    resetPriceTransform(paneId: string): void {
+        const renderer = this.paneRenderers.find(r => r.getPane().id === paneId)
+        if (!renderer) return
+        renderer.getPane().yAxis.resetTransform()
+        this.scheduleDraw()
+    }
+
     /**
      * 缩放价格轴（用于右侧刻度栏上下拖动）
      * @param paneId 目标 pane ID
@@ -1633,9 +1656,13 @@ export class Chart {
         }
 
         // 触发指标计算（在 scheduleDraw 之前，确保渲染器读到最新状态）
-        this.indicatorScheduler.update(this._internalData, this.lastVisibleRange)
-
-        this.scheduleDraw()
+        const indicatorsReady = this.indicatorScheduler.update(this._internalData, this.lastVisibleRange)
+        if (indicatorsReady) {
+            this.pendingIndicatorDataUpdate = false
+            this.scheduleDraw()
+        } else {
+            this.pendingIndicatorDataUpdate = true
+        }
     }
 
     /** 获取当前数据源（供 renderers 和 interaction 使用） */
@@ -2335,8 +2362,13 @@ export class Chart {
                     )
                     this.lastVisibleRange = { start, end }
                 }
-                this.indicatorScheduler.update(this._internalData, this.lastVisibleRange)
-                this.scheduleDraw()
+                const indicatorsReady = this.indicatorScheduler.update(this._internalData, this.lastVisibleRange)
+                if (indicatorsReady) {
+                    this.pendingIndicatorDataUpdate = false
+                    this.scheduleDraw()
+                } else {
+                    this.pendingIndicatorDataUpdate = true
+                }
             })
         }
 
@@ -2514,7 +2546,7 @@ export class Chart {
      * 更新缓存的 scrollLeft 并触发交互 controller
      */
     handleScrollEvent(): void {
-        this.interaction.onScroll()
+        this.interaction.onScroll({ scheduleDraw: !this.pendingIndicatorDataUpdate })
         // 更新 viewport signal 中的 visible range
         this.updateViewportSignal()
     }
