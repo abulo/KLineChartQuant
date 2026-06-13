@@ -97,6 +97,7 @@ export type DataFetcher = (
         endDate: string
         period: string
         adjust: string
+        exchange?: string
     },
 ) => Promise<ReadonlyArray<KLineData>>
 

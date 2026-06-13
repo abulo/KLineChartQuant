@@ -121,6 +121,7 @@ export class DataBuffer {
             endDate: formatDate(endTs),
             period: spec.period ?? 'daily',
             adjust: spec.adjust ?? 'none',
+            exchange: spec.exchange,
         })
             .then((incoming) => {
                 if (this._disposed) return

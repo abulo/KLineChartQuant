@@ -1,6 +1,7 @@
 export { thousandMockDataFetcher } from './thousand-mock'
 export { hundredMockDataFetcher } from './hundred-mock'
 export { baostockDataFetcher } from './baostock'
+export { tradingviewDataFetcher } from './tradingview'
 export { routerDataFetcher } from './router'
 export { DataBuffer } from './dataBuffer'
 export type { DataWindow } from './dataBuffer'

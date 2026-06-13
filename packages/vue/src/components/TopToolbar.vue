@@ -58,24 +58,25 @@ const emit = defineEmits<{
 }>()
 
 const MOCK_SYMBOLS: SymbolItem[] = [
-  { code: 'AAPL', description: 'Apple Inc.', exchange: 'NASDAQ', source: 'baostock' },
-  { code: 'TSLA', description: 'Tesla, Inc.', exchange: 'NASDAQ', source: 'baostock' },
-  { code: 'GOOGL', description: 'Alphabet Inc.', exchange: 'NASDAQ', source: 'baostock' },
-  { code: 'MSFT', description: 'Microsoft Corporation', exchange: 'NASDAQ', source: 'baostock' },
-  { code: 'AMZN', description: 'Amazon.com, Inc.', exchange: 'NASDAQ', source: 'baostock' },
-  { code: 'NVDA', description: 'NVIDIA Corporation', exchange: 'NASDAQ', source: 'baostock' },
-  { code: 'META', description: 'Meta Platforms, Inc.', exchange: 'NASDAQ', source: 'baostock' },
-  { code: 'BRK.B', description: 'Berkshire Hathaway Inc.', exchange: 'NYSE', source: 'baostock' },
-  { code: 'JPM', description: 'JPMorgan Chase & Co.', exchange: 'NYSE', source: 'baostock' },
-  { code: 'V', description: 'Visa Inc.', exchange: 'NYSE', source: 'baostock' },
-  { code: 'BTCUSDT', description: 'Bitcoin / Tether', exchange: 'BINANCE', source: 'baostock' },
-  { code: 'ETHUSDT', description: 'Ethereum / Tether', exchange: 'BINANCE', source: 'baostock' },
-  { code: 'sh.601360', description: '三六零', exchange: 'SSE', source: 'baostock' },
-  { code: 'sh.600519', description: '贵州茅台', exchange: 'SSE', source: 'baostock' },
-  { code: '000858', description: '五 粮 液', exchange: 'SZSE', source: 'baostock' },
-  { code: '000001', description: '平安银行', exchange: 'SZSE', source: 'baostock' },
-  { code: 'MOCK-100', description: 'Mock 100 条', exchange: 'MOCK', source: 'mock-100' },
-  { code: 'MOCK-10000', description: 'Mock 10000 条', exchange: 'MOCK', source: 'mock-10000' },
+  // ── TradingView 全球品种 ──
+  { code: 'XAUUSD',  description: '现货黄金',             exchange: 'OANDA',    source: 'tradingview' },
+  { code: 'BTCUSDT', description: 'Bitcoin / Tether',     exchange: 'BINANCE',  source: 'tradingview' },
+  { code: 'ETHUSDT', description: 'Ethereum / Tether',    exchange: 'BINANCE',  source: 'tradingview' },
+  { code: 'EURUSD',  description: '欧元/美元',            exchange: 'OANDA',    source: 'tradingview' },
+  { code: 'SPX',     description: '标普 500 指数',        exchange: 'SP',       source: 'tradingview' },
+  { code: 'AAPL',    description: 'Apple Inc.',           exchange: 'NASDAQ',   source: 'tradingview' },
+  { code: 'TSLA',    description: 'Tesla, Inc.',          exchange: 'NASDAQ',   source: 'tradingview' },
+  { code: '600519',  description: '贵州茅台',             exchange: 'SSE',      source: 'tradingview' },
+  { code: '000001',  description: '平安银行',             exchange: 'SZSE',     source: 'tradingview' },
+  { code: '1810',    description: '小米集团',             exchange: 'HKEX',     source: 'tradingview' },
+  // ── Baostock A 股 ──
+  { code: 'sh.600519', description: '贵州茅台',            exchange: 'SSE',      source: 'baostock' },
+  { code: 'sh.601360', description: '三六零',              exchange: 'SSE',      source: 'baostock' },
+  { code: '000858',  description: '五 粮 液',             exchange: 'SZSE',     source: 'baostock' },
+  { code: '000001',  description: '平安银行',             exchange: 'SZSE',     source: 'baostock' },
+  // ── Mock ──
+  { code: 'MOCK-100',   description: 'Mock 100 条',       exchange: 'MOCK',     source: 'mock-100' },
+  { code: 'MOCK-10000', description: 'Mock 10000 条',     exchange: 'MOCK',     source: 'mock-10000' },
 ]
 
 const displaySymbol = computed(() => props.symbol?.trim() ?? '')
