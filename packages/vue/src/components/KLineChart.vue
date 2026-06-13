@@ -752,27 +752,9 @@ function handleIndicatorToggle(indicatorId: string, active: boolean) {
   const c = controller.value
   if (!c) return
 
-  const mainIndicatorIds = [
-    'MA',
-    'BOLL',
-    'EXPMA',
-    'ENE',
-    'WMA',
-    'DEMA',
-    'TEMA',
-    'HMA',
-    'KAMA',
-    'SAR',
-    'SUPERTREND',
-    'KELTNER',
-    'DONCHIAN',
-    'ICHIMOKU',
-    'PIVOT',
-    'FIB',
-    'STRUCTURE',
-    'ZONES',
-  ]
-  if (mainIndicatorIds.includes(indicatorId)) {
+  const def = getRegisteredIndicatorDefinition(indicatorId)
+  const isMain = def && (def.category === 'main' || def.allowMainPane)
+  if (isMain) {
     const existingIndicator = mainActiveIndicators.value.find((id) => id === indicatorId)
     if (active && !existingIndicator) {
       c.addIndicator(indicatorId, 'main', indicatorParams.value[indicatorId])
