@@ -154,6 +154,7 @@ import {
   getRegisteredIndicatorDefinitions,
 } from '@363045841yyt/klinechart-core/indicators'
 import type { DrawingObject, DrawingStyle } from '@363045841yyt/klinechart-core/plugin'
+import { SETTINGS_STORAGE_KEY } from '@363045841yyt/klinechart-core/config'
 import type { ChartSettings } from '@363045841yyt/klinechart-core/config'
 import {
   resolveThemeColors,
@@ -271,6 +272,9 @@ function forcePercentAxis() {
   const nextSettings = { ...chartSettings.value, axisType: 'percent' as const }
   chartSettings.value = nextSettings
   controller.value?.updateSettingsFacade(nextSettings)
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings))
+  } catch { /* quota exceeded */ }
 }
 
 const containerRef = ref<HTMLDivElement | null>(null)
