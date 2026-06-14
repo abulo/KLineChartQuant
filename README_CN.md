@@ -19,8 +19,8 @@
 轻量级金融 K 线图表库，专注量化交易场景。**Agent 是一等公民** — 支持 AI Agent 直接控制图表操作，提供 TradingView 级别的交互体验。
 
 <div align="center">
-  <img src="https://files.seeusercontent.com/2026/06/05/5Nfe/dark1.png" width="400" style="border-radius: 12px; margin: 8px;" />
-  <img src="https://files.seeusercontent.com/2026/06/05/vN2k/dark2.png" width="400" style="border-radius: 12px; margin: 8px;" />
+  <img src="https://files.seeusercontent.com/2026/06/14/4Oky/pasted-image-1781448962268.webp" width="400" style="border-radius: 12px; margin: 8px;" />
+  <img src="https://files.seeusercontent.com/2026/06/14/7xPd/pasted-image-1781448960220.webp" width="400" style="border-radius: 12px; margin: 8px;" />
   <br/>
   <img src="https://files.seeusercontent.com/2026/06/05/Udw3/white1.png" width="400" style="border-radius: 12px; margin: 8px;" />
   <img src="https://files.seeusercontent.com/2026/06/05/vQg8/white2.png" width="400" style="border-radius: 12px; margin: 8px;" />
@@ -35,6 +35,8 @@
 - **高性能** - 流畅处理万级数据点，无卡顿缩放平移；**200Hz 屏幕下支持 190-200fps**，单帧生成时间低至 **2ms**
 - **WebGL 渲染** - K 线、成交量柱、MACD 柱通过 WebGL 渲染，GPU 加速，**200Hz 屏幕下可达 190fps**，每帧 GPU 耗时 **<1ms**
 - **交互优化** - 缩放锚点稳定、十字光标精准、拖拽流畅
+- **商品比较** - 支持无限数量商品走势比较
+- **多数据源** - 支持多数据源聚合并可自由扩展
 
 ## 🚀 快速开始
 
@@ -135,6 +137,8 @@ const config: SemanticChartConfig = {
 
 ## 🚀 What's New
 
+- **v0.8** 支持商品比较，支持多数据源聚合
+- **v0.7** 渲染器注册链路AOP重构，支持装饰器语法，拆分monorepo，支持vue、react（实验性），core单独发包，令牌化颜色系统
 - **v0.6.10** 统一 WebGL 渲染上下文共享，重构副图生命周期管理 — 通过 SubPaneManager 集中管理副图实例，paneId 作为一等标识
 - **v0.6.6** 综合渲染优化：价格转坐标批量化、刻度位置与几何数据缓存、月份键值计算优化；**200Hz 屏幕下稳定 190-200fps**，单帧生成时间降至 **2ms**
 - **v0.6.3** K 线、成交量柱、MACD 柱支持 WebGL 渲染，大幅提升整体性能

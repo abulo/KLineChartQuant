@@ -90,19 +90,18 @@ export function createMainIndicatorLegendRendererPlugin(options: {
         if (!meta.getTitleInfo) continue
         if (!scheduler?.isMainIndicatorActive(meta.name)) continue
         const params = scheduler?.getMainIndicatorParams(meta.name) ?? {}
-        const getTitleInfo = meta.getTitleInfo
+
+        const titleInfo = meta.getTitleInfo(
+          klineData,
+          targetIndex,
+          params as Record<string, number | boolean | string>,
+          pluginHost!,
+          'main',
+        )
+        if (!titleInfo) continue
 
         rows.push({
           draw: (rowIndex: number) => {
-            const titleInfo = getTitleInfo(
-              klineData,
-              targetIndex,
-              params as Record<string, number | boolean | string>,
-              pluginHost!,
-              'main',
-            )
-            if (!titleInfo) return
-
             let x = legendX
             let y = config.yPaddingPx / 2 + legendYOffset + rowIndex * lineHeight
             overlayCtx.fillStyle = colors.text.primary

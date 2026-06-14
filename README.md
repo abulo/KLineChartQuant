@@ -18,8 +18,8 @@ English | [简体中文](README_CN.md)
 A lightweight financial K-line charting library focused on quantitative trading scenarios. **Agent is a first-class citizen** — supports AI Agent direct control of chart operations, providing TradingView-level interaction experience.
 
 <div align="center">
-  <img src="https://files.seeusercontent.com/2026/06/05/5Nfe/dark1.png" width="400" style="border-radius: 12px; margin: 8px;" />
-  <img src="https://files.seeusercontent.com/2026/06/05/vN2k/dark2.png" width="400" style="border-radius: 12px; margin: 8px;" />
+  <img src="https://files.seeusercontent.com/2026/06/14/4Oky/pasted-image-1781448962268.webp" width="400" style="border-radius: 12px; margin: 8px;" />
+  <img src="https://files.seeusercontent.com/2026/06/14/7xPd/pasted-image-1781448960220.webp" width="400" style="border-radius: 12px; margin: 8px;" />
   <br/>
   <img src="https://files.seeusercontent.com/2026/06/05/Udw3/white1.png" width="400" style="border-radius: 12px; margin: 8px;" />
   <img src="https://files.seeusercontent.com/2026/06/05/vQg8/white2.png" width="400" style="border-radius: 12px; margin: 8px;" />
@@ -34,6 +34,8 @@ A lightweight financial K-line charting library focused on quantitative trading 
 - **High Performance** - Smoothly handles tens of thousands of data points, no lag during zoom or pan; supports **190-200fps on 200Hz displays** with single-frame generation time as low as **2ms**
 - **WebGL Rendering** - K-lines, volume bars, and MACD bars rendered via WebGL for GPU-accelerated performance, reaching **190fps on 200Hz displays** with per-frame GPU time under **1ms**
 - **Optimized Interaction** - Stable zoom anchor, precise crosshair cursor, smooth drag
+- **Multi-Symbol Comparison** - Supports unlimited number of instruments for trend comparison
+- **Multi-Source Aggregation** - Supports aggregation and unification of multiple data sources
 
 ## 🚀 Quick Start
 
@@ -134,6 +136,8 @@ const config: SemanticChartConfig = {
 
 ## 🚀 What's New
 
+- **v0.8** Symbol comparison, multi-source data aggregation
+- **v0.7** Renderer registration chain AOP refactoring with decorator syntax, monorepo split, Vue/React bindings (experimental), standalone core package, tokenized color system
 - **v0.6.10** Unified WebGL rendering context sharing for all panes, plus sub-pane lifecycle refactoring — centralized pane instance management via SubPaneManager with first-class paneId identity
 - **v0.6.6** Comprehensive rendering optimizations: batched price-to-Y calculations, cached tick positions and geometry, optimized month-key operations; achieves stable **190-200fps on 200Hz displays** with frame generation time down to **2ms**
 - **v0.6.3** WebGL rendering for K-lines, volume bars, and MACD bars; significant performance boost across the board
