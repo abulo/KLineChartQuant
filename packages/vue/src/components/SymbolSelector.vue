@@ -464,6 +464,8 @@ watch(() => props.symbol, () => {
 }
 
 .symbol-chip__spinner {
+  display: inline-block;
+  flex-shrink: 0;
   width: 12px;
   height: 12px;
   border: 2px solid var(--klc-color-axis-text);
