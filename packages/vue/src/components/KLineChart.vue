@@ -168,8 +168,8 @@ import TopToolbar, { type SymbolItem } from './TopToolbar.vue'
 
 const props = withDefaults(
   defineProps<{
-    /** 语义化配置（必需，唯一控制源） */
-    semanticConfig: SemanticChartConfig
+    /** 语义化配置（可选，唯一控制源） */
+    semanticConfig?: SemanticChartConfig
 
     /** 数据获取函数（必需）。框架不绑定数据源，由使用者注入。 */
     dataFetcher: DataFetcher
@@ -211,7 +211,7 @@ const emit = defineEmits<{
   (e: 'kLineLevelChange', level: string): void
 }>()
 
-const kLineLevel = ref(props.semanticConfig.data.period)
+const kLineLevel = ref(props.semanticConfig?.data?.period ?? 'daily')
 const currentSymbol = ref('选择商品')
 const currentSymbolItem = ref<SymbolItem | null>(null)
 const symbolLoading = ref(false)
@@ -253,9 +253,9 @@ function toSymbolSpec(item: SymbolItem): SymbolSpec {
     exchange: item.exchange,
     period: kLineLevel.value,
     source: item.source,
-    startDate: props.semanticConfig.data.startDate,
-    endDate: props.semanticConfig.data.endDate,
-    adjust: props.semanticConfig.data.adjust,
+    startDate: props.semanticConfig?.data?.startDate ?? '',
+    endDate: props.semanticConfig?.data?.endDate ?? '',
+    adjust: props.semanticConfig?.data?.adjust ?? 'none',
   }
 }
 
@@ -706,7 +706,7 @@ function clearAllSubPanes(): void {
 function initIndicatorsFromConfig(): void {
   const config = props.semanticConfig
   const c = controller.value
-  if (!c) return
+  if (!config || !c) return
 
   const mainIndicators = config.indicators?.main
   if (mainIndicators) {

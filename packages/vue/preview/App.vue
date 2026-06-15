@@ -78,7 +78,6 @@
       :style="{ width: embedWidth, height: embedHeight }"
     >
       <KLineChart
-        :semanticConfig="currentConfig"
         :dataFetcher="dataFetcher"
         :is-fullscreen="isFullscreen"
         @toggle-fullscreen="toggleFullscreen"
@@ -97,7 +96,6 @@
             </header>
             <div class="modal-body">
               <KLineChart
-                :semanticConfig="currentConfig"
                 :dataFetcher="dataFetcher"
                 @theme-change="onThemeChange"
               />
@@ -114,7 +112,6 @@ import { ref, computed, provide, inject, type Ref, type InjectionKey } from 'vue
 import KLineChart from '../src/components/KLineChart.vue'
 import { VERSION, CORE_VERSION } from '../src/version'
 import { routerDataFetcher } from '@363045841yyt/klinechart-core/controllers'
-import debugConfig from './debug-config.json'
 
 const FULLSCREEN_TARGET_KEY: InjectionKey<Ref<HTMLElement | null>> = Symbol(
   'fullscreen-teleport-target',
@@ -130,9 +127,6 @@ function useFullscreenTeleportTarget() {
     return targetRef?.value ?? 'body'
   })
 }
-
-const defaultConfig = debugConfig as Record<string, any>
-const currentConfig = computed(() => defaultConfig)
 
 const dataFetcher = routerDataFetcher
 

@@ -1,26 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { KLineChartWC, type KLineChartWCProps } from '../src/KLineChartWC'
-import type { SemanticChartConfig } from '@363045841yyt/klinechart-core/semantic'
 import { hundredMockDataFetcher } from '@363045841yyt/klinechart-core/controllers'
 import '@363045841yyt/klinechart/web-component'
-
-const defaultConfig: SemanticChartConfig = {
-  version: '1.0.0',
-  data: {
-    source: 'mock',
-    symbol: '601360',
-    startDate: '2025-01-01',
-    endDate: '2026-05-17',
-    period: 'daily',
-  },
-  indicators: {
-    main: [{ type: 'BOLL', enabled: true }],
-    sub: [
-      { type: 'MACD', enabled: true },
-      { type: 'RSI', enabled: true },
-    ],
-  },
-}
 
 const dataFetcher = hundredMockDataFetcher
 
@@ -112,7 +93,6 @@ export default function App() {
         }}
       >
         <KLineChartWC
-          semanticConfig={defaultConfig}
           dataFetcher={dataFetcher}
           style={{ width: '100%', height: '100%' }}
           onToggleFullscreen={toggleFullscreen}
@@ -128,7 +108,6 @@ export default function App() {
             </header>
             <div style={styles.modalBody}>
               <KLineChartWC
-                semanticConfig={defaultConfig}
                 dataFetcher={dataFetcher}
                 style={{ width: '100%', height: '100%' }}
               />

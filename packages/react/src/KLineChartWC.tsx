@@ -16,7 +16,7 @@ declare global {
 }
 
 export interface KLineChartWCProps {
-    semanticConfig: SemanticChartConfig
+    semanticConfig?: SemanticChartConfig
     dataFetcher: DataFetcher
 
     yPaddingPx?: number
@@ -52,7 +52,7 @@ export const KLineChartWC = forwardRef<KLineChartWCHandle, KLineChartWCProps>(
 
         useEffect(() => {
             const el = hostRef.current
-            if (!el) return
+            if (!el || !props.semanticConfig) return
             el.semanticConfig = props.semanticConfig
             el.dataFetcher = props.dataFetcher
         }, [props.semanticConfig, props.dataFetcher])
