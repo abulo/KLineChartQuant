@@ -1,6 +1,7 @@
 import type { DataFetcher, KLineData } from '../controllers/types'
 
 const PERIOD_TO_CATEGORY: Record<string, number> = {
+  '1min': 8,
   '5min': 0,
   '15min': 1,
   '30min': 2,
@@ -8,6 +9,8 @@ const PERIOD_TO_CATEGORY: Record<string, number> = {
   daily: 4,
   weekly: 5,
   monthly: 6,
+  quarterly: 10,
+  yearly: 11,
 }
 
 const ADJUST_MAP: Record<string, number> = {
