@@ -93,6 +93,8 @@
             :anchor-placement="tooltipAnchorPlacement"
             :up-color="tooltipColors.upColor"
             :down-color="tooltipColors.downColor"
+            :timezone="props.timezone"
+            :show-time="isIntraday"
           />
           <MarkerTooltip
             v-if="hoveredMarker || hoveredCustomMarker"
@@ -192,6 +194,8 @@ const props = withDefaults(
     initialZoomLevel?: number
     /** 是否全屏 */
     isFullscreen?: boolean
+    /** 时区，默认 Asia/Shanghai */
+    timezone?: string
   }>(),
   {
     yPaddingPx: 20,
@@ -203,6 +207,7 @@ const props = withDefaults(
     zoomLevels: 20,
     initialZoomLevel: 3,
     isFullscreen: false,
+    timezone: 'Asia/Shanghai',
   },
 )
 
@@ -216,6 +221,7 @@ const emit = defineEmits<{
 
 const kLineLevel = ref(props.semanticConfig?.data?.period ?? 'daily')
 const kLineAdjust = ref(props.semanticConfig?.data?.adjust ?? 'none')
+const isIntraday = computed(() => kLineLevel.value.includes('min'))
 const currentSymbol = ref('选择商品')
 const currentSymbolItem = ref<SymbolItem | null>(null)
 const symbolLoading = ref(false)

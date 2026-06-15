@@ -273,6 +273,8 @@ export interface RenderContext {
   ctx: CanvasRenderingContext2D
   pane: PaneInfo
   data: unknown[]
+  /** K线级别，如 'daily'、'5min'、'15min' */
+  period: string
   comparisonData?: ReadonlyMap<string, ReadonlyArray<KLineData>>
   comparisonSymbols?: ReadonlyArray<import('../controllers/types').SymbolSpec>
   comparisonColors?: ReadonlyMap<string, string>

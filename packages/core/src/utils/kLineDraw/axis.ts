@@ -1,7 +1,7 @@
 import type { KLineData } from '../../types/price'
 import { priceToY, yToPrice } from '../priceToY'
 import { alignToPhysicalPixelCenter, roundToPhysicalPixel } from '../../engine/draw/pixelAlign'
-import { formatYMDShanghai, formatMonthOrYear, findMonthBoundaries } from '../../utils/dateFormat'
+import { formatYMDShanghai, formatMonthOrYear, formatDay, findMonthBoundaries, findDayBoundaries } from '../../utils/dateFormat'
 import { resolveThemeColors } from '../../tokens'
 import type { ColorPresetSettings } from '../../tokens'
 import { getFont, setCanvasFont } from '../../engine/theme/fonts'
@@ -133,6 +133,8 @@ export interface TimeAxisOptions {
     drawTopBorder?: boolean
     /** 是否绘制底部边界线（默认 true，如果副图已有下边框则设为 false 避免重复） */
     drawBottomBorder?: boolean
+    /** K线级别，如 'daily'、'5min'、'15min' */
+    period: string
 }
 
 export interface LastPriceLineOptions {
@@ -406,14 +408,20 @@ export function drawTimeAxis(ctx: CanvasRenderingContext2D, opts: TimeAxisOption
     const regularFont = getFont(fontSize)
     const boldFont = getFont(fontSize, { bold: true })
 
-    const boundaries = findMonthBoundaries(data)
+    const isMinuteData = opts.period.includes('min')
+    const showOnlyYear = !isMinuteData && opts.period !== 'daily'
+    const boundaries = isMinuteData ? findDayBoundaries(data) : findMonthBoundaries(data)
     const visibleBoundaries = boundaries.filter((idx: number) => idx >= startIndex && idx < endIndex)
 
-    let lastWasYear: boolean | null = null
+    let lastBold: boolean | null = null
+    const labelFn = isMinuteData ? formatDay : formatMonthOrYear
 
     for (const idx of visibleBoundaries) {
         const k = data[idx]
         if (!k) continue
+
+        const { text, isYear } = labelFn(k.timestamp)
+        if (showOnlyYear && !isYear) continue
 
         const worldX = startX + idx * unit + alignedKWidth / 2
         const screenX = worldX - scrollLeft
@@ -423,10 +431,9 @@ export function drawTimeAxis(ctx: CanvasRenderingContext2D, opts: TimeAxisOption
 
         if (screenX >= minX && screenX <= maxX) {
             const drawX = Math.min(Math.max(screenX, minX), maxX)
-            const { text, isYear } = formatMonthOrYear(k.timestamp)
-            if (lastWasYear !== isYear) {
+            if (lastBold !== isYear) {
                 setCanvasFont(ctx, isYear ? boldFont : regularFont)
-                lastWasYear = isYear
+                lastBold = isYear
             }
             ctx.fillText(text, roundToPhysicalPixel(drawX, dpr), alignToPhysicalPixelCenter(textY, dpr))
         }

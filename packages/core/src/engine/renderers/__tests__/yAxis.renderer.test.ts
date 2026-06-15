@@ -76,6 +76,7 @@ function createContext(overrides: Partial<RenderContext> = {}): RenderContext {
     kBarRects: [] as { x: number; width: number }[],
     yAxisLabels: [],
     xAxisLabels: [],
+    period: 'daily',
     theme: 'light',
     ...overrides,
   }

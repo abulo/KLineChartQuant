@@ -138,6 +138,39 @@ export function monthKey(timestamp: number): number {
 // ========== 便捷别名 ==========
 
 /**
+ * 格式化时间戳为日期/日期时间字符串，支持可配置时区
+ * @param timestamp - 时间戳（毫秒）
+ * @param options - 配置项
+ * @param options.timeZone - 时区，默认 'Asia/Shanghai'
+ * @param options.showTime - 是否显示时间，默认 false
+ * @returns 格式化后的字符串，如 "2026-05-15" 或 "2026-05-15 09:35"
+ */
+export function formatTimestamp(
+  timestamp: number,
+  options?: { timeZone?: string; showTime?: boolean }
+): string {
+  const timeZone = options?.timeZone ?? 'Asia/Shanghai'
+  const showTime = options?.showTime ?? false
+  const formatter = new Intl.DateTimeFormat('zh-CN', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    ...(showTime ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}),
+  })
+  const parts = formatter.formatToParts(new Date(timestamp))
+  let y = '', m = '', d = '', h = '', min = ''
+  for (const p of parts) {
+    if (p.type === 'year') y = p.value
+    else if (p.type === 'month') m = p.value
+    else if (p.type === 'day') d = p.value
+    else if (p.type === 'hour') h = p.value
+    else if (p.type === 'minute') min = p.value
+  }
+  return showTime ? `${y}-${m}-${d} ${h}:${min}` : `${y}-${m}-${d}`
+}
+
+/**
  * formatDateToYYYYMMDD 的别名，保持与历史代码的兼容性
  * timestamp 是"上海时区当天 00:00:00"映射到 UTC 的值；显示时强制按上海时区格式化
  * @param ts - 时间戳（毫秒）
@@ -206,3 +239,55 @@ export function findMonthBoundaries(data: Array<{ timestamp: number } | undefine
     _cacheResult = boundaries
     return boundaries
 }
+
+// ========== 日边界查找 + 日标签格式化 ==========
+
+/**
+ * 查找每天第一个K线的索引
+ */
+export function findDayBoundaries(data: Array<{ timestamp: number } | undefined>): number[] {
+    if (data.length === 0) return []
+
+    const boundaries: number[] = [0]
+    let lastKey = dayKey(data[0]!.timestamp)
+
+    for (let i = 1; i < data.length; i++) {
+        const cur = data[i]
+        if (!cur) continue
+        const curKey = dayKey(cur.timestamp)
+        if (curKey !== lastKey) {
+            boundaries.push(i)
+            lastKey = curKey
+        }
+    }
+
+    return boundaries
+}
+
+function dayKey(timestamp: number): number {
+    const d = new Date(timestamp)
+    return d.getFullYear() * 366 + getDayOfYear(d)
+}
+
+/**
+ * 格式化日期为 "MM-DD" 或年初显示 "YYYY-MM-DD"
+ */
+export function formatDay(timestamp: number): { text: string; isYear: boolean } {
+    const d = new Date(timestamp)
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const isYear = d.getMonth() === 0 && d.getDate() === 1
+    if (isYear) {
+        return { text: `${d.getFullYear()}-${month}-${day}`, isYear }
+    }
+    return { text: `${month}-${day}`, isYear }
+}
+
+// 兼容 getDayOfYear — fallback when not on Date prototype
+function getDayOfYear(date: Date): number {
+    const start = new Date(date.getFullYear(), 0, 0)
+    const diff = date.getTime() - start.getTime()
+    return Math.floor(diff / 86400000)
+}
+
+

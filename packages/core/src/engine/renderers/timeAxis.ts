@@ -56,6 +56,7 @@ export function createTimeAxisRendererPlugin(options: {
         lineColor: colors.border.dark,
         drawTopBorder: false,
         drawBottomBorder: false,
+        period: context.period,
       }, context.theme, context.isAsiaMarket, context.colorPresetSettings)
 
       // 绘制来自 xAxisRanges 的时间范围带（先于标签绘制）

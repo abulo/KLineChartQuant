@@ -177,6 +177,10 @@ export class ChartDataManager {
     return this._symbolsSignal
   }
 
+  get currentPeriod(): string {
+    return this._dataBuffer.currentSpec?.period ?? 'daily'
+  }
+
   getInternalData(): KLineData[] {
     return this._internalData
   }

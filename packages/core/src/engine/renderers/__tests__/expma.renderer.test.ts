@@ -105,6 +105,7 @@ function createMockRenderContext(
     scrollLeft: 0,
     pane: mockPane,
     kLineCenters: Array.from({ length: 100 }, (_, i) => i * 10 + 5),
+    period: 'daily',
     ...overrides,
   } as RenderContext
 }

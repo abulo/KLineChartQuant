@@ -8,7 +8,7 @@
   >
     <div class="kline-tooltip__title">
       <span v-if="k.stockCode">{{ k.stockCode }}</span>
-      <span>{{ formatDate(k.timestamp) }}</span>
+      <span>{{ formattedDate }}</span>
     </div>
     <div class="kline-tooltip__grid">
       <div class="row">
@@ -51,6 +51,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
+import { formatTimestamp } from '@363045841yyt/klinechart-core'
 
 export interface KLineData {
   timestamp: number
@@ -79,9 +80,23 @@ const props = withDefaults(defineProps<{
   upColor?: string
   /** 跌的颜色（默认绿跌） */
   downColor?: string
+  /** 时区，默认 Asia/Shanghai */
+  timezone?: string
+  /** 是否显示时分，默认 false */
+  showTime?: boolean
 }>(), {
   upColor: '#ef4444',
   downColor: '#22c55e',
+  timezone: 'Asia/Shanghai',
+  showTime: false,
+})
+
+const formattedDate = computed(() => {
+  if (!props.k) return ''
+  return formatTimestamp(props.k.timestamp, {
+    timeZone: props.timezone,
+    showTime: props.showTime,
+  })
 })
 
 const useAnchor = computed(() => props.useAnchor === true)
@@ -91,14 +106,6 @@ const anchorPlacementClass = computed(() =>
 
 function onRef(el: Element | ComponentPublicInstance | null) {
   props.setEl?.(el as HTMLDivElement | null)
-}
-
-function formatDate(ts: number): string {
-  const d = new Date(ts)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
 }
 
 function formatVolume(v: number): string {
