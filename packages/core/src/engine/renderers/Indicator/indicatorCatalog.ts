@@ -327,7 +327,7 @@ function rebuildIfStale(): Indicator[] {
           id: def.displayName.toUpperCase(),
           label: def.displayName,
           name: ui?.name ?? def.displayName,
-          pane: def.category === 'main' || def.allowMainPane ? 'main' : 'sub',
+          pane: (def.category === 'main' || def.allowMainPane ? 'main' : 'sub') as Indicator['pane'],
           description: ui?.description,
           params: ui?.params,
         }
