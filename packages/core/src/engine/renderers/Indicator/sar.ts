@@ -1,5 +1,6 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
+import { resolveThemeColors } from '../../../tokens'
 import type { KLineData } from '../../../types/price'
 import type { SARRenderState } from '../../indicators/sarState'
 import { createSARStateKey, EMPTY_SAR_STATE } from '../../indicators/sarState'
@@ -9,8 +10,6 @@ import type { IndicatorScheduler, SARSchedulerConfig } from '../../indicators/sc
 import { calcSARData } from '../../indicators/calculators'
 import { createValuePointVisibleStateComposer } from '../../indicators/visibleStateComposers'
 
-const SAR_UP_COLOR = '#22c55e'
-const SAR_DOWN_COLOR = '#ef4444'
 const DOT_RADIUS = 1.5
 const TAU = Math.PI * 2
 
@@ -59,6 +58,7 @@ export function createSARRendererPlugin(options: SARRendererOptions = {}): Rende
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters } = context
+            const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
 
             const stateKey = resolveKey()
             if (!stateKey) return
@@ -77,7 +77,7 @@ export function createSARRendererPlugin(options: SARRendererOptions = {}): Rende
                 const centerX = kLineCenters[i - range.start]
                 if (centerX === undefined) continue
                 const y = pane.yAxis.priceToY(point.value)
-                ctx.fillStyle = point.trend === 'up' ? SAR_UP_COLOR : SAR_DOWN_COLOR
+                ctx.fillStyle = point.trend === 'up' ? colors.candleUpBody : colors.candleDownBody
                 ctx.beginPath()
                 ctx.arc(centerX, y, DOT_RADIUS, 0, TAU)
                 ctx.fill()

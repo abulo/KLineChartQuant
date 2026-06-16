@@ -1,5 +1,6 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
+import { resolveThemeColors } from '../../../tokens'
 import type { KLineData } from '../../../types/price'
 import type { SuperTrendRenderState } from '../../indicators/supertrendState'
 import { createSuperTrendStateKey, EMPTY_SUPERTREND_STATE } from '../../indicators/supertrendState'
@@ -8,9 +9,6 @@ import { resolveStateKey, type TitleInfo, type GetTitleInfoFn } from '../../indi
 import type { IndicatorScheduler, SuperTrendSchedulerConfig } from '../../indicators/scheduler'
 import { calcSuperTrendData } from '../../indicators/calculators'
 import { createValuePointVisibleStateComposer } from '../../indicators/visibleStateComposers'
-
-const ST_UP_COLOR = '#22c55e'
-const ST_DOWN_COLOR = '#ef4444'
 
 export interface SuperTrendRendererOptions {
     paneId?: string
@@ -51,6 +49,7 @@ export function createSuperTrendRendererPlugin(options: SuperTrendRendererOption
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters } = context
+            const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
             const stateKey = resolveKey()
             if (!stateKey) return
             const state = pluginHost?.getSharedState<SuperTrendRenderState>(stateKey)
@@ -77,7 +76,7 @@ export function createSuperTrendRendererPlugin(options: SuperTrendRendererOption
                 const y = pane.yAxis.priceToY(point.value)
 
                 if (prevX !== null && prevTrend === point.trend) {
-                    ctx.strokeStyle = point.trend === 'up' ? ST_UP_COLOR : ST_DOWN_COLOR
+                    ctx.strokeStyle = point.trend === 'up' ? colors.candleUpBody : colors.candleDownBody
                     ctx.beginPath()
                     ctx.moveTo(prevX, prevY!)
                     ctx.lineTo(centerX, y)

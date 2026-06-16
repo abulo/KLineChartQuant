@@ -1,5 +1,6 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
+import { resolveThemeColors } from '../../../tokens'
 import type { KLineData } from '../../../types/price'
 import type { IchimokuRenderState } from '../../indicators/ichimokuState'
 import { createIchimokuStateKey, EMPTY_ICHIMOKU_STATE } from '../../indicators/ichimokuState'
@@ -14,8 +15,6 @@ const KIJUN_COLOR = '#2563eb'
 const SPAN_A_COLOR = '#16a34a'
 const SPAN_B_COLOR = '#dc2626'
 const CHIKOU_COLOR = '#7c3aed'
-const CLOUD_BULL = 'rgba(34, 197, 94, 0.15)'
-const CLOUD_BEAR = 'rgba(239, 68, 68, 0.15)'
 
 type Point = { x: number; y: number }
 
@@ -58,6 +57,7 @@ export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = 
 
         draw(context: RenderContext) {
             const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
+            const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
             const stateKey = resolveKey()
             if (!stateKey) return
             const state = pluginHost?.getSharedState<IchimokuRenderState>(stateKey)
@@ -94,7 +94,7 @@ export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = 
             if (params.showCloud && cloudSegs.length >= 2) {
                 ctx.save()
                 ctx.translate(-scrollLeft, 0)
-                fillCloud(ctx, cloudSegs)
+                fillCloud(ctx, cloudSegs, colors.candleUpBody, colors.candleDownBody)
                 ctx.restore()
             }
 
@@ -153,11 +153,16 @@ function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
 function fillCloud(
     ctx: CanvasRenderingContext2D,
     segs: { x: number; ya: number; yb: number; bull: boolean }[],
+    bullColor: string,
+    bearColor: string,
+    alpha = 0.15,
 ): void {
+    ctx.save()
+    ctx.globalAlpha = alpha
     for (let i = 0; i < segs.length - 1; i++) {
         const a = segs[i]!
         const b = segs[i + 1]!
-        ctx.fillStyle = a.bull ? CLOUD_BULL : CLOUD_BEAR
+        ctx.fillStyle = a.bull ? bullColor : bearColor
         ctx.beginPath()
         ctx.moveTo(a.x, a.ya)
         ctx.lineTo(b.x, b.ya)
@@ -166,6 +171,7 @@ function fillCloud(
         ctx.closePath()
         ctx.fill()
     }
+    ctx.restore()
 }
 
 export function getIchimokuTitleInfo(
