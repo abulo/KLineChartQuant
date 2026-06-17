@@ -1,5 +1,12 @@
 <template>
-  <div class="top-toolbar">
+  <div
+    ref="toolbarRef"
+    class="top-toolbar"
+    @mousedown="onMouseDown"
+    @mousemove="onMouseMove"
+    @mouseup="onMouseUp"
+    @mouseleave="onMouseUp"
+  >
     <SymbolSelector
       v-if="displaySymbol"
       :symbol="displaySymbol"
@@ -38,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import KLineLevelDropdown, { type KLineLevel } from './KLineLevelDropdown.vue'
 import KLineAdjustmentDropdown, { type KLineAdjustment } from './KLineAdjustmentDropdown.vue'
 import SymbolSelector from './SymbolSelector.vue'
@@ -46,6 +53,41 @@ import CompareSymbolSelector from './CompareSymbolSelector.vue'
 import type { SymbolItem } from './SymbolSelector.vue'
 
 export type { SymbolItem }
+
+const toolbarRef = ref<HTMLElement | null>(null)
+
+let isDown = false
+let startX = 0
+let scrollLeft = 0
+
+function onMouseDown(e: MouseEvent) {
+  const el = toolbarRef.value
+  if (!el) return
+  isDown = true
+  startX = e.pageX - el.getBoundingClientRect().left
+  scrollLeft = el.scrollLeft
+  el.style.cursor = 'grabbing'
+  el.style.userSelect = 'none'
+}
+
+function onMouseMove(e: MouseEvent) {
+  if (!isDown) return
+  const el = toolbarRef.value
+  if (!el) return
+  e.preventDefault()
+  const x = e.pageX - el.getBoundingClientRect().left
+  const walk = x - startX
+  el.scrollLeft = scrollLeft - walk
+}
+
+function onMouseUp() {
+  if (!isDown) return
+  isDown = false
+  const el = toolbarRef.value
+  if (!el) return
+  el.style.cursor = ''
+  el.style.userSelect = ''
+}
 
 const props = defineProps<{
   symbol?: string
@@ -115,6 +157,14 @@ function onSymbolSelectorChange(item: SymbolItem) {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
   user-select: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.top-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .indicator-button {
@@ -167,6 +217,9 @@ function onSymbolSelectorChange(item: SymbolItem) {
 @media (max-width: 768px), (max-height: 640px) {
   .indicator-button__text {
     display: none;
+  }
+  .indicator-button {
+    height: 26px;
   }
 }
 </style>
