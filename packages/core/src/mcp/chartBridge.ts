@@ -6,6 +6,7 @@ export interface ChartBridgeOptions {
   sessionId?: string
   autoReconnect?: boolean
   reconnectDelay?: number
+  maxReconnectDelay?: number
   heartbeatInterval?: number
   wsImpl?: new (url: string) => WebSocket
 }
@@ -22,6 +23,7 @@ export class ChartBridge {
   readonly sessionId: string
   private readonly autoReconnect: boolean
   private readonly reconnectDelay: number
+  private readonly maxReconnectDelay: number
   private readonly heartbeatInterval: number
   private readonly onToolCall: ToolCallHandler
 
@@ -29,6 +31,7 @@ export class ChartBridge {
   private ws: WebSocket | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  private _reconnectAttempt = 0
   private destroyed = false
 
   private listeners = new Map<ChartBridgeEvent, Set<MessageHandler>>()
@@ -42,6 +45,7 @@ export class ChartBridge {
     this.sessionId = options.sessionId ?? crypto.randomUUID()
     this.autoReconnect = options.autoReconnect ?? true
     this.reconnectDelay = options.reconnectDelay ?? 3000
+    this.maxReconnectDelay = options.maxReconnectDelay ?? 30_000
     this.heartbeatInterval = options.heartbeatInterval ?? 30_000
     this.onToolCall = options.onToolCall
     this.wsImpl = options.wsImpl ?? WebSocket
@@ -59,6 +63,7 @@ export class ChartBridge {
         const ws = new this.wsImpl(this.wsUrl)
 
         ws.onopen = () => {
+          this._reconnectAttempt = 0
           this.ws = ws
           console.info(
             `[ChartBridge] WS opened → sending register (sessionId=${this.sessionId})`,
@@ -115,6 +120,7 @@ export class ChartBridge {
 
   destroy(): void {
     this.destroyed = true
+    this._reconnectAttempt = 0
     this.disconnect()
     this.listeners.clear()
   }
@@ -188,11 +194,22 @@ export class ChartBridge {
 
   private scheduleReconnect(): void {
     this.cancelReconnect()
+    const base = this.reconnectDelay
+    const attempt = this._reconnectAttempt
+    const exponential = Math.min(base * Math.pow(2, attempt), this.maxReconnectDelay)
+    const jitter = 0.5 + Math.random() * 0.5
+    const delay = Math.round(exponential * jitter)
+
+    this._reconnectAttempt = attempt + 1
+    console.info(
+      `[ChartBridge] reconnect scheduled in ${delay}ms (attempt ${attempt + 1})`,
+    )
+
     this.reconnectTimer = setTimeout(() => {
       if (!this.destroyed) {
         this.connect()
       }
-    }, this.reconnectDelay)
+    }, delay)
   }
 
   private cancelReconnect(): void {
