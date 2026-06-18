@@ -248,6 +248,39 @@ function onConfirm() {
   color: var(--klc-color-axis-text);
 }
 
+/* ── 描述切换按钮 ── */
+.toggle-desc-btn {
+  background: var(--klc-color-background);
+  border: 1px solid var(--klc-color-border-button);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--klc-color-axis-text);
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.toggle-desc-btn:hover {
+  background: var(--klc-color-tag-bg-hover);
+  color: var(--klc-color-foreground);
+  border-color: var(--klc-color-axis-line);
+}
+
+.toggle-desc-btn.active {
+  background: var(--klc-color-foreground);
+  border-color: var(--klc-color-foreground);
+  color: var(--klc-color-background);
+}
+
+.toggle-desc-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* ── 步进输入框 ── */
 .input-wrapper {
   display: flex;

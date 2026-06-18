@@ -164,9 +164,9 @@ const modalStyle = computed(() => ({
 .base-close-btn {
   background: var(--klc-color-background);
   border: 1px solid var(--klc-color-border-button);
-  border-radius: 7px;
-  width: 30px;
-  height: 30px;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;

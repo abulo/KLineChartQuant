@@ -341,9 +341,9 @@ defineExpose({
 .view-toggle-btn {
   background: var(--klc-color-background);
   border: 1px solid var(--klc-color-border-button);
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
