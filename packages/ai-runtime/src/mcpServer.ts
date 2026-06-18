@@ -1,4 +1,5 @@
 import type { ControllerDescription } from '@363045841yyt/klinechart-core'
+import { generateUUID } from '@363045841yyt/klinechart-core'
 import type { WebSocket } from 'ws'
 import { ALL_TOOLS } from './toolSchemas'
 import { SessionRegistry } from './sessionRegistry'
@@ -32,7 +33,7 @@ function handleWsConnection(ws: WebSocket, registry: SessionRegistry): void {
     }
 
     if (msg.type === 'register') {
-      const sessionId = (msg.sessionId as string) ?? crypto.randomUUID()
+      const sessionId = (msg.sessionId as string) ?? generateUUID()
       handle = new WsSessionHandle(sessionId, ws)
       registry.register(sessionId, handle)
       console.error(

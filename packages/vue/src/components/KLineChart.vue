@@ -106,7 +106,7 @@
         </div>
         <Teleport v-if="tooltipLayerRef" :to="tooltipLayerRef">
           <div
-            v-if="hovered"
+            v-if="hovered && !isMobile"
             class="tooltip-anchor kline-tooltip-anchor"
             :class="{ 'use-anchor': useAnchorPositioning }"
             :style="klineTooltipAnchorStyle"
@@ -118,7 +118,7 @@
             :style="markerTooltipAnchorStyle"
           ></div>
           <KLineTooltip
-            v-if="hovered"
+            v-if="hovered && !isMobile"
             :k="hovered"
             :index="hoveredIndex"
             :data="chartData"
@@ -536,6 +536,7 @@ const isResizingPane = computed(() => interactionState.value.isResizingPaneBound
 const isHoveringPaneSeparator = computed(() => interactionState.value.isHoveringPaneBoundary)
 const hoveredPaneBoundaryId = computed(() => interactionState.value.hoveredPaneBoundaryId)
 const isHoveringRightAxis = computed(() => interactionState.value.isHoveringRightAxis)
+const isMobile = window.matchMedia('(pointer: coarse)').matches
 const hoveredIdx = computed(() => interactionState.value.hoveredIndex)
 const crosshairIdx = computed(() => interactionState.value.crosshairIndex)
 
@@ -1189,5 +1190,11 @@ watch(
 
 .right-axis {
   z-index: 15;
+}
+</style>
+
+<style>
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 </style>

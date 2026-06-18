@@ -1,4 +1,5 @@
 import type { ToolCall, ToolResult, ControllerDescription, ToolCallHandler } from './types'
+import { generateUUID } from '../utils/uuid'
 
 export interface ChartBridgeOptions {
   wsUrl: string
@@ -42,7 +43,7 @@ export class ChartBridge {
   onStateChange?: () => void
 
   constructor(options: ChartBridgeOptions) {
-    this.sessionId = options.sessionId ?? crypto.randomUUID()
+    this.sessionId = options.sessionId ?? generateUUID()
     this.autoReconnect = options.autoReconnect ?? true
     this.reconnectDelay = options.reconnectDelay ?? 3000
     this.maxReconnectDelay = options.maxReconnectDelay ?? 30_000

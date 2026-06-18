@@ -81,6 +81,54 @@ export function createMainIndicatorLegendRendererPlugin(options: {
       const targetIndex = crosshairIndex ?? Math.min(range.end - 1, klineData.length - 1)
       const rows: Array<{ draw: (rowIndex: number) => void }> = []
 
+      if (typeof crosshairIndex === 'number') {
+        const k = klineData[targetIndex]
+        if (k) {
+          const isUp = k.close >= k.open
+          const volText = typeof k.volume === 'number' ? formatVolumeShort(k.volume) : null
+          rows.push({
+            draw: (rowIndex: number) => {
+              let x = legendX
+              const y = config.yPaddingPx / 2 + legendYOffset + rowIndex * lineHeight
+              const upColor = isUp ? colors.candleUpBody : colors.candleDownBody
+
+              overlayCtx.fillStyle = colors.text.primary
+              overlayCtx.fillText('O ', x, y)
+              x += measureTextWidth(overlayCtx, 'O ')
+              overlayCtx.fillStyle = upColor
+              overlayCtx.fillText(k.open.toFixed(2), x, y)
+              x += measureTextWidth(overlayCtx, k.open.toFixed(2)) + gap
+
+              overlayCtx.fillStyle = colors.text.primary
+              overlayCtx.fillText('H ', x, y)
+              x += measureTextWidth(overlayCtx, 'H ')
+              overlayCtx.fillText(k.high.toFixed(2), x, y)
+              x += measureTextWidth(overlayCtx, k.high.toFixed(2)) + gap
+
+              overlayCtx.fillText('L ', x, y)
+              x += measureTextWidth(overlayCtx, 'L ')
+              overlayCtx.fillText(k.low.toFixed(2), x, y)
+              x += measureTextWidth(overlayCtx, k.low.toFixed(2)) + gap
+
+              overlayCtx.fillStyle = colors.text.primary
+              overlayCtx.fillText('C ', x, y)
+              x += measureTextWidth(overlayCtx, 'C ')
+              overlayCtx.fillStyle = upColor
+              overlayCtx.fillText(k.close.toFixed(2), x, y)
+              x += measureTextWidth(overlayCtx, k.close.toFixed(2)) + gap
+
+              if (volText) {
+                overlayCtx.fillStyle = colors.text.tertiary
+                overlayCtx.fillText('Vol ', x, y)
+                x += measureTextWidth(overlayCtx, 'Vol ')
+                overlayCtx.fillStyle = colors.text.primary
+                overlayCtx.fillText(volText, x, y)
+              }
+            },
+          })
+        }
+      }
+
       const scheduler = pluginHost && typeof pluginHost.getService === 'function'
         ? pluginHost.getService<IndicatorScheduler>('indicatorScheduler')
         : undefined
@@ -236,4 +284,10 @@ function findBaselineByTimestamp(data: ReadonlyArray<KLineData>, timestamp: numb
     if (item.timestamp >= timestamp) return item
   }
   return null
+}
+
+function formatVolumeShort(v: number): string {
+  if (v >= 1e8) return (v / 1e8).toFixed(2) + '亿'
+  if (v >= 1e4) return (v / 1e4).toFixed(2) + '万'
+  return v.toFixed(2)
 }

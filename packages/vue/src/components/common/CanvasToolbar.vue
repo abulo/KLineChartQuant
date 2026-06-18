@@ -20,6 +20,14 @@
     0 1px 2px rgba(0, 0, 0, 0.04);
   user-select: none;
   pointer-events: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.canvas-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .canvas-toolbar :deep(.toolbar-btn) {

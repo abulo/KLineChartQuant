@@ -17,9 +17,16 @@
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
   z-index: 100;
   pointer-events: none;
+  max-width: calc(100% - 20px);
+}
+
+@media (max-width: 768px) {
+  .canvas-toolbar-stack {
+    max-width: 90%;
+  }
 }
 </style>

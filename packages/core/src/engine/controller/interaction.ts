@@ -62,6 +62,13 @@ export class InteractionController {
     /** [触屏]:触摸会话标记，避免触摸触发的模拟 mouse 事件干扰 */
     private isTouchSession = false
 
+    /** 触屏探索模式：true=长按出十字线不滚动，false=直接滚动 */
+    private exploreMode = true
+    /** 触屏按下时的时间戳/位置（用于 tap 检测） */
+    private touchStartTime = 0
+    private touchStartX = 0
+    private touchStartY = 0
+
     private pinchTracker = new PinchTracker()
 
     /** 十字线位置 */
@@ -217,14 +224,22 @@ export class InteractionController {
 
         const pane = this.getPaneByY(mouseY)
         this.isDragging = true
-        this.dragMode = 'pan'
-        this.updatePlotHoverFromPoint(e.clientX, e.clientY)
+        this.touchStartTime = Date.now()
+        this.touchStartX = e.clientX
+        this.touchStartY = e.clientY
+        this.dragMode = this.isTouchSession && this.exploreMode ? 'explore' : 'pan'
+        if (this.dragMode === 'explore') {
+            this.updatePlotHoverFromPoint(e.clientX, e.clientY)
+        }
         this.dragStartX = e.clientX
         this.dragStartY = e.clientY
         this.scrollStartX = this.chart.getCachedScrollLeft()
         this.activePaneIdOnDrag = pane?.id || null
 
         this.chart.scheduleDraw()
+        if (this.dragMode === 'explore') {
+            this.notifyInteractionChange()
+        }
     }
 
 
@@ -250,14 +265,37 @@ export class InteractionController {
 
         if (e.isPrimary === false) return
         const wasPanning = this.dragMode === 'pan'
+        const wasExploring = this.dragMode === 'explore'
+
+        if (wasExploring && this.isTouchSession) {
+            const elapsed = Date.now() - this.touchStartTime
+            const dx = e.clientX - this.touchStartX
+            const dy = e.clientY - this.touchStartY
+            if (elapsed < 200 && Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+                // Quick tap → dismiss crosshair, switch to scroll mode
+                this.exploreMode = false
+                this.clearHover()
+                this.chart.scheduleDraw()
+                this.notifyInteractionChange()
+            } else {
+                // Long press or drag → keep crosshair
+                this.exploreMode = true
+                this.updatePlotHoverFromPoint(e.clientX, e.clientY)
+                this.chart.scheduleDraw()
+                this.notifyInteractionChange()
+            }
+        }
+
+        if (wasPanning) {
+            this.exploreMode = true
+            this.chart.checkVisibleRangeGap()
+        }
+
         this.isDragging = false
         this.dragMode = 'none'
         this.activePaneIdOnDrag = null
         this.activeSeparatorUpperPaneId = null
         this.notifyInteractionChange()
-        if (wasPanning) {
-            this.chart.checkVisibleRangeGap()
-        }
     }
 
     /**
@@ -273,10 +311,12 @@ export class InteractionController {
         this.dragMode = 'none'
         this.activePaneIdOnDrag = null
         this.clearSeparatorState()
+        if (!this.isTouchSession) {
+            this.clearHover()
+            this.chart.scheduleDraw()
+            this.notifyInteractionChange()
+        }
         this.isTouchSession = false
-        this.clearHover()
-        this.chart.scheduleDraw()
-        this.notifyInteractionChange()
     }
 
     /** 处理滚动事件 */
@@ -323,6 +363,13 @@ export class InteractionController {
                     this.chart.scalePrice(this.activePaneIdOnDrag, deltaY)
                     this.dragStartY = e.clientY
                 }
+                return
+            }
+
+            if (this.dragMode === 'explore') {
+                this.updatePlotHoverFromPoint(e.clientX, e.clientY)
+                this.chart.scheduleDraw()
+                this.notifyInteractionChange()
                 return
             }
 

@@ -30,7 +30,7 @@ export function createCrosshairRendererPlugin(options: {
       const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
       const state = options.getCrosshairState()
 
-      if (state.isDragging || !state.pos) return
+      if (!state.pos) return
 
       const { x } = state.pos
       const isActive = pane.id === state.activePaneId
