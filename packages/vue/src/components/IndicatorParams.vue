@@ -329,7 +329,10 @@ function onConfirm() {
 }
 
 .param-input {
-  width: 60px;
+  width: auto;
+  field-sizing: content;
+  min-width: 60px;
+  padding: 0 8px;
   border: none;
   border-left: 1px solid var(--klc-color-border-button);
   border-right: 1px solid var(--klc-color-border-button);
