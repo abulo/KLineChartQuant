@@ -15,10 +15,10 @@ describe('calcIchimokuData', () => {
 
     it('on constantPrice (H=L=100) all lines collapse to 100', () => {
         // Only constantPrice (30 bars) is shorter than spanBPeriod=52, so use small periods for this test
-        const out = calcIchimokuData(constantPrice, 5, 10, 15, 5)
-        // Test data is 30 bars, so spanA/B/chikou exist within the window
+        const displacement = 5
+        const out = calcIchimokuData(constantPrice, 5, 10, 15, displacement)
         const valid = out.filter((p): p is NonNullable<typeof p> => p !== undefined)
-        expect(valid.length).toBe(constantPrice.length)
+        expect(valid.length).toBe(constantPrice.length + displacement)
         // After warm-up, tenkan and kijun should both be 100
         for (let t = 15; t < out.length - 5; t++) {
             const p = out[t]!

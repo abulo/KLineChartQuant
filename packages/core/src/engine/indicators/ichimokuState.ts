@@ -10,6 +10,8 @@ import { createIndicatorStateKey } from '../../plugin/stateKeys'
  * - chikou (迟行线) = close[t+displacement]，后置位移
  *
  * 任一字段都可能 undefined（数据不足或位移外）。
+ *
+ * series 长度 = data.length + displacement，末尾 displacement 槽位为未来云（仅 spanA/spanB）。
  */
 export interface IchimokuPoint {
     tenkan?: number

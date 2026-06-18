@@ -542,6 +542,57 @@ export function createValuePointVisibleStateComposer<T extends object>(
     }
 }
 
+/**
+ * 一目均衡表专用的 visible state composer。
+ * 与 createValuePointVisibleStateComposer 的区别：
+ * - 将 visibleRange 向后扩展 displacement 根，以确保未来云的极值计入 valueMin/valueMax
+ */
+export function createIchimokuVisibleStateComposer<T extends object>(
+    bundleKey: string,
+    emptyState: {
+        timestamp: number
+        series: (T | undefined)[]
+        params: unknown
+        valueMin: number
+        valueMax: number
+        visibleMin: number
+        visibleMax: number
+    },
+    fields: readonly (keyof T)[],
+): IndicatorVisibleStateComposer {
+    return ({ bundle, visibleRange, timestamp, active }) => {
+        const source = getPointArraySeriesBundle<T>(bundle, bundleKey)
+        if (!active) {
+            return {
+                ...emptyState,
+                timestamp,
+                series: source.series,
+                params: source.params,
+            }
+        }
+
+        const displacement = (source.params as Record<string, unknown>)?.displacement as number ?? 26
+        const extendedRange = {
+            start: visibleRange.start,
+            end: Math.min(visibleRange.end + displacement, source.series.length),
+        }
+        const extremes = calcPointArrayExtremes(source.series, fields, extendedRange)
+        const bounds = computeMAFamilyBounds(
+            Number.isFinite(extremes.min) && Number.isFinite(extremes.max) ? extremes : null,
+            emptyState,
+        )
+        return {
+            timestamp,
+            series: source.series,
+            params: source.params,
+            valueMin: bounds.valueMin,
+            valueMax: bounds.valueMax,
+            visibleMin: extremes.min,
+            visibleMax: extremes.max,
+        }
+    }
+}
+
 export function createBandVisibleStateComposer<T extends object>(
     bundleKey: string,
     emptyState: {

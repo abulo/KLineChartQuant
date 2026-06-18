@@ -8,7 +8,8 @@ import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey, type TitleInfo, type TitleValueItem, type GetTitleInfoFn } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, IchimokuSchedulerConfig } from '../../indicators/scheduler'
 import { calcIchimokuData } from '../../indicators/calculators'
-import { createValuePointVisibleStateComposer } from '../../indicators/visibleStateComposers'
+import { createIchimokuVisibleStateComposer } from '../../indicators/visibleStateComposers'
+import { getPhysicalKLineConfig } from '../../utils/klineConfig'
 
 const TENKAN_COLOR = '#dc2626'
 const KIJUN_COLOR = '#2563eb'
@@ -87,6 +88,25 @@ export function createIchimokuRendererPlugin(options: IchimokuRendererOptions = 
                 if (params.showChikou && p.chikou !== undefined) chikouPts.push({ x: centerX, y: toY(p.chikou) })
                 if (params.showCloud && p.spanA !== undefined && p.spanB !== undefined) {
                     cloudSegs.push({ x: centerX, ya: toY(p.spanA), yb: toY(p.spanB), bull: p.spanA > p.spanB })
+                }
+            }
+
+            // 未来云：在数据末尾延伸 displacement 根 spanA/spanB 线及云段
+            const dataLen = (context.data as unknown[]).length
+            if (dataLen < series.length) {
+                const physConfig = getPhysicalKLineConfig(context.kWidth, context.kGap, context.dpr)
+                const futureEnd = Math.min(dataLen + params.displacement, series.length)
+                for (let i = dataLen; i < futureEnd; i++) {
+                    const p = series[i]
+                    if (!p) continue
+                    const leftPx = physConfig.startXPx + i * physConfig.unitPx
+                    const wickXPx = leftPx + (physConfig.kWidthPx - 1) / 2
+                    const centerX = wickXPx / context.dpr
+                    if (params.showSpanA && p.spanA !== undefined) spanAPts.push({ x: centerX, y: toY(p.spanA) })
+                    if (params.showSpanB && p.spanB !== undefined) spanBPts.push({ x: centerX, y: toY(p.spanB) })
+                    if (params.showCloud && p.spanA !== undefined && p.spanB !== undefined) {
+                        cloudSegs.push({ x: centerX, ya: toY(p.spanA), yb: toY(p.spanB), bull: p.spanA > p.spanB })
+                    }
                 }
             }
 
@@ -209,7 +229,7 @@ export function getIchimokuTitleInfo(
     allowMainPane: true,
     mainPane: { rendererName: 'ichimoku_main', toActiveConfig: (params, active) => ({ ...params, showTenkan: active, showKijun: active, showSpanA: active, showSpanB: active, showChikou: active, showCloud: active }) },
     scale: { indicatorKey: 'ichimoku', label: 'Ichimoku', decimals: 2 },
-    visibleState: { compose: createValuePointVisibleStateComposer('ichimoku', EMPTY_ICHIMOKU_STATE, ['tenkan', 'kijun', 'spanA', 'spanB', 'chikou']) },
+    visibleState: { compose: createIchimokuVisibleStateComposer('ichimoku', EMPTY_ICHIMOKU_STATE, ['tenkan', 'kijun', 'spanA', 'spanB', 'chikou']) },
     runtime: { defaultConfig:{tenkanPeriod:9,kijunPeriod:26,spanBPeriod:52,displacement:26,showTenkan:true,showKijun:true,showSpanA:true,showSpanB:true,showCloud:true,showChikou:true}, computeKey:'calcIchimokuData', compute:(data,c)=>calcIchimokuData(data,c.tenkanPeriod,c.kijunPeriod,c.spanBPeriod,c.displacement) },
 })
 class IchimokuDefinition {

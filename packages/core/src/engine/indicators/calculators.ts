@@ -1559,7 +1559,7 @@ export function calcDonchianDataSoA(
 //   spanA(t)  = (tenkan(t-displacement) + kijun(t-displacement)) / 2   ← 前置 displacement
 //   spanB(t)  = 用 spanBPeriod 计算后再前置 displacement
 //   chikou(t) = close(t+displacement)                                  ← 后置 displacement
-// 注：不做未来云的延伸（输出长度 = data.length；最后 displacement 根没 spanA/B；前 displacement 根没 chikou）
+// 输出长度 = data.length + displacement，末尾 displacement 根为未来云（仅 spanA/spanB）
 // ============================================================================
 
 export interface IchimokuPoint {
@@ -1600,8 +1600,11 @@ export function calcIchimokuData(
     displacement: number,
 ): (IchimokuPoint | undefined)[] {
     const n = data.length
-    const result: (IchimokuPoint | undefined)[] = new Array(n).fill(undefined)
-    if (n === 0 || tenkanPeriod <= 0 || kijunPeriod <= 0 || spanBPeriod <= 0) return result
+    const totalLen = n + displacement
+    const result: (IchimokuPoint | undefined)[] = new Array(totalLen).fill(undefined)
+    if (n === 0 || tenkanPeriod <= 0 || kijunPeriod <= 0 || spanBPeriod <= 0) {
+        return result.slice(0, n)
+    }
 
     const tenkan = _rollingMidline(data, tenkanPeriod)
     const kijun = _rollingMidline(data, kijunPeriod)
@@ -1628,6 +1631,22 @@ export function calcIchimokuData(
         const future = t + displacement
         if (future < n) point.chikou = data[future]!.close
 
+        result[t] = point
+    }
+
+    // 未来云：在 data 末尾延伸 displacement 根，仅含 spanA/spanB
+    for (let f = 0; f < displacement; f++) {
+        const t = n + f
+        const src = t - displacement
+        const point: IchimokuPoint = {}
+        if (src >= 0 && src < n) {
+            if (tenkan[src] !== undefined && kijun[src] !== undefined) {
+                point.spanA = (tenkan[src]! + kijun[src]!) / 2
+            }
+            if (spanBSource[src] !== undefined) {
+                point.spanB = spanBSource[src]
+            }
+        }
         result[t] = point
     }
 
