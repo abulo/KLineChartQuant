@@ -64,7 +64,7 @@ exports[`theme baseline — dark > CSS declaration block (snapshot) 1`] = `
   --klc-color-tag-bg-transparent: transparent;
   --klc-color-tag-bg-active: #1890ff;
   --klc-color-tag-bg-active-hover: #40a9ff;
-  --klc-color-tag-bg-hover: #3a3a4a;
+  --klc-color-tag-bg-hover: #262C36;
   --klc-color-border-dark: rgba(255, 255, 255, 0.15);
   --klc-color-border-medium: rgba(255, 255, 255, 0.12);
   --klc-color-border-light: rgba(255, 255, 255, 0.08);
