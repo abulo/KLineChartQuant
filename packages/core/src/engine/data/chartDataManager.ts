@@ -1,5 +1,5 @@
 import type { KLineData } from '../../types/price'
-import type { SymbolSpec, DataFetcher } from '../../controllers/types'
+import type { SymbolSpec, DataFetcher, CustomDataSource } from '../../controllers/types'
 import { createSignal, type Signal } from '../../reactivity/signal'
 import { DataBuffer } from '../../data-fetchers/dataBuffer'
 import type { ChartDom, Viewport } from '../chartTypes'
@@ -449,6 +449,95 @@ export class ChartDataManager {
     const mainEarliest = this._dataBuffer.loadedWindow?.earliestTs
     newBuffer.setSymbol(spec, mainEarliest)
     this._symbolsSignal.set([this._symbolsSignal.peek()[0]!, ...this._comparisonSpecs])
+  }
+
+  setComparisonData(symbol: string, data: KLineData[]): void {
+    const key = symbol
+    const existing = this._comparisonBuffers.get(key)
+
+    if (!existing) {
+      const buffer = new DataBuffer()
+      this._comparisonBuffers.set(key, buffer)
+
+      const unsub = buffer.data.subscribe(() => {
+        this._comparisonData.set(key, [...buffer.data.peek()])
+        this.deps.scheduleDraw()
+      })
+      this._comparisonBufferUnsubs.set(key, unsub)
+
+      const unsubLoading = buffer.loading.subscribe(() => this.recomputeComparisonLoading())
+      this._comparisonLoadingUnsubs.set(key, unsubLoading)
+
+      const color =
+        COMPARISON_PALETTE[this._comparisonColors.size % COMPARISON_PALETTE.length] ??
+        DEFAULT_COMPARISON_COLOR
+      this._comparisonColors.set(key, color)
+      this._comparisonColorsSignal.set(new Map(this._comparisonColors))
+
+      const spec: SymbolSpec = { symbol, period: this.currentPeriod }
+      this._comparisonSpecs.push(spec)
+      const mainSpec = this._symbolsSignal.peek()[0]
+      this._symbolsSignal.set(mainSpec ? [mainSpec, ...this._comparisonSpecs] : [...this._comparisonSpecs])
+
+      buffer.setInlineData(data)
+      return
+    }
+    existing.setInlineData(data)
+  }
+
+  setCurrentSymbol(symbol: string): void {
+    const currentSpec = this._dataBuffer.currentSpec
+    if (currentSpec) {
+      this._dataBuffer.setCurrentSpec({ ...currentSpec, symbol })
+    } else {
+      this._dataBuffer.setCurrentSpec({ symbol })
+    }
+    const specs = this._symbolsSignal.peek()
+    if (specs.length > 0) {
+      const updated = [{ ...specs[0], symbol }, ...specs.slice(1)] as SymbolSpec[]
+      this._symbolsSignal.set(updated)
+    }
+  }
+
+  setCurrentPeriod(period: string): void {
+    const currentSpec = this._dataBuffer.currentSpec
+    if (currentSpec) {
+      this._dataBuffer.setCurrentSpec({ ...currentSpec, period })
+    } else {
+      this._dataBuffer.setCurrentSpec({ symbol: '', period })
+    }
+    const specs = this._symbolsSignal.peek()
+    if (specs.length > 0) {
+      const updated = [{ ...specs[0], period }, ...specs.slice(1)] as SymbolSpec[]
+      this._symbolsSignal.set(updated)
+    }
+  }
+
+  applyCustomData(source: CustomDataSource): void {
+    if (source.symbol) this.setCurrentSymbol(source.symbol)
+    if (source.period) this.setCurrentPeriod(source.period)
+
+    // 确保主品种在 _symbolsSignal 中有条目，避免后续 setComparisonData
+    // 因取不到 mainSpec 而把第一个对比商品误当做主品种
+    const specs = this._symbolsSignal.peek()
+    if (specs.length === 0 && source.symbol) {
+      const mainSpec: SymbolSpec = {
+        symbol: source.symbol,
+        period: source.period ?? 'daily',
+      }
+      this._symbolsSignal.set([mainSpec])
+    }
+
+    const plainData = source.data.map((d) => ({ ...d }))
+    this.setData(plainData)
+    if (source.comparisons) {
+      for (const key of this._comparisonBuffers.keys()) {
+        if (!source.comparisons[key]) this.removeComparisonSymbol(key)
+      }
+      for (const [symbol, data] of Object.entries(source.comparisons)) {
+        this.setComparisonData(symbol, data.map((d) => ({ ...d })))
+      }
+    }
   }
 
   removeComparisonSymbol(symbol: string): void {

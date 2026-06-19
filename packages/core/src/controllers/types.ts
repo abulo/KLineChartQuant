@@ -102,6 +102,17 @@ export type DataFetcher = (
     },
 ) => Promise<ReadonlyArray<KLineData>>
 
+/** User-provided K-line data bundle — bypasses the fetcher pipeline entirely */
+export interface CustomDataSource {
+    symbol?: string
+    period?: string
+    adjust?: string
+    /** Main chart K-line data (required) */
+    data: ReadonlyArray<KLineData>
+    /** Comparison products keyed by symbol */
+    comparisons?: Record<string, ReadonlyArray<KLineData>>
+}
+
 // ---------------------------------------------------------------------------
 // Indicator metadata
 // ---------------------------------------------------------------------------
@@ -264,6 +275,14 @@ export interface ChartController extends DrawingChartAdapter {
     setSymbols(next: ReadonlyArray<SymbolSpec>): void
     addComparisonSymbol(spec: SymbolSpec): void
     removeComparisonSymbol(symbol: string): void
+    /** Inject comparison product data directly (bypasses fetcher) */
+    setComparisonData(symbol: string, data: ReadonlyArray<KLineData>): void
+    /** Update the main symbol code without triggering a fetch */
+    setCurrentSymbol(symbol: string): void
+    /** Update the K-line period without triggering a fetch */
+    setCurrentPeriod(period: string): void
+    /** Inject a complete custom data bundle (bypasses fetcher pipeline) */
+    applyCustomData(source: CustomDataSource): void
     setDataFetcher(fetcher: DataFetcher | null): void
     setData(next: ReadonlyArray<KLineData>): void
     appendData(next: ReadonlyArray<KLineData>): void
