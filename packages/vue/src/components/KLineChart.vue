@@ -286,7 +286,6 @@ const isIntraday = computed(() => kLineLevel.value.includes('min'))
 const currentSymbol = ref('选择商品')
 const currentSymbolItem = ref<SymbolItem | null>(null)
 const symbolStatus = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
-const symbolTimeoutId = ref<ReturnType<typeof setTimeout> | null>(null)
 const overlaySymbols = ref<string[]>([])
 const overlaySymbolItems = ref<SymbolItem[]>([])
 
@@ -296,7 +295,6 @@ function onKLineLevelChange(level: string) {
   }
   kLineLevel.value = level as typeof kLineLevel.value
   emit('kLineLevelChange', level)
-  controller.value?.setCurrentPeriod(level)
   syncSymbolsToController()
 }
 
@@ -314,7 +312,6 @@ function onKLineAdjustChange(adjust: 'qfq' | 'hfq' | 'splits' | 'none') {
 }
 
 function onSymbolChange(item: SymbolItem) {
-  if (symbolTimeoutId.value) clearTimeout(symbolTimeoutId.value)
   symbolStatus.value = 'loading'
   currentSymbol.value = item.code
   currentSymbolItem.value = item
@@ -866,10 +863,6 @@ function setupChartCallbacks(ctrl: ChartController): () => void {
     dataLength.value = data.length
     dataVersion.value++
     if (data.length > 0 && (symbolStatus.value === 'loading' || symbolStatus.value === 'error')) {
-      if (symbolTimeoutId.value) {
-        clearTimeout(symbolTimeoutId.value)
-        symbolTimeoutId.value = null
-      }
       symbolStatus.value = 'ready'
     }
   })
@@ -878,14 +871,8 @@ function setupChartCallbacks(ctrl: ChartController): () => void {
     const loading = ctrl.dataLoading.peek()
     if (loading) {
       symbolStatus.value = 'loading'
-      if (symbolTimeoutId.value) clearTimeout(symbolTimeoutId.value)
-      symbolTimeoutId.value = setTimeout(() => {
-        if (symbolStatus.value === 'loading') {
-          symbolStatus.value = 'error'
-        }
-        symbolTimeoutId.value = null
-      }, 10000)
-      return
+    } else if (symbolStatus.value === 'loading') {
+      symbolStatus.value = 'error'
     }
   })
 
@@ -930,10 +917,6 @@ function setupChartCallbacks(ctrl: ChartController): () => void {
   })
 
   return () => {
-      if (symbolTimeoutId.value) {
-        clearTimeout(symbolTimeoutId.value)
-        symbolTimeoutId.value = null
-      }
       unsubscribeViewport()
       unsubscribeData()
       unsubscribeDataLoading()
