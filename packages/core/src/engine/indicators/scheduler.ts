@@ -119,7 +119,7 @@ export class IndicatorScheduler {
 
     // 当前数据和配置快照
     private currentData: KLineData[] = []
-    private configSnapshot: IndicatorConfigSnapshot = this.getDefaultConfig()
+    private configSnapshot!: IndicatorConfigSnapshot
     private paneIdOverrides = new Map<string, string>()
 
     // Worker 相关
@@ -147,8 +147,11 @@ export class IndicatorScheduler {
     // 注册表
     private registry: IndicatorRegistry
 
-    constructor() {
-        this.registry = new IndicatorRegistry()
+    constructor(autoSync?: boolean) {
+        this.registry = autoSync !== undefined
+            ? new IndicatorRegistry(autoSync)
+            : new IndicatorRegistry()
+        this.configSnapshot = this.buildInitialConfigSnapshot()
         this.initBackend()
     }
 
@@ -254,133 +257,15 @@ export class IndicatorScheduler {
     // 初始化
     // ============================================================================
 
-    private getDefaultConfig(): IndicatorConfigSnapshot {
-        return {
-            ma: { ma5: true, ma10: true, ma20: true, ma30: true, ma60: true },
-            boll: {
-                period: 20,
-                multiplier: 2,
-                showUpper: true,
-                showMiddle: true,
-                showLower: true,
-                showBand: true,
-            },
-            expma: { fastPeriod: 12, slowPeriod: 50 },
-            ene: { period: 10, deviation: 11 },
-            rsi: {
-                period1: 6,
-                period2: 12,
-                period3: 24,
-                showRSI1: true,
-                showRSI2: true,
-                showRSI3: true,
-            },
-            cci: { period: 14, showCCI: true },
-            stoch: { n: 9, m: 3, showK: true, showD: true },
-            mom: { period: 10, showMOM: true },
-            wmsr: { period: 14, showWMSR: true },
-            kst: {
-                roc1: 10,
-                roc2: 15,
-                roc3: 20,
-                roc4: 30,
-                signalPeriod: 9,
-                showKST: true,
-                showSignal: true,
-            },
-            fastk: { period: 9, showFASTK: true },
-            macd: {
-                fastPeriod: 12,
-                slowPeriod: 26,
-                signalPeriod: 9,
-                showDIF: true,
-                showDEA: true,
-                showBAR: true,
-            },
-            atr: { period: DEFAULT_ATR_PERIOD, showATR: true },
-            wma: { period: DEFAULT_WMA_PERIOD, showWMA: true },
-            dema: { period: DEFAULT_DEMA_PERIOD, showDEMA: true },
-            tema: { period: DEFAULT_TEMA_PERIOD, showTEMA: true },
-            hma: { period: DEFAULT_HMA_PERIOD, showHMA: true },
-            kama: {
-                period: DEFAULT_KAMA_PERIOD,
-                fastPeriod: DEFAULT_KAMA_FAST_PERIOD,
-                slowPeriod: DEFAULT_KAMA_SLOW_PERIOD,
-                showKAMA: true,
-            },
-            sar: { step: DEFAULT_SAR_STEP, maxStep: DEFAULT_SAR_MAX_STEP, showSAR: true },
-            supertrend: {
-                atrPeriod: DEFAULT_SUPERTREND_ATR_PERIOD,
-                multiplier: DEFAULT_SUPERTREND_MULTIPLIER,
-                showSuperTrend: true,
-            },
-            keltner: {
-                emaPeriod: DEFAULT_KELTNER_EMA_PERIOD,
-                atrPeriod: DEFAULT_KELTNER_ATR_PERIOD,
-                multiplier: DEFAULT_KELTNER_MULTIPLIER,
-                showUpper: true,
-                showMiddle: true,
-                showLower: true,
-            },
-            donchian: {
-                period: DEFAULT_DONCHIAN_PERIOD,
-                showUpper: true,
-                showMiddle: true,
-                showLower: true,
-            },
-            ichimoku: {
-                tenkanPeriod: DEFAULT_ICHIMOKU_TENKAN,
-                kijunPeriod: DEFAULT_ICHIMOKU_KIJUN,
-                spanBPeriod: DEFAULT_ICHIMOKU_SPAN_B,
-                displacement: DEFAULT_ICHIMOKU_DISPLACEMENT,
-                showTenkan: true,
-                showKijun: true,
-                showSpanA: true,
-                showSpanB: true,
-                showCloud: true,
-                showChikou: true,
-            },
-            roc: { period: DEFAULT_ROC_PERIOD, showROC: true },
-            trix: {
-                period: DEFAULT_TRIX_PERIOD,
-                signalPeriod: DEFAULT_TRIX_SIGNAL_PERIOD,
-                showTRIX: true,
-                showSignal: true,
-            },
-            hv: { period: DEFAULT_HV_PERIOD, annualizationFactor: DEFAULT_HV_ANNUALIZATION, showHV: true },
-            parkinson: { period: DEFAULT_PARKINSON_PERIOD, annualizationFactor: DEFAULT_PARKINSON_ANNUALIZATION, showParkinson: true },
-            chaikinVol: { emaPeriod: DEFAULT_CHAIKIN_VOL_EMA_PERIOD, rocPeriod: DEFAULT_CHAIKIN_VOL_ROC_PERIOD, showChaikinVol: true },
-            vma: { period: DEFAULT_VMA_PERIOD, showVMA: true },
-            obv: { showOBV: true },
-            pvt: { showPVT: true },
-            vwap: { sessionResetGapMs: DEFAULT_VWAP_SESSION_GAP_MS, showVWAP: true },
-            cmf: { period: DEFAULT_CMF_PERIOD, showCMF: true },
-            mfi: { period: DEFAULT_MFI_PERIOD, showMFI: true },
-            pivot: { showPP: true, showR1: true, showR2: true, showR3: false, showS1: true, showS2: true, showS3: false },
-            fib: { period: DEFAULT_FIB_PERIOD, showLevels: true },
-            structure: {
-                leftWindow: DEFAULT_STRUCTURE_LEFT,
-                rightWindow: DEFAULT_STRUCTURE_RIGHT,
-                breakoutSource: 'close',
-                showSwingLabels: true,
-                showBOS: true,
-                showCHOCH: true,
-                showProvisional: false,
-            },
-            zones: {
-                showFVG: true,
-                showOB: true,
-                showFilledZones: false,
-                obLookback: DEFAULT_ZONES_OB_LOOKBACK,
-            },
-            volumeProfile: {
-                bins: DEFAULT_VP_BINS,
-                lookback: DEFAULT_VP_LOOKBACK,
-                valueAreaPercent: DEFAULT_VP_VALUE_AREA,
-                showPOC: true,
-                showValueArea: true,
-            },
+    private buildInitialConfigSnapshot(): IndicatorConfigSnapshot {
+        const config: Record<string, unknown> = {}
+        for (const meta of this.registry.getAll()) {
+            if (meta.runtime?.defaultConfig) {
+                const key = meta.runtime.configKey ?? meta.name
+                config[key] = { ...(meta.runtime.defaultConfig as Record<string, unknown>) }
+            }
         }
+        return config as IndicatorConfigSnapshot
     }
 
     private initBackend(): void {

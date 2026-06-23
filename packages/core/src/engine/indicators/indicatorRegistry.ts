@@ -1,14 +1,29 @@
 import type { IndicatorMetadata } from './indicatorMetadata'
+import { getRegisteredIndicatorDefinitions } from './indicatorDefinitionRegistry'
 
 /**
  * IndicatorRegistry - 指标注册表
  *
  * 管理所有已注册指标的元数据
  * 支持运行时动态注册/注销指标
+ *
+ * 构造时自动从全局 {@link getRegisteredIndicatorDefinitions | indicatorDefinitionRegistry}
+ * 同步已声明的指标，无需外部手动桥接。
+ *
+ * @param autoSync - 是否在构造时自动同步全局 registry（默认 true）；
+ *                   测试环境下应设为 `false` 以避免全局状态污染。
  */
 export class IndicatorRegistry {
     private indicators = new Map<string, IndicatorMetadata>()
     private aliases = new Map<string, string>()
+
+    constructor(private autoSync = true) {
+        if (autoSync) {
+            for (const def of getRegisteredIndicatorDefinitions()) {
+                this.register(def)
+            }
+        }
+    }
 
     private normalize(id: string): string {
         return id.trim().toLowerCase().replace(/[^a-z0-9]/g, '')

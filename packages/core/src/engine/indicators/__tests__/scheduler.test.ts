@@ -131,7 +131,7 @@ describe('IndicatorScheduler', () => {
   let mockHost: PluginHost
 
   beforeEach(() => {
-    scheduler = new IndicatorScheduler()
+    scheduler = new IndicatorScheduler(false)
     mockHost = createMockPluginHost()
     scheduler.setPluginHost(mockHost)
     registerTestIndicators(scheduler)
@@ -144,7 +144,7 @@ describe('IndicatorScheduler', () => {
     })
 
     it('should accept plugin host', () => {
-      const newScheduler = new IndicatorScheduler()
+      const newScheduler = new IndicatorScheduler(false)
       newScheduler.setPluginHost(mockHost)
       // Should not throw
       expect(() => newScheduler.recompute()).not.toThrow()
@@ -426,7 +426,7 @@ describe('BOLL State in scheduler', () => {
   let mockHost: PluginHost
 
   beforeEach(() => {
-    scheduler = new IndicatorScheduler()
+    scheduler = new IndicatorScheduler(false)
     mockHost = createMockPluginHost()
     scheduler.setPluginHost(mockHost)
     registerTestIndicators(scheduler)
@@ -509,7 +509,7 @@ describe('EXPMA State in scheduler', () => {
   let mockHost: PluginHost
 
   beforeEach(() => {
-    scheduler = new IndicatorScheduler()
+    scheduler = new IndicatorScheduler(false)
     mockHost = createMockPluginHost()
     scheduler.setPluginHost(mockHost)
     registerTestIndicators(scheduler)
@@ -563,7 +563,7 @@ describe('ENE State in scheduler', () => {
   let mockHost: PluginHost
 
   beforeEach(() => {
-    scheduler = new IndicatorScheduler()
+    scheduler = new IndicatorScheduler(false)
     mockHost = createMockPluginHost()
     scheduler.setPluginHost(mockHost)
     registerTestIndicators(scheduler)
@@ -620,7 +620,7 @@ describe('Per-indicator dirty flags', () => {
   let mockHost: PluginHost
 
   beforeEach(() => {
-    scheduler = new IndicatorScheduler()
+    scheduler = new IndicatorScheduler(false)
     mockHost = createMockPluginHost()
     scheduler.setPluginHost(mockHost)
     registerTestIndicators(scheduler)
@@ -769,7 +769,7 @@ describe('RSI State in scheduler', () => {
   let mockHost: PluginHost
 
   beforeEach(() => {
-    scheduler = new IndicatorScheduler()
+    scheduler = new IndicatorScheduler(false)
     mockHost = createMockPluginHost()
     scheduler.setPluginHost(mockHost)
     registerTestIndicators(scheduler)

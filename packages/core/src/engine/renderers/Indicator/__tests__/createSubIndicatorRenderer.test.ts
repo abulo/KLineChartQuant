@@ -47,7 +47,7 @@ describe('createSubIndicatorRenderer', () => {
   })
 
   it('supports legacy uppercase ids through registry normalization', () => {
-    const registry = new IndicatorRegistry()
+    const registry = new IndicatorRegistry(false)
     for (const definition of getBuiltinIndicatorDefinitions()) {
       registry.register(definition)
     }

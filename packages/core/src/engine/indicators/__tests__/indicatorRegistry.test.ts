@@ -1,6 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { IndicatorRegistry } from '../indicatorRegistry'
+import { clearRegisteredIndicatorDefinitionsForTest } from '../indicatorDefinitionRegistry'
 import type { IndicatorMetadata } from '../indicatorMetadata'
+
+beforeEach(() => {
+  clearRegisteredIndicatorDefinitionsForTest()
+})
 
 function createMeta(overrides: Partial<IndicatorMetadata> = {}): IndicatorMetadata {
   return {
@@ -17,7 +22,7 @@ function createMeta(overrides: Partial<IndicatorMetadata> = {}): IndicatorMetada
 
 describe('IndicatorRegistry', () => {
   it('resolves indicators by name, displayName, aliases, and case-insensitive ids', () => {
-    const registry = new IndicatorRegistry()
+    const registry = new IndicatorRegistry(false)
     const meta = createMeta()
 
     registry.register(meta)
@@ -30,7 +35,7 @@ describe('IndicatorRegistry', () => {
   })
 
   it('throws for missing required metadata fields', () => {
-    const registry = new IndicatorRegistry()
+    const registry = new IndicatorRegistry(false)
 
     expect(() => registry.register(createMeta({ name: '' }))).toThrow('Indicator name is required')
     expect(() => registry.register(createMeta({ displayName: '' }))).toThrow("displayName is required")
@@ -38,7 +43,7 @@ describe('IndicatorRegistry', () => {
   })
 
   it('replaces old aliases when unregistering', () => {
-    const registry = new IndicatorRegistry()
+    const registry = new IndicatorRegistry(false)
     const meta = createMeta()
 
     registry.register(meta)
@@ -51,7 +56,7 @@ describe('IndicatorRegistry', () => {
   })
 
   it('returns required metadata or throws a descriptive error', () => {
-    const registry = new IndicatorRegistry()
+    const registry = new IndicatorRegistry(false)
     const meta = createMeta()
 
     registry.register(meta)

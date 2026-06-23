@@ -4,7 +4,6 @@ import type { IndicatorInstance, SubPaneInfo, PaneSpec, ChartOptions } from '../
 import type { VisibleRange } from '../layout/pane'
 import { UpdateLevel } from '../layout/pane'
 import { IndicatorScheduler } from './scheduler'
-import { getBuiltinIndicatorDefinitions } from './registerBuiltins'
 import { getRegisteredIndicatorDefinitions } from './indicatorDefinitionRegistry'
 import { SubPaneManager, type SubPaneEntry, type SubPaneContext } from '../subPaneManager'
 import { createSubIndicatorRenderer, type SubIndicatorType } from '../renderers/Indicator'
@@ -93,12 +92,9 @@ export class ChartIndicatorManager {
     constructor(deps: IndicatorDependencies) {
         this.deps = deps
 
-        // 初始化指标调度器
+        // 初始化指标调度器（IndicatorRegistry 构造时自动从全局 registry 同步）
         this.indicatorScheduler = new IndicatorScheduler()
         this.indicatorScheduler.setPluginHost(deps.getPluginHost())
-        for (const definition of getBuiltinIndicatorDefinitions()) {
-            this.indicatorScheduler.registerIndicator(definition)
-        }
         this.indicatorScheduler.setInvalidateCallback(() => {
             deps.setPendingIndicatorDataUpdate(false)
             deps.scheduleDraw()
@@ -459,45 +455,8 @@ export class ChartIndicatorManager {
     }
 
     private getDefaultSubPaneParams(indicatorId: SubIndicatorType): Record<string, unknown> {
-        const defaults: Record<string, Record<string, unknown>> = {
-            VOLUME: {},
-            MACD: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 },
-            RSI: { period1: 6, period2: 12, period3: 24 },
-            CCI: { period: 14, showCCI: true },
-            STOCH: { n: 9, m: 3, showK: true, showD: true },
-            MOM: { period: 10, showMOM: true },
-            WMSR: { period: 14, showWMSR: true },
-            KST: { roc1: 10, roc2: 15, roc3: 20, roc4: 30, signalPeriod: 9, showKST: true, showSignal: true },
-            FASTK: { period: 9, showFASTK: true },
-            ATR: { period: 14, showATR: true },
-            WMA: { period: 10, showWMA: true },
-            DEMA: { period: 14, showDEMA: true },
-            TEMA: { period: 14, showTEMA: true },
-            HMA: { period: 14, showHMA: true },
-            KAMA: { period: 10, fastPeriod: 2, slowPeriod: 30, showKAMA: true },
-            SAR: { step: 0.02, maxStep: 0.2, showSAR: true },
-            SUPERTREND: { atrPeriod: 10, multiplier: 3, showSuperTrend: true },
-            KELTNER: { emaPeriod: 20, atrPeriod: 10, multiplier: 2, showUpper: true, showMiddle: true, showLower: true },
-            DONCHIAN: { period: 20, showUpper: true, showMiddle: true, showLower: true },
-            ICHIMOKU: { tenkanPeriod: 9, kijunPeriod: 26, spanBPeriod: 52, displacement: 26, showTenkan: true, showKijun: true, showSpanA: true, showSpanB: true, showChikou: true, showCloud: true },
-            ROC: { period: 12, showROC: true },
-            TRIX: { period: 15, signalPeriod: 9, showTRIX: true, showSignal: true },
-            HV: { period: 20, annualizationFactor: 252, showHV: true },
-            PARKINSON: { period: 20, annualizationFactor: 252, showParkinson: true },
-            CHAIKIN_VOL: { emaPeriod: 10, rocPeriod: 10, showChaikinVol: true },
-            VMA: { period: 5, showVMA: true },
-            OBV: { showOBV: true },
-            PVT: { showPVT: true },
-            VWAP: { sessionResetGapMs: 0, showVWAP: true },
-            CMF: { period: 20, showCMF: true },
-            MFI: { period: 14, showMFI: true },
-            PIVOT: { showPP: true, showR1: true, showR2: true, showR3: false, showS1: true, showS2: true, showS3: false },
-            FIB: { period: 50, showLevels: true },
-            STRUCTURE: { leftWindow: 2, rightWindow: 2, breakoutSource: 'close', showSwingLabels: true, showBOS: true, showCHOCH: true, showProvisional: false },
-            ZONES: { showFVG: true, showOB: true, showFilledZones: true, obLookback: 5 },
-            VOLUME_PROFILE: { bins: 24, lookback: 0, valueAreaPercent: 0.7, showVolumeProfile: true },
-        }
-        return { ...(defaults[indicatorId] ?? {}) }
+        const meta = this.indicatorScheduler.getIndicatorMetadata(indicatorId)
+        return { ...((meta?.runtime?.defaultConfig as Record<string, unknown>) ?? {}) }
     }
 
     // ========== 高层指标 API ==========
