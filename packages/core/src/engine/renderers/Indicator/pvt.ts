@@ -1,7 +1,7 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { PVTRenderState } from '../../indicators/pvtState'
-import { createPVTStateKey, EMPTY_PVT_STATE } from '../../indicators/pvtState'
+import type { PVTRenderState } from '../../indicators/state/pvtState'
+import { createPVTStateKey, EMPTY_PVT_STATE } from '../../indicators/state/pvtState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
@@ -106,7 +106,7 @@ function createPVTRendererPlugin(options: { paneId?: string } = {}): RendererPlu
             const state = pluginHost?.getSharedState<PVTRenderState>(stateKey)
             return state?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 

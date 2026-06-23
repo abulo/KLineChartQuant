@@ -2,8 +2,8 @@ import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../..
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
 import type { KLineData } from '../../../types/price'
-import type { SuperTrendRenderState } from '../../indicators/supertrendState'
-import { createSuperTrendStateKey, EMPTY_SUPERTREND_STATE } from '../../indicators/supertrendState'
+import type { SuperTrendRenderState } from '../../indicators/state/supertrendState'
+import { createSuperTrendStateKey, EMPTY_SUPERTREND_STATE } from '../../indicators/state/supertrendState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey, type TitleInfo, type GetTitleInfoFn } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, SuperTrendSchedulerConfig } from '../../indicators/scheduler'
@@ -96,7 +96,7 @@ function createSuperTrendRendererPlugin(options: SuperTrendRendererOptions = {})
             const state = pluginHost?.getSharedState<SuperTrendRenderState>(stateKey)
             return state?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 
@@ -131,7 +131,7 @@ function getSuperTrendTitleInfo(
     mainPane: { rendererName: 'supertrend_main', toActiveConfig: (params, active) => ({ ...params, showSuperTrend: active }) },
     scale: { indicatorKey: 'supertrend', label: 'SuperTrend', decimals: 2 },
     visibleState: { compose: createValuePointVisibleStateComposer('supertrend', EMPTY_SUPERTREND_STATE, ['value']) },
-    runtime: { defaultConfig:{atrPeriod:10,multiplier:3,showSuperTrend:true}, computeKey:'calcSuperTrendData', compute:(data,c)=>calcSuperTrendData(data,c.atrPeriod,c.multiplier) },
+    runtime: { defaultConfig: { atrPeriod: 10, multiplier: 3, showSuperTrend: true }, computeKey: 'calcSuperTrendData', compute: (data, c) => calcSuperTrendData(data, c.atrPeriod, c.multiplier) },
 })
 class SuperTrendIndicatorDefinition {
     static rendererFactory = createSuperTrendRendererPlugin

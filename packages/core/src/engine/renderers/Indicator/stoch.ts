@@ -2,8 +2,8 @@ import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../..
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
 import { createDashedLineRenderer } from './shared/dashedLines'
-import type { STOCHRenderState } from '../../indicators/stochState'
-import { createSTOCHStateKey, EMPTY_STOCH_STATE } from '../../indicators/stochState'
+import type { STOCHRenderState } from '../../indicators/state/stochState'
+import { createSTOCHStateKey, EMPTY_STOCH_STATE } from '../../indicators/state/stochState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { createFixedRangePointVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
@@ -103,7 +103,7 @@ function createSTOCHRendererPlugin(options: STOCHRendererOptions = {}): Renderer
         },
 
         draw(context: RenderContext) {
-const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
+            const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
             const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
 
             const stateKey = resolveKey()
@@ -292,7 +292,7 @@ function getSTOCHTitleInfo(
     visibleState: { compose: createFixedRangePointVisibleStateComposer('stoch', EMPTY_STOCH_STATE, ['k', 'd'] as const) },
     scaleRendererFactory: createStochScaleRendererPlugin,
     getTitleInfo: getSTOCHTitleInfo,
-    runtime: { defaultConfig:{n:9,m:3,showK:true,showD:true}, computeKey:'calcSTOCHData', compute:(data,c)=>calcSTOCHData(data,c.n,c.m) },
+    runtime: { defaultConfig: { n: 9, m: 3, showK: true, showD: true }, computeKey: 'calcSTOCHData', compute: (data, c) => calcSTOCHData(data, c.n, c.m) },
 })
 class STOCHIndicatorDefinition {
     static rendererFactory = createSTOCHRendererPlugin

@@ -2,8 +2,8 @@ import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../..
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
 import { alignToPhysicalPixelCenter } from '../../draw/pixelAlign'
-import type { WMSRRenderState } from '../../indicators/wmsrState'
-import { createWMSRStateKey, EMPTY_WMSR_STATE } from '../../indicators/wmsrState'
+import type { WMSRRenderState } from '../../indicators/state/wmsrState'
+import { createWMSRStateKey, EMPTY_WMSR_STATE } from '../../indicators/state/wmsrState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { createFixedRangeSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
@@ -163,7 +163,7 @@ function createWMSRRendererPlugin(options: WMSRRendererOptions = {}): RendererPl
         },
 
         draw(context: RenderContext) {
-const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
+            const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
             const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
 
             const stateKey = resolveKey()

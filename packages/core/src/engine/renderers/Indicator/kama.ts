@@ -1,8 +1,8 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { createSingleLineTitleInfo } from './shared/titleInfo'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { KAMARenderState } from '../../indicators/kamaState'
-import { createKAMAStateKey, EMPTY_KAMA_STATE } from '../../indicators/kamaState'
+import type { KAMARenderState } from '../../indicators/state/kamaState'
+import { createKAMAStateKey, EMPTY_KAMA_STATE } from '../../indicators/state/kamaState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
@@ -134,7 +134,7 @@ const getKAMATitleInfo = createSingleLineTitleInfo({ createStateKey: createKAMAS
     mainPane: { rendererName: 'kama_main', toActiveConfig: (params, active) => ({ ...params, showKAMA: active }) },
     visibleState: { compose: createSparseVisibleStateComposer('kama', EMPTY_KAMA_STATE) },
     scale: { indicatorKey: 'kama', label: 'KAMA', decimals: 2 },
-    runtime: { defaultConfig:{period:10,fastPeriod:2,slowPeriod:30,showKAMA:true}, computeKey:'calcKAMAData', compute:(data,c)=>calcKAMAData(data,c.period,c.fastPeriod,c.slowPeriod) },
+    runtime: { defaultConfig: { period: 10, fastPeriod: 2, slowPeriod: 30, showKAMA: true }, computeKey: 'calcKAMAData', compute: (data, c) => calcKAMAData(data, c.period, c.fastPeriod, c.slowPeriod) },
 })
 class KAMADefinition {
     static rendererFactory = createKAMARendererPlugin

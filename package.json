@@ -82,11 +82,11 @@
     "typescript": "~6.0.3",
     "unplugin-icons": "^23.0.1",
     "unplugin-vue-components": "^32.1.0",
-    "vite": "^8.0.10",
+    "vite": "^8.0.16",
     "vite-plugin-babel": "^1.3.2",
-    "vite-plugin-dts": "^5.0.1",
+    "vite-plugin-dts": "^5.0.2",
     "vite-plugin-vue-devtools": "^8.1.1",
-    "vitest": "^4.1.5",
-    "vue-tsc": "^3.3.2"
+    "vitest": "^4.1.9",
+    "vue-tsc": "^3.3.5"
   }
 }

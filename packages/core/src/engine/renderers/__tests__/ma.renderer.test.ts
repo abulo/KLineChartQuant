@@ -1,7 +1,7 @@
 // @ts-nocheck - Test file with intentional type relaxations for mocking
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createMARendererPlugin } from '../Indicator/ma'
-import { MA_STATE_KEY, type MARenderState } from '@/core/indicators/maState'
+import { MA_STATE_KEY, type MARenderState } from '@/core/indicators/state/maState'
 import type { PluginHost, RenderContext, RendererPluginWithHost } from '@/plugin'
 import type { KLineData } from '@/types/price'
 import type { Pane } from '@/core/layout/pane'

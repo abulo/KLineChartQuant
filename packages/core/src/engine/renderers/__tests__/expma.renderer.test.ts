@@ -1,7 +1,7 @@
 // @ts-nocheck - Test file with intentional type relaxations for mocking
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createEXPMARendererPlugin } from '../Indicator/expma'
-import { EXPMA_STATE_KEY, type EXPMARenderState } from '@/core/indicators/expmaState'
+import { EXPMA_STATE_KEY, type EXPMARenderState } from '@/core/indicators/state/expmaState'
 import type { PluginHost, RenderContext, RendererPluginWithHost } from '@/plugin'
 import type { KLineData } from '@/types/price'
 import type { Pane } from '@/core/layout/pane'

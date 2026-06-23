@@ -1,7 +1,7 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { MFIRenderState } from '../../indicators/mfiState'
-import { createMFIStateKey, EMPTY_MFI_STATE } from '../../indicators/mfiState'
+import type { MFIRenderState } from '../../indicators/state/mfiState'
+import { createMFIStateKey, EMPTY_MFI_STATE } from '../../indicators/state/mfiState'
 import { createSingleLineTitleInfo } from './shared/titleInfo'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { createFixedRangeSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
@@ -125,7 +125,7 @@ function createMFIRendererPlugin(options: { paneId?: string } = {}): RendererPlu
             const state = pluginHost?.getSharedState<MFIRenderState>(stateKey)
             return state?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 

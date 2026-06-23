@@ -1,9 +1,9 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
-import type { KSTRenderState } from '../../indicators/kstState'
-import { createKSTStateKey } from '../../indicators/kstState'
-import { EMPTY_KST_STATE } from '../../indicators/kstState'
+import type { KSTRenderState } from '../../indicators/state/kstState'
+import { createKSTStateKey } from '../../indicators/state/kstState'
+import { EMPTY_KST_STATE } from '../../indicators/state/kstState'
 import { createPaddedPointVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
@@ -103,7 +103,7 @@ function createKSTRendererPlugin(options: KSTRendererOptions = {}): RendererPlug
         },
 
         draw(context: RenderContext) {
-const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
+            const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
             const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
 
             const stateKey = resolveKey()
@@ -301,7 +301,7 @@ function getKSTTitleInfo(
     scaleRendererFactory: createKstScaleRendererPlugin,
     visibleState: { compose: createPaddedPointVisibleStateComposer('kst', EMPTY_KST_STATE, ['kst', 'signal'] as const) },
     getTitleInfo: getKSTTitleInfo,
-    runtime: { defaultConfig:{roc1:10,roc2:15,roc3:20,roc4:30,signalPeriod:9,showKST:true,showSignal:true}, computeKey:'calcKSTData', compute:(data,c)=>calcKSTData(data,c.roc1,c.roc2,c.roc3,c.roc4,c.signalPeriod) },
+    runtime: { defaultConfig: { roc1: 10, roc2: 15, roc3: 20, roc4: 30, signalPeriod: 9, showKST: true, showSignal: true }, computeKey: 'calcKSTData', compute: (data, c) => calcKSTData(data, c.roc1, c.roc2, c.roc3, c.roc4, c.signalPeriod) },
 })
 class KSTIndicatorDefinition {
     static rendererFactory = createKSTRendererPlugin

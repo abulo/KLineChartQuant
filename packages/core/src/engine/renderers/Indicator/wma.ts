@@ -1,8 +1,8 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { createSingleLineTitleInfo } from './shared/titleInfo'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { WMARenderState } from '../../indicators/wmaState'
-import { createWMAStateKey, EMPTY_WMA_STATE } from '../../indicators/wmaState'
+import type { WMARenderState } from '../../indicators/state/wmaState'
+import { createWMAStateKey, EMPTY_WMA_STATE } from '../../indicators/state/wmaState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
@@ -134,7 +134,7 @@ const getWMATitleInfo = createSingleLineTitleInfo({ createStateKey: createWMASta
     mainPane: { rendererName: 'wma_main', toActiveConfig: (params, active) => ({ ...params, showWMA: active }) },
     visibleState: { compose: createSparseVisibleStateComposer('wma', EMPTY_WMA_STATE) },
     scale: { indicatorKey: 'wma', label: 'WMA', decimals: 2 },
-    runtime: { defaultConfig:{period:10,showWMA:true}, computeKey:'calcWMAData', compute:(data,c)=>calcWMAData(data,c.period) },
+    runtime: { defaultConfig: { period: 10, showWMA: true }, computeKey: 'calcWMAData', compute: (data, c) => calcWMAData(data, c.period) },
 })
 class WMADefinition {
     static rendererFactory = createWMARendererPlugin

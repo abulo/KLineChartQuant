@@ -1,8 +1,8 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { createSingleLineTitleInfo } from './shared/titleInfo'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { TEMARenderState } from '../../indicators/temaState'
-import { createTEMAStateKey, EMPTY_TEMA_STATE } from '../../indicators/temaState'
+import type { TEMARenderState } from '../../indicators/state/temaState'
+import { createTEMAStateKey, EMPTY_TEMA_STATE } from '../../indicators/state/temaState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
@@ -134,7 +134,7 @@ const getTEMATitleInfo = createSingleLineTitleInfo({ createStateKey: createTEMAS
     mainPane: { rendererName: 'tema_main', toActiveConfig: (params, active) => ({ ...params, showTEMA: active }) },
     visibleState: { compose: createSparseVisibleStateComposer('tema', EMPTY_TEMA_STATE) },
     scale: { indicatorKey: 'tema', label: 'TEMA', decimals: 2 },
-    runtime: { defaultConfig:{period:14,showTEMA:true}, computeKey:'calcTEMAData', compute:(data,c)=>calcTEMAData(data,c.period) },
+    runtime: { defaultConfig: { period: 14, showTEMA: true }, computeKey: 'calcTEMAData', compute: (data, c) => calcTEMAData(data, c.period) },
 })
 class TEMADefinition {
     static rendererFactory = createTEMARendererPlugin

@@ -1,8 +1,8 @@
 import { resolveThemeColors } from '../../../tokens'
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { ZonesRenderState } from '../../indicators/zonesState'
-import { createZonesStateKey, EMPTY_ZONES_STATE } from '../../indicators/zonesState'
+import type { ZonesRenderState } from '../../indicators/state/zonesState'
+import { createZonesStateKey, EMPTY_ZONES_STATE } from '../../indicators/state/zonesState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { createFixedUnitVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { resolveStateKey, type TitleInfo, type TitleValueItem, type GetTitleInfoFn } from '../../indicators/indicatorMetadata'
@@ -73,8 +73,8 @@ function createZonesRendererPlugin(options: { paneId?: string } = {}): RendererP
                 const yLow = toY(zone.low)
                 const fill = zone.kind === 'FVG_BULL' ? colors.zones.fvgBullFill
                     : zone.kind === 'FVG_BEAR' ? colors.zones.fvgBearFill
-                    : zone.kind === 'OB_BULL' ? colors.zones.obBullFill
-                    : colors.zones.obBearFill
+                        : zone.kind === 'OB_BULL' ? colors.zones.obBullFill
+                            : colors.zones.obBearFill
                 ctx.fillStyle = fill
                 ctx.fillRect(startX, yHigh, endX - startX, yLow - yHigh)
             }
@@ -86,7 +86,7 @@ function createZonesRendererPlugin(options: { paneId?: string } = {}): RendererP
             if (!stateKey) return {}
             return pluginHost?.getSharedState<ZonesRenderState>(stateKey)?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 
@@ -125,7 +125,7 @@ const getZonesTitleInfo: GetTitleInfoFn = (_data, index, _params, host, paneId) 
     mainPane: { rendererName: 'zones_main', toActiveConfig: (params, active) => ({ ...params, showFVG: active, showOB: active, showFilledZones: active }) },
     scale: { indicatorKey: 'zones', label: 'Zones', decimals: 2 },
     visibleState: { compose: createFixedUnitVisibleStateComposer('zones', EMPTY_ZONES_STATE) },
-    runtime: { defaultConfig:{showFVG:true,showOB:true,showFilledZones:true,obLookback:20}, computeKey:'calcZonesData', compute:(data,c)=>calcZonesData(data,c.obLookback,5,2,'close') },
+    runtime: { defaultConfig: { showFVG: true, showOB: true, showFilledZones: true, obLookback: 20 }, computeKey: 'calcZonesData', compute: (data, c) => calcZonesData(data, c.obLookback, 5, 2, 'close') },
 })
 class ZonesDefinition {
     static rendererFactory = createZonesRendererPlugin

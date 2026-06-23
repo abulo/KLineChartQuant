@@ -2,8 +2,8 @@ import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../..
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
 import type { KLineData } from '../../../types/price'
-import type { SARRenderState } from '../../indicators/sarState'
-import { createSARStateKey, EMPTY_SAR_STATE } from '../../indicators/sarState'
+import type { SARRenderState } from '../../indicators/state/sarState'
+import { createSARStateKey, EMPTY_SAR_STATE } from '../../indicators/state/sarState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey, type TitleInfo, type GetTitleInfoFn } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, SARSchedulerConfig } from '../../indicators/scheduler'
@@ -130,7 +130,7 @@ function getSARTitleInfo(
     mainPane: { rendererName: 'sar_main', toActiveConfig: (params, active) => ({ ...params, showSAR: active }) },
     scale: { indicatorKey: 'sar', label: 'SAR', decimals: 4 },
     visibleState: { compose: createValuePointVisibleStateComposer('sar', EMPTY_SAR_STATE, ['value']) },
-    runtime: { defaultConfig:{step:0.02,maxStep:0.2,showSAR:true}, computeKey:'calcSARData', compute:(data,c)=>calcSARData(data,c.step,c.maxStep) },
+    runtime: { defaultConfig: { step: 0.02, maxStep: 0.2, showSAR: true }, computeKey: 'calcSARData', compute: (data, c) => calcSARData(data, c.step, c.maxStep) },
 })
 class SARDefinition {
     static rendererFactory = createSARRendererPlugin

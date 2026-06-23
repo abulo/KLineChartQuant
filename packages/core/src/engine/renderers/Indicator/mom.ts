@@ -2,9 +2,9 @@ import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../..
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
 import { alignToPhysicalPixelCenter } from '../../draw/pixelAlign'
-import type { MOMRenderState } from '../../indicators/momState'
-import { createMOMStateKey } from '../../indicators/momState'
-import { EMPTY_MOM_STATE } from '../../indicators/momState'
+import type { MOMRenderState } from '../../indicators/state/momState'
+import { createMOMStateKey } from '../../indicators/state/momState'
+import { EMPTY_MOM_STATE } from '../../indicators/state/momState'
 import { createPaddedSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
@@ -147,7 +147,7 @@ function createMOMRendererPlugin(options: MOMRendererOptions = {}): RendererPlug
         },
 
         draw(context: RenderContext) {
-const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
+            const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
             const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
 
             const stateKey = resolveKey()

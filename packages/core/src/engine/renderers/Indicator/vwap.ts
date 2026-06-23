@@ -1,7 +1,7 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { VWAPRenderState } from '../../indicators/vwapState'
-import { createVWAPStateKey, EMPTY_VWAP_STATE } from '../../indicators/vwapState'
+import type { VWAPRenderState } from '../../indicators/state/vwapState'
+import { createVWAPStateKey, EMPTY_VWAP_STATE } from '../../indicators/state/vwapState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
@@ -106,7 +106,7 @@ function createVWAPRendererPlugin(options: { paneId?: string } = {}): RendererPl
             const state = pluginHost?.getSharedState<VWAPRenderState>(stateKey)
             return state?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 

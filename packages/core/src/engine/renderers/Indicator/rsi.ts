@@ -2,8 +2,8 @@ import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../..
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
 import { alignToPhysicalPixelCenter } from '../../draw/pixelAlign'
-import type { RSIRenderState } from '../../indicators/rsiState'
-import { createRSIStateKey, EMPTY_RSI_STATE } from '../../indicators/rsiState'
+import type { RSIRenderState } from '../../indicators/state/rsiState'
+import { createRSIStateKey, EMPTY_RSI_STATE } from '../../indicators/state/rsiState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { createFixedRangeRecordVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
@@ -171,7 +171,7 @@ function createRSIRendererPlugin(options: RSIRendererOptions = {}): RendererPlug
         },
 
         draw(context: RenderContext) {
-const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
+            const { ctx, pane, range, scrollLeft, dpr, kLineCenters, lineWebGLSurface } = context
             const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
 
             // 从 StateStore 读取 RSI 状态
@@ -394,7 +394,7 @@ function getRSITitleInfo(
     visibleState: { compose: createFixedRangeRecordVisibleStateComposer('rsi', EMPTY_RSI_STATE) },
     scaleRendererFactory: createRsiScaleRendererPlugin,
     getTitleInfo: getRSITitleInfo,
-    runtime: { defaultConfig:{period1:6,period2:12,period3:24,showRSI1:true,showRSI2:true,showRSI3:true}, computeKey:'calcRSIData', compute:(data,c)=>{const p=[c.period1,c.period2,c.period3];const s=[c.showRSI1,c.showRSI2,c.showRSI3];const r:Record<number,(number|undefined)[]>={};for(let i=0;i<3;i++){if(s[i])r[p[i]]=calcRSIData(data,p[i])}return r} },
+    runtime: { defaultConfig: { period1: 6, period2: 12, period3: 24, showRSI1: true, showRSI2: true, showRSI3: true }, computeKey: 'calcRSIData', compute: (data, c) => { const p = [c.period1, c.period2, c.period3]; const s = [c.showRSI1, c.showRSI2, c.showRSI3]; const r: Record<number, (number | undefined)[]> = {}; for (let i = 0; i < 3; i++) { if (s[i]) r[p[i]] = calcRSIData(data, p[i]) } return r } },
 })
 class RSIIndicatorDefinition {
     static rendererFactory = createRSIRendererPlugin

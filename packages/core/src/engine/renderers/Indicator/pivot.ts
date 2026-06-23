@@ -1,7 +1,7 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { PivotRenderState } from '../../indicators/pivotState'
-import { createPivotStateKey, EMPTY_PIVOT_STATE } from '../../indicators/pivotState'
+import type { PivotRenderState } from '../../indicators/state/pivotState'
+import { createPivotStateKey, EMPTY_PIVOT_STATE } from '../../indicators/state/pivotState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey, type TitleInfo, type TitleValueItem, type GetTitleInfoFn } from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, PivotSchedulerConfig } from '../../indicators/scheduler'
@@ -99,7 +99,7 @@ function createPivotRendererPlugin(options: { paneId?: string } = {}): RendererP
             if (!stateKey) return {}
             return pluginHost?.getSharedState<PivotRenderState>(stateKey)?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 
@@ -169,7 +169,7 @@ const getPivotTitleInfo: GetTitleInfoFn = (_data, index, _params, host, paneId) 
     mainPane: { rendererName: 'pivot_main', toActiveConfig: (params, active) => ({ ...params, showPP: active, showR1: active, showR2: active, showR3: active, showS1: active, showS2: active, showS3: active }) },
     scale: { indicatorKey: 'pivot', label: 'Pivot', decimals: 2 },
     visibleState: { compose: createExactRangePointVisibleStateComposer('pivot', EMPTY_PIVOT_STATE, ['pp', 'r1', 'r2', 'r3', 's1', 's2', 's3']) },
-    runtime: { defaultConfig:{showPP:true,showR1:true,showR2:true,showR3:true,showS1:true,showS2:true,showS3:true}, computeKey:'calcPivotData', compute:(data,c)=>calcPivotData(data) },
+    runtime: { defaultConfig: { showPP: true, showR1: true, showR2: true, showR3: true, showS1: true, showS2: true, showS3: true }, computeKey: 'calcPivotData', compute: (data, c) => calcPivotData(data) },
 })
 class PivotDefinition {
     static rendererFactory = createPivotRendererPlugin

@@ -3,8 +3,8 @@ import { RENDERER_PRIORITY } from '../../../plugin'
 import type { KLineData } from '../../../types/price'
 import { resolveThemeColors } from '../../../tokens'
 import { alignToPhysicalPixelCenter } from '../../draw/pixelAlign'
-import type { MACDRenderState } from '../../indicators/macdState'
-import { createMACDStateKey, EMPTY_MACD_STATE } from '../../indicators/macdState'
+import type { MACDRenderState } from '../../indicators/state/macdState'
+import { createMACDStateKey, EMPTY_MACD_STATE } from '../../indicators/state/macdState'
 import type { MACDPoint } from '../../indicators/calculators'
 import { calcMACDData } from '../../indicators/calculators'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
@@ -38,17 +38,17 @@ interface MACDRendererOptions {
 }
 
 function getMACDStateKey(host: PluginHost | null, paneId: string): string | null {
-    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
-    if (!scheduler) {
-        console.warn('[MACDRenderer] Scheduler not available via service locator')
-        return null
-    }
-    const meta = scheduler.getIndicatorMetadata('macd')
-    if (!meta) {
-        console.warn("[MACDRenderer] Indicator metadata for 'macd' not found, skip rendering")
-        return null
-    }
-    return resolveStateKey(meta.stateKey, paneId)
+  const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+  if (!scheduler) {
+    console.warn('[MACDRenderer] Scheduler not available via service locator')
+    return null
+  }
+  const meta = scheduler.getIndicatorMetadata('macd')
+  if (!meta) {
+    console.warn("[MACDRenderer] Indicator metadata for 'macd' not found, skip rendering")
+    return null
+  }
+  return resolveStateKey(meta.stateKey, paneId)
 }
 
 /**
@@ -421,32 +421,32 @@ function compositeMacdWebGL(ctx: CanvasRenderingContext2D, context: RenderContex
  * 从 pluginHost 获取已计算好的数据，避免重复计算
  */
 function getMACDTitleInfo(
-    _data: KLineData[],
-    index: number | null,
-    params: Record<string, number | boolean | string>,
-    pluginHost: PluginHost,
-    paneId: string,
+  _data: KLineData[],
+  index: number | null,
+  params: Record<string, number | boolean | string>,
+  pluginHost: PluginHost,
+  paneId: string,
 ): { name: string; params: number[]; values: Array<{ label: string; value: number; color: string }> } | null {
-    if (index === null) return null
-    const fastPeriod = (params.fastPeriod as number) ?? 12
-    const slowPeriod = (params.slowPeriod as number) ?? 26
-    const signalPeriod = (params.signalPeriod as number) ?? 9
-    const colors = resolveThemeColors('light')
-    const state = pluginHost.getSharedState<MACDRenderState>(createMACDStateKey(paneId))
-    if (!state) return null
+  if (index === null) return null
+  const fastPeriod = (params.fastPeriod as number) ?? 12
+  const slowPeriod = (params.slowPeriod as number) ?? 26
+  const signalPeriod = (params.signalPeriod as number) ?? 9
+  const colors = resolveThemeColors('light')
+  const state = pluginHost.getSharedState<MACDRenderState>(createMACDStateKey(paneId))
+  if (!state) return null
 
-    const point = state.series[index]
-    if (!point) return null
+  const point = state.series[index]
+  if (!point) return null
 
-    return {
-        name: 'MACD',
-        params: [fastPeriod, slowPeriod, signalPeriod],
-        values: [
-            { label: 'DIF', value: point.dif, color: colors.macd.dif },
-            { label: 'DEA', value: point.dea, color: colors.macd.dea },
-            { label: 'MACD', value: point.macd, color: point.macd >= 0 ? colors.macd.barUp : colors.macd.barDown },
-        ],
-    }
+  return {
+    name: 'MACD',
+    params: [fastPeriod, slowPeriod, signalPeriod],
+    values: [
+      { label: 'DIF', value: point.dif, color: colors.macd.dif },
+      { label: 'DEA', value: point.dea, color: colors.macd.dea },
+      { label: 'MACD', value: point.macd, color: point.macd >= 0 ? colors.macd.barUp : colors.macd.barDown },
+    ],
+  }
 }
 
 @Indicator({
@@ -456,8 +456,8 @@ function getMACDTitleInfo(
   defaultPaneId: 'sub_MACD',
   scaleRendererFactory: createMacdScaleRendererPlugin,
   visibleState: { compose: createMACDVisibleStateComposer('macd', EMPTY_MACD_STATE) },
-    getTitleInfo: getMACDTitleInfo,
-    runtime: { defaultConfig:{fastPeriod:12,slowPeriod:26,signalPeriod:9,showDIF:true,showDEA:true,showBAR:true}, computeKey:'calcMACDData', compute:(data,c)=>calcMACDData(data,c.fastPeriod,c.slowPeriod,c.signalPeriod) },
+  getTitleInfo: getMACDTitleInfo,
+  runtime: { defaultConfig: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9, showDIF: true, showDEA: true, showBAR: true }, computeKey: 'calcMACDData', compute: (data, c) => calcMACDData(data, c.fastPeriod, c.slowPeriod, c.signalPeriod) },
 })
 class MACDIndicatorDefinition {
   static rendererFactory = createMACDRendererPlugin

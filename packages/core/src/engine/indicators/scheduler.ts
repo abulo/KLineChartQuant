@@ -28,30 +28,30 @@ import { IndicatorRegistry } from './indicatorRegistry'
 import { resolveStateKey, type IndicatorMetadata } from './indicatorMetadata'
 import type { BaseIndicatorState } from '../../plugin'
 // Default constants for default config
-import { DEFAULT_ATR_PERIOD } from './atrState'
-import { DEFAULT_WMA_PERIOD } from './wmaState'
-import { DEFAULT_DEMA_PERIOD } from './demaState'
-import { DEFAULT_TEMA_PERIOD } from './temaState'
-import { DEFAULT_HMA_PERIOD } from './hmaState'
-import { DEFAULT_KAMA_PERIOD, DEFAULT_KAMA_FAST_PERIOD, DEFAULT_KAMA_SLOW_PERIOD } from './kamaState'
-import { DEFAULT_SAR_STEP, DEFAULT_SAR_MAX_STEP } from './sarState'
-import { DEFAULT_SUPERTREND_ATR_PERIOD, DEFAULT_SUPERTREND_MULTIPLIER } from './supertrendState'
-import { DEFAULT_KELTNER_EMA_PERIOD, DEFAULT_KELTNER_ATR_PERIOD, DEFAULT_KELTNER_MULTIPLIER } from './keltnerState'
-import { DEFAULT_DONCHIAN_PERIOD } from './donchianState'
-import { DEFAULT_ICHIMOKU_TENKAN, DEFAULT_ICHIMOKU_KIJUN, DEFAULT_ICHIMOKU_SPAN_B, DEFAULT_ICHIMOKU_DISPLACEMENT } from './ichimokuState'
-import { DEFAULT_ROC_PERIOD } from './rocState'
-import { DEFAULT_TRIX_PERIOD, DEFAULT_TRIX_SIGNAL_PERIOD } from './trixState'
-import { DEFAULT_HV_PERIOD, DEFAULT_HV_ANNUALIZATION } from './hvState'
-import { DEFAULT_PARKINSON_PERIOD, DEFAULT_PARKINSON_ANNUALIZATION } from './parkinsonState'
-import { DEFAULT_CHAIKIN_VOL_EMA_PERIOD, DEFAULT_CHAIKIN_VOL_ROC_PERIOD } from './chaikinVolState'
-import { DEFAULT_VMA_PERIOD } from './vmaState'
-import { DEFAULT_VWAP_SESSION_GAP_MS } from './vwapState'
-import { DEFAULT_CMF_PERIOD } from './cmfState'
-import { DEFAULT_MFI_PERIOD } from './mfiState'
-import { DEFAULT_FIB_PERIOD } from './fibState'
-import { DEFAULT_STRUCTURE_LEFT, DEFAULT_STRUCTURE_RIGHT } from './structureState'
-import { DEFAULT_ZONES_OB_LOOKBACK } from './zonesState'
-import { DEFAULT_VP_BINS, DEFAULT_VP_LOOKBACK, DEFAULT_VP_VALUE_AREA } from './volumeProfileState'
+import { DEFAULT_ATR_PERIOD } from './state/atrState'
+import { DEFAULT_WMA_PERIOD } from './state/wmaState'
+import { DEFAULT_DEMA_PERIOD } from './state/demaState'
+import { DEFAULT_TEMA_PERIOD } from './state/temaState'
+import { DEFAULT_HMA_PERIOD } from './state/hmaState'
+import { DEFAULT_KAMA_PERIOD, DEFAULT_KAMA_FAST_PERIOD, DEFAULT_KAMA_SLOW_PERIOD } from './state/kamaState'
+import { DEFAULT_SAR_STEP, DEFAULT_SAR_MAX_STEP } from './state/sarState'
+import { DEFAULT_SUPERTREND_ATR_PERIOD, DEFAULT_SUPERTREND_MULTIPLIER } from './state/supertrendState'
+import { DEFAULT_KELTNER_EMA_PERIOD, DEFAULT_KELTNER_ATR_PERIOD, DEFAULT_KELTNER_MULTIPLIER } from './state/keltnerState'
+import { DEFAULT_DONCHIAN_PERIOD } from './state/donchianState'
+import { DEFAULT_ICHIMOKU_TENKAN, DEFAULT_ICHIMOKU_KIJUN, DEFAULT_ICHIMOKU_SPAN_B, DEFAULT_ICHIMOKU_DISPLACEMENT } from './state/ichimokuState'
+import { DEFAULT_ROC_PERIOD } from './state/rocState'
+import { DEFAULT_TRIX_PERIOD, DEFAULT_TRIX_SIGNAL_PERIOD } from './state/trixState'
+import { DEFAULT_HV_PERIOD, DEFAULT_HV_ANNUALIZATION } from './state/hvState'
+import { DEFAULT_PARKINSON_PERIOD, DEFAULT_PARKINSON_ANNUALIZATION } from './state/parkinsonState'
+import { DEFAULT_CHAIKIN_VOL_EMA_PERIOD, DEFAULT_CHAIKIN_VOL_ROC_PERIOD } from './state/chaikinVolState'
+import { DEFAULT_VMA_PERIOD } from './state/vmaState'
+import { DEFAULT_VWAP_SESSION_GAP_MS } from './state/vwapState'
+import { DEFAULT_CMF_PERIOD } from './state/cmfState'
+import { DEFAULT_MFI_PERIOD } from './state/mfiState'
+import { DEFAULT_FIB_PERIOD } from './state/fibState'
+import { DEFAULT_STRUCTURE_LEFT, DEFAULT_STRUCTURE_RIGHT } from './state/structureState'
+import { DEFAULT_ZONES_OB_LOOKBACK } from './state/zonesState'
+import { DEFAULT_VP_BINS, DEFAULT_VP_LOOKBACK, DEFAULT_VP_VALUE_AREA } from './state/volumeProfileState'
 
 /**
  * 可见范围
@@ -590,7 +590,7 @@ export class IndicatorScheduler {
             this.paneIdOverrides.set(indicatorId, paneId)
         }
         // Merge config
-        ;(this.configSnapshot as any)[configKey] = {
+        ; (this.configSnapshot as any)[configKey] = {
             ...((this.configSnapshot as any)[configKey] ?? {}),
             ...config,
         }

@@ -1,6 +1,6 @@
 import type { RendererPluginWithHost, PluginHost, RenderContext } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import { MA_STATE_KEY, type MARenderState } from '../../indicators/maState'
+import { MA_STATE_KEY, type MARenderState } from '../../indicators/state/maState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import type { IndicatorPriceRangeComputer, IndicatorRenderStateComposer, GetTitleInfoFn, TitleInfo, TitleValueItem } from '../../indicators/indicatorMetadata'
@@ -161,7 +161,7 @@ function getMATitleInfo(
             chart.updateRendererConfig('ma', maFlags)
         },
     },
-    runtime: { defaultConfig:{ma5:true,ma10:true,ma20:true,ma30:true,ma60:true}, computeKey:'calcMAData', compute:(data,c)=>{const p=[5,10,20,30,60];const r:Record<number,(number|undefined)[]>={};for(const o of p){if((c as any)['ma'+o])r[o]=calcMAData(data,o)}return r} },
+    runtime: { defaultConfig: { ma5: true, ma10: true, ma20: true, ma30: true, ma60: true }, computeKey: 'calcMAData', compute: (data, c) => { const p = [5, 10, 20, 30, 60]; const r: Record<number, (number | undefined)[]> = {}; for (const o of p) { if ((c as any)['ma' + o]) r[o] = calcMAData(data, o) } return r } },
     getTitleInfo: getMATitleInfo,
 })
 class MADefinition {

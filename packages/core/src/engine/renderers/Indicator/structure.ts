@@ -1,8 +1,8 @@
 import { resolveThemeColors } from '../../../tokens'
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
-import type { StructureRenderState } from '../../indicators/structureState'
-import { createStructureStateKey, EMPTY_STRUCTURE_STATE } from '../../indicators/structureState'
+import type { StructureRenderState } from '../../indicators/state/structureState'
+import { createStructureStateKey, EMPTY_STRUCTURE_STATE } from '../../indicators/state/structureState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { createFixedUnitVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
@@ -109,34 +109,34 @@ function createStructureRendererPlugin(options: { paneId?: string } = {}): Rende
             const state = pluginHost?.getSharedState<StructureRenderState>(stateKey)
             return state?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 
 function getStructureTitleInfo(
-  _data: KLineData[],
-  index: number | null,
-  params: Record<string, number | boolean | string>,
-  host: PluginHost,
-  paneId: string,
+    _data: KLineData[],
+    index: number | null,
+    params: Record<string, number | boolean | string>,
+    host: PluginHost,
+    paneId: string,
 ): TitleInfo | null {
-  if (index === null) return null
-  const leftWindow = (params.leftWindow as number) ?? 5
-  const rightWindow = (params.rightWindow as number) ?? 2
-  const colors = resolveThemeColors('light')
-  const state = host.getSharedState<StructureRenderState>(createStructureStateKey(paneId))
+    if (index === null) return null
+    const leftWindow = (params.leftWindow as number) ?? 5
+    const rightWindow = (params.rightWindow as number) ?? 2
+    const colors = resolveThemeColors('light')
+    const state = host.getSharedState<StructureRenderState>(createStructureStateKey(paneId))
 
-  const values: Array<{ label: string; value: number; color: string }> = []
-  if (state && state.series.swings.length > 0) {
-    values.push({ label: 'Swings', value: state.series.swings.length, color: colors.structure.hh })
-    values.push({ label: 'Events', value: state.series.events.length, color: colors.structure.choch })
-  }
+    const values: Array<{ label: string; value: number; color: string }> = []
+    if (state && state.series.swings.length > 0) {
+        values.push({ label: 'Swings', value: state.series.swings.length, color: colors.structure.hh })
+        values.push({ label: 'Events', value: state.series.events.length, color: colors.structure.choch })
+    }
 
-  return {
-    name: 'Structure',
-    params: [leftWindow, rightWindow],
-    values,
-  }
+    return {
+        name: 'Structure',
+        params: [leftWindow, rightWindow],
+        values,
+    }
 }
 
 @Indicator({
@@ -149,7 +149,7 @@ function getStructureTitleInfo(
     scale: { indicatorKey: 'structure', label: 'Structure', decimals: 2 },
     getTitleInfo: getStructureTitleInfo,
     visibleState: { compose: createFixedUnitVisibleStateComposer('structure', EMPTY_STRUCTURE_STATE) },
-    runtime: { defaultConfig:{leftWindow:5,rightWindow:2,breakoutSource:'close',showSwingLabels:true,showBOS:true,showCHOCH:true,showProvisional:true}, computeKey:'calcStructureData', compute:(data,c)=>calcStructureData(data,c.leftWindow,c.rightWindow,c.breakoutSource) },
+    runtime: { defaultConfig: { leftWindow: 5, rightWindow: 2, breakoutSource: 'close', showSwingLabels: true, showBOS: true, showCHOCH: true, showProvisional: true }, computeKey: 'calcStructureData', compute: (data, c) => calcStructureData(data, c.leftWindow, c.rightWindow, c.breakoutSource) },
 })
 class StructureIndicatorDefinition {
     static rendererFactory = createStructureRendererPlugin

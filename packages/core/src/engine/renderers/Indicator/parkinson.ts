@@ -1,9 +1,9 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
-import type { ParkinsonRenderState } from '../../indicators/parkinsonState'
-import { createParkinsonStateKey } from '../../indicators/parkinsonState'
-import { EMPTY_PARKINSON_STATE } from '../../indicators/parkinsonState'
+import type { ParkinsonRenderState } from '../../indicators/state/parkinsonState'
+import { createParkinsonStateKey } from '../../indicators/state/parkinsonState'
+import { EMPTY_PARKINSON_STATE } from '../../indicators/state/parkinsonState'
 import { createNonNegativeSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
@@ -109,7 +109,7 @@ function createParkinsonRendererPlugin(options: { paneId?: string } = {}): Rende
             const state = pluginHost?.getSharedState<ParkinsonRenderState>(stateKey)
             return state?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 
@@ -123,7 +123,7 @@ const getParkinsonTitleInfo = createSingleLineTitleInfo({ createStateKey: create
     scale: { indicatorKey: 'parkinson', label: 'Parkinson', decimals: 2 },
     getTitleInfo: getParkinsonTitleInfo,
     visibleState: { compose: createNonNegativeSparseVisibleStateComposer('parkinson', EMPTY_PARKINSON_STATE) },
-    runtime: { defaultConfig:{period:20,annualizationFactor:252,showParkinson:true}, computeKey:'calcParkinsonData', compute:(data,c)=>calcParkinsonData(data,c.period,c.annualizationFactor) },
+    runtime: { defaultConfig: { period: 20, annualizationFactor: 252, showParkinson: true }, computeKey: 'calcParkinsonData', compute: (data, c) => calcParkinsonData(data, c.period, c.annualizationFactor) },
 })
 class ParkinsonIndicatorDefinition {
     static rendererFactory = createParkinsonRendererPlugin

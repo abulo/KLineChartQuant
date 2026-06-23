@@ -1,8 +1,8 @@
 import type { RendererPluginWithHost, RenderContext, PluginHost } from '../../../plugin'
 import { RENDERER_PRIORITY } from '../../../plugin'
 import { resolveThemeColors } from '../../../tokens'
-import type { ROCRenderState } from '../../indicators/rocState'
-import { createROCStateKey, EMPTY_ROC_STATE } from '../../indicators/rocState'
+import type { ROCRenderState } from '../../indicators/state/rocState'
+import { createROCStateKey, EMPTY_ROC_STATE } from '../../indicators/state/rocState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
 import { resolveStateKey } from '../../indicators/indicatorMetadata'
 import { createSparseVisibleStateComposer } from '../../indicators/visibleStateComposers'
@@ -127,7 +127,7 @@ function createROCRendererPlugin(options: ROCRendererOptions = {}): RendererPlug
             const state = pluginHost?.getSharedState<ROCRenderState>(stateKey)
             return state?.params ?? {}
         },
-        setConfig() {},
+        setConfig() { },
     }
 }
 
