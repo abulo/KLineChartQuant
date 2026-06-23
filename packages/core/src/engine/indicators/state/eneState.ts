@@ -1,6 +1,6 @@
 import type { BaseIndicatorState } from '../../../plugin'
 import { createIndicatorStateKey } from '../../../plugin/stateKeys'
-import type { ENEPoint } from './calculators'
+import type { ENEPoint } from '../calculators'
 
 export const DEFAULT_ENE_PERIOD = 10
 export const DEFAULT_ENE_DEVIATION = 11

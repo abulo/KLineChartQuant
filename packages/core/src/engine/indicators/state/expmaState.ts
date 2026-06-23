@@ -1,6 +1,6 @@
 import type { BaseIndicatorState } from '../../../plugin'
 import { createIndicatorStateKey } from '../../../plugin/stateKeys'
-import type { EXPMAPoint } from './calculators'
+import type { EXPMAPoint } from '../calculators'
 
 export const DEFAULT_EXPMA_FAST_PERIOD = 12
 export const DEFAULT_EXPMA_SLOW_PERIOD = 50

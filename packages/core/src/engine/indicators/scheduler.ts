@@ -265,7 +265,7 @@ export class IndicatorScheduler {
                 config[key] = { ...(meta.runtime.defaultConfig as Record<string, unknown>) }
             }
         }
-        return config as IndicatorConfigSnapshot
+        return config as unknown as IndicatorConfigSnapshot
     }
 
     private initBackend(): void {

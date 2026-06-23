@@ -1,6 +1,6 @@
 import type { BaseIndicatorState } from '../../../plugin'
 import { createIndicatorStateKey } from '../../../plugin/stateKeys'
-import type { BOLLPoint } from './calculators'
+import type { BOLLPoint } from '../calculators'
 
 export const DEFAULT_BOLL_PERIOD = 20
 export const DEFAULT_BOLL_MULTIPLIER = 2
