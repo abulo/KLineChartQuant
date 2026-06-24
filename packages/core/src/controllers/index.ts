@@ -28,6 +28,7 @@ export type {
     PaneLayoutInfo,
     SymbolSpec,
     DataFetcher,
+    CustomDataSource,
 } from './types'
 
 export { createChartController } from './createChartController'
