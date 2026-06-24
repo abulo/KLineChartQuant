@@ -51,20 +51,14 @@ jobs:
           fi
 
           # 根据 tag 名判断 npm dist-tag
+          # 用 bash glob 而非 grep，避免 GH Actions 环境中 regex 差异导致匹配失败
           TAG="${GITHUB_REF_NAME#v}"
-          if echo "$TAG" | grep -qE '-(alpha|beta|rc)\.'; then
-            PRERELEASE=true
-            if echo "$TAG" | grep -qE '-alpha\.'; then
-              NPM_TAG=alpha
-            elif echo "$TAG" | grep -qE '-beta\.'; then
-              NPM_TAG=beta
-            else
-              NPM_TAG=rc
-            fi
-          else
-            PRERELEASE=false
-            NPM_TAG=latest
-          fi
+          case "$TAG" in
+            *-alpha.*) PRERELEASE=true; NPM_TAG=alpha ;;
+            *-beta.*)  PRERELEASE=true; NPM_TAG=beta  ;;
+            *-rc.*)    PRERELEASE=true; NPM_TAG=rc    ;;
+            *)         PRERELEASE=false; NPM_TAG=latest ;;
+          esac
 
           echo "Publishing version $TAG with npm tag '$NPM_TAG' (prerelease=$PRERELEASE)"
 
