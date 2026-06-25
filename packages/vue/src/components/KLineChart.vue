@@ -200,9 +200,8 @@ import {
   type InteractionSnapshot,
   type SymbolSpec,
   type CustomDataSource,
-  zoomLevelToKWidth,
-  kGapFromKWidth,
 } from '@363045841yyt/klinechart-core/controllers'
+import { useChartState } from '../composables/chart/useChartState'
 import { useChartTheme } from '../composables/chart/useChartTheme'
 import { useIndicatorManager } from '../composables/chart/useIndicatorManager'
 import { useDrawingManager } from '../composables/chart/useDrawingManager'
@@ -287,7 +286,6 @@ const kLineAdjust = ref(props.semanticConfig?.data?.adjust ?? 'none')
 const isIntraday = computed(() => kLineLevel.value.includes('min'))
 const currentSymbol = ref('选择商品')
 const currentSymbolItem = ref<SymbolItem | null>(null)
-const symbolStatus = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
 const overlaySymbols = ref<string[]>([])
 const overlaySymbolItems = ref<SymbolItem[]>([])
 
@@ -315,23 +313,25 @@ function onKLineAdjustChange(adjust: 'qfq' | 'hfq' | 'splits' | 'none') {
 
 function onSymbolChange(item: SymbolItem) {
   symbolStatus.value = 'loading'
-  currentSymbol.value = item.code
-  currentSymbolItem.value = item
-  syncSymbolsToController()
+  const current = controller.value?.symbols.peek() ?? []
+  const comparisonSpecs = current.slice(1)
+  controller.value?.setSymbols([
+    toSymbolSpec(item),
+    ...comparisonSpecs,
+  ])
 }
 
 function onAddOverlaySymbol(item: SymbolItem) {
-  if (currentSymbolItem.value?.code === item.code) return
-  if (overlaySymbols.value.includes(item.code)) return
-  overlaySymbolItems.value = [...overlaySymbolItems.value, item]
-  overlaySymbols.value = overlaySymbolItems.value.map((symbol) => symbol.code)
+  const ctrl = controller.value
+  if (!ctrl) return
+  const current = ctrl.symbols.peek()
+  const currentCodes = current.map((s) => s.symbol)
+  if (currentCodes.includes(item.code)) return
   forcePercentAxis()
-  controller.value?.addComparisonSymbol(toSymbolSpec(item))
+  ctrl.addComparisonSymbol(toSymbolSpec(item))
 }
 
 function onRemoveOverlaySymbol(code: string) {
-  overlaySymbolItems.value = overlaySymbolItems.value.filter((item) => item.code !== code)
-  overlaySymbols.value = overlaySymbolItems.value.map((symbol) => symbol.code)
   controller.value?.removeComparisonSymbol(code)
 }
 
@@ -391,21 +391,29 @@ const {
 
 const semanticController = shallowRef<SemanticChartController | null>(null)
 
-/* ========== 本地响应式状态 ========== */
-const dataLength = ref(0)
-const dataVersion = ref(0)
 const showBatchStockDialog = ref(false)
 const batchStockCodes = ref<string[]>([])
-const viewportVersion = ref(0)
-const viewportDpr = ref(1)
-const zoomLevel = ref(props.initialZoomLevel ?? 1)
-const kWidth = ref(0)
-const kGap = ref(1)
-const viewWidth = ref(0)
-const paneRatios = ref<Record<string, number>>({})
-const comparisonColorsMap = ref<Map<string, string>>(new Map())
-const comparisonLoading = ref(false)
-const activeToolId = ref('cursor')
+
+const chartState = useChartState(props.initialZoomLevel ?? 1, {
+  minKWidth: props.minKWidth,
+  maxKWidth: props.maxKWidth,
+  zoomLevelCount: props.zoomLevels,
+})
+const {
+  symbolStatus,
+  zoomLevel,
+  kWidth,
+  kGap,
+  viewWidth,
+  viewportDpr,
+  viewportVersion,
+  dataLength,
+  dataVersion,
+  paneRatios,
+  comparisonColorsMap,
+  comparisonLoading,
+  activeToolId,
+} = chartState
 
 const {
   mainActiveIndicators,
@@ -467,17 +475,6 @@ const {
   dataFetcher: computed(() => props.dataFetcher),
   batchStockCodes,
 })
-
-// ── Viewport Initial Values ──
-// 初始化 kWidth / kGap（与 Chart 引擎 zoom→物理值 转换一致）
-const initZoom = zoomLevel.value
-kWidth.value = zoomLevelToKWidth(initZoom, {
-  minKWidth: props.minKWidth,
-  maxKWidth: props.maxKWidth,
-  zoomLevelCount: props.zoomLevels,
-  dpr: viewportDpr.value,
-})
-kGap.value = kGapFromKWidth(kWidth.value, viewportDpr.value)
 
 // ── No-op Render Trigger (exposed) ──
 function scheduleRender() {
