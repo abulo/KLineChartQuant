@@ -12,6 +12,7 @@
  *   - Tear down DOM + listeners on dispose().
  */
 
+import { KLineChartError } from '../errors'
 import { createSignal, type Signal } from '../reactivity'
 import type {
     ChartController,
@@ -223,7 +224,7 @@ function mapInteractionSnapshot(snapshot: LegacyInteractionSnapshot): Interactio
 function buildDom(container: HTMLElement): MountedDom {
     const ownerDoc = container.ownerDocument
     if (!ownerDoc) {
-        throw new Error(
+        throw new KLineChartError('CONTROLLER_CONFIG_INVALID',
             '[createChartController] container has no ownerDocument; cannot build DOM scaffold',
         )
     }
@@ -296,10 +297,10 @@ function buildDom(container: HTMLElement): MountedDom {
 
 export async function createChartController(opts: ChartMountOptions): Promise<ChartController> {
     if (!opts) {
-        throw new Error('[createChartController] opts is required')
+        throw new KLineChartError('CONTROLLER_CONFIG_INVALID', '[createChartController] opts is required')
     }
     if (!opts.container) {
-        throw new Error('[createChartController] opts.container must be a non-null HTMLElement')
+        throw new KLineChartError('CONTROLLER_CONFIG_INVALID', '[createChartController] opts.container must be a non-null HTMLElement')
     }
 
     await loadBuiltinIndicators()

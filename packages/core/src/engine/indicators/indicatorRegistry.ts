@@ -1,3 +1,4 @@
+import { KLineChartError } from '../../errors'
 import type { IndicatorMetadata } from './indicatorMetadata'
 import { getRegisteredIndicatorDefinitions } from './indicatorDefinitionRegistry'
 
@@ -52,20 +53,20 @@ export class IndicatorRegistry {
     register<T>(meta: IndicatorMetadata<T>): void {
         // 验证必填字段
         if (!meta.name || typeof meta.name !== 'string') {
-            throw new Error('[IndicatorRegistry] Indicator name is required')
+            throw new KLineChartError('INVALID_PARAM', '[IndicatorRegistry] Indicator name is required')
         }
 
         if (!meta.displayName) {
-            throw new Error(`[IndicatorRegistry] displayName is required for indicator '${meta.name}'`)
+            throw new KLineChartError('INVALID_PARAM', `[IndicatorRegistry] displayName is required for indicator '${meta.name}'`)
         }
 
         if (!meta.rendererFactory || typeof meta.rendererFactory !== 'function') {
-            throw new Error(`[IndicatorRegistry] rendererFactory is required for indicator '${meta.name}'`)
+            throw new KLineChartError('INVALID_PARAM', `[IndicatorRegistry] rendererFactory is required for indicator '${meta.name}'`)
         }
 
         const normalizedName = this.normalize(meta.name)
         if (!normalizedName) {
-            throw new Error('[IndicatorRegistry] Indicator name is required')
+            throw new KLineChartError('INVALID_PARAM', '[IndicatorRegistry] Indicator name is required')
         }
 
         // 检查重复注册
@@ -112,7 +113,7 @@ export class IndicatorRegistry {
     getRequired(name: string): IndicatorMetadata {
         const meta = this.get(name)
         if (!meta) {
-            throw new Error(`[IndicatorRegistry] Unknown indicator '${name}'`)
+            throw new KLineChartError('NOT_REGISTERED', `[IndicatorRegistry] Unknown indicator '${name}'`)
         }
         return meta
     }

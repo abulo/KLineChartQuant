@@ -1,3 +1,4 @@
+import { KLineChartError } from '../errors'
 import type { KLineData } from '../controllers/types'
 import { DataFetcher } from './fetcherDefinitionRegistry'
 import type { FetchConfig } from './types'
@@ -27,7 +28,7 @@ async function fetchBaoStock(
   try {
     const res = await fetch(url)
     if (!res.ok) {
-      throw new Error(`[baostock] fetch failed: ${res.status} ${res.statusText}`)
+      throw new KLineChartError('FETCH_FAILED', `[baostock] fetch failed: ${res.status} ${res.statusText}`)
     }
     const json = await res.json()
     return (json.data ?? json).map(

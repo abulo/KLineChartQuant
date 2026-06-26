@@ -97,6 +97,10 @@ const HINTS: Readonly<Record<KLineChartErrorCode, string>> = {
     CONTROLLER_CONFIG_INVALID:
         'Chart controller wiring is incomplete. Most often: container is null/undefined, opts is missing, or no ChartControllerFactory was registered via __setChartFactory before mount.',
 
+    // Data-fetcher
+    FETCH_FAILED:
+        'A remote data-fetch failed. Check network connectivity, API endpoint, and authentication tokens. If using baostock/tradingview provider, verify the symbol and period are valid.',
+
     // Serialization
     SCHEMA_VERSION_MISMATCH:
         'The serialized state was produced by a different schema version. Migrate it via the schema-version converter, or re-export from the source session.',

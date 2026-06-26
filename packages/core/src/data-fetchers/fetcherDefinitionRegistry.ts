@@ -1,3 +1,4 @@
+import { KLineChartError } from '../errors'
 import type { DataFetcherDefinitionConfig, DataFetcherDefinition, DataFetcherFn, TimeShareFetcherFn } from './types'
 
 type DataFetcherClass = {
@@ -12,7 +13,7 @@ export function DataFetcher(config: DataFetcherDefinitionConfig) {
   return function <T extends DataFetcherClass>(value: T, context: ClassDecoratorContext<T>): T {
     context.addInitializer(function (this: T) {
       if (typeof this.fetcher !== 'function') {
-        throw new Error(
+        throw new KLineChartError('NOT_REGISTERED',
           `[DataFetcher] '${config.name}' definition must expose static fetcher`,
         )
       }

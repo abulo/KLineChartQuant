@@ -62,6 +62,8 @@ export type KLineChartErrorCode =
     | 'REPLAY_CONFIG_INVALID'
     // scene / chart-controller / framework adapter wiring
     | 'CONTROLLER_CONFIG_INVALID'
+    // data-fetcher (gotdx / baostock / tradingview)
+    | 'FETCH_FAILED'
     // serialization
     | 'SCHEMA_VERSION_MISMATCH'
     | 'INVALID_JSON'
@@ -98,7 +100,7 @@ export class KLineChartError extends Error {
         // Capture stack at the throw site, not inside the constructor.
         // V8-specific but harmless elsewhere.
         if (typeof (Error as unknown as { captureStackTrace?: unknown }).captureStackTrace === 'function') {
-            ;(Error as unknown as { captureStackTrace: (e: Error, c: unknown) => void }).captureStackTrace(
+            ; (Error as unknown as { captureStackTrace: (e: Error, c: unknown) => void }).captureStackTrace(
                 this,
                 KLineChartError,
             )

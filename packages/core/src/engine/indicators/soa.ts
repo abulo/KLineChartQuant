@@ -1,3 +1,4 @@
+import { KLineChartError } from '../../errors'
 import type { KLineData } from '../../types/price'
 
 /**
@@ -249,7 +250,7 @@ export class SharedKLineBuffer {
     if (start < 0) start = 0
     if (end > layout.length) end = layout.length
     if (start >= end) {
-      throw new Error(`Invalid subview range: [${start}, ${end})`)
+      throw new KLineChartError('INDICATOR_INVALID_PARAM', `Invalid subview range: [${start}, ${end})`)
     }
 
     const length = end - start

@@ -3,6 +3,7 @@
  * 把 Worker/Runtime 返回的 series bundle 组装成与现有兼容的 render states
  */
 
+import { KLineChartError } from '../../errors'
 import type {
     MARenderState,
 } from './state/maState'
@@ -229,7 +230,7 @@ function composeRequiredMetadataVisibleState(
 
     const compose = meta.visibleState?.compose
     if (!compose) {
-        throw new Error(`[StateComposer] Missing visibleState.compose for ${indicatorId}`)
+        throw new KLineChartError('NOT_REGISTERED', `[StateComposer] Missing visibleState.compose for ${indicatorId}`)
     }
 
     return compose({

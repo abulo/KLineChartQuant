@@ -1,4 +1,5 @@
 import type { ToolCall, ToolResult, ControllerDescription, ToolCallHandler } from './types'
+import { KLineChartError } from '../errors'
 import { generateUUID } from '../utils/uuid'
 import { Effect, Fiber, pipe, Schedule } from 'effect'
 
@@ -104,7 +105,7 @@ export class ChartBridge {
 
             ws.onerror = () => {
               console.error(`[ChartBridge] WS error — connection failed`)
-              const err = new Error('WebSocket connection failed')
+              const err = new KLineChartError('FETCH_FAILED', 'WebSocket connection failed')
               this.onError?.(err)
               this.emit('error', err)
               resume(Effect.fail(err))
@@ -115,8 +116,8 @@ export class ChartBridge {
         }),
         Effect.timeout('15 seconds'),
         Effect.mapError((err) => {
-          if (err instanceof Error) return err
-          return new Error(`Connection failed: ${String(err)}`)
+          if (err instanceof KLineChartError) return err
+          return new KLineChartError('FETCH_FAILED', `Connection failed: ${String(err)}`)
         }),
       ),
     )

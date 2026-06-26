@@ -1,3 +1,4 @@
+import { KLineChartError } from '../errors'
 import type { KLineData } from '../controllers/types'
 import { DataFetcher } from './fetcherDefinitionRegistry'
 import type { FetchConfig } from './types'
@@ -34,11 +35,11 @@ async function fetchTradingview(
   try {
     const res = await fetch(url)
     if (!res.ok) {
-      throw new Error(`[tradingview] fetch failed: ${res.status} ${res.statusText}`)
+      throw new KLineChartError('FETCH_FAILED', `[tradingview] fetch failed: ${res.status} ${res.statusText}`)
     }
     const json = await res.json()
     if (!json.success) {
-      throw new Error(`[tradingview] API error: ${json.error_msg}`)
+      throw new KLineChartError('FETCH_FAILED', `[tradingview] API error: ${json.error_msg}`)
     }
     if (json.warning) {
       console.warn(`[tradingview] ${json.warning}`)
