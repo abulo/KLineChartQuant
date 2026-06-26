@@ -1,5 +1,6 @@
 import type { ToolCall, ToolResult, ControllerDescription, ToolCallHandler } from './types'
 import { generateUUID } from '../utils/uuid'
+import { Effect, Fiber, pipe, Schedule } from 'effect'
 
 export interface ChartBridgeOptions {
   wsUrl: string
@@ -30,8 +31,8 @@ export class ChartBridge {
 
   private readonly wsImpl: new (url: string) => WebSocket
   private ws: WebSocket | null = null
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  private _heartbeatFiber: Fiber.Fiber<void> | null = null
+  private _reconnectFiber: Fiber.Fiber<void> | null = null
   private _reconnectAttempt = 0
   private destroyed = false
 
@@ -59,57 +60,66 @@ export class ChartBridge {
     if (this.destroyed) return
     this.disconnect()
 
-    return new Promise((resolve, reject) => {
-      try {
-        const ws = new this.wsImpl(this.wsUrl)
-
-        ws.onopen = () => {
-          this._reconnectAttempt = 0
-          this.ws = ws
-          console.info(
-            `[ChartBridge] WS opened → sending register (sessionId=${this.sessionId})`,
-          )
-          ws.send(JSON.stringify({ type: 'register', sessionId: this.sessionId }))
-          this.startHeartbeat()
-          this.onConnected?.()
-          this.emit('connected')
-          resolve()
-        }
-
-        ws.onmessage = (event: MessageEvent) => {
-          let msg: Record<string, unknown>
+    await Effect.runPromise(
+      pipe(
+        Effect.async<void, Error>((resume) => {
           try {
-            msg = JSON.parse(event.data as string)
-          } catch {
-            return
-          }
-          this.handleMessage(msg)
-        }
+            const ws = new this.wsImpl(this.wsUrl)
 
-        ws.onclose = () => {
-          console.warn(
-            `[ChartBridge] WS closed, autoReconnect=${this.autoReconnect}`,
-          )
-          this.ws = null
-          this.stopHeartbeat()
-          this.onDisconnected?.()
-          this.emit('disconnected')
-          if (this.autoReconnect && !this.destroyed) {
-            this.scheduleReconnect()
-          }
-        }
+            ws.onopen = () => {
+              this._reconnectAttempt = 0
+              this.ws = ws
+              console.info(
+                `[ChartBridge] WS opened → sending register (sessionId=${this.sessionId})`,
+              )
+              ws.send(JSON.stringify({ type: 'register', sessionId: this.sessionId }))
+              this.startHeartbeat()
+              this.onConnected?.()
+              this.emit('connected')
+              resume(Effect.succeed(undefined))
+            }
 
-        ws.onerror = () => {
-          console.error(`[ChartBridge] WS error — connection failed`)
-          const err = new Error('WebSocket connection failed')
-          this.onError?.(err)
-          this.emit('error', err)
-          reject(err)
-        }
-      } catch (err) {
-        reject(err)
-      }
-    })
+            ws.onmessage = (event: MessageEvent) => {
+              let msg: Record<string, unknown>
+              try {
+                msg = JSON.parse(event.data as string)
+              } catch {
+                return
+              }
+              this.handleMessage(msg)
+            }
+
+            ws.onclose = () => {
+              console.warn(
+                `[ChartBridge] WS closed, autoReconnect=${this.autoReconnect}`,
+              )
+              this.ws = null
+              this.stopHeartbeat()
+              this.onDisconnected?.()
+              this.emit('disconnected')
+              if (this.autoReconnect && !this.destroyed) {
+                this.scheduleReconnect()
+              }
+            }
+
+            ws.onerror = () => {
+              console.error(`[ChartBridge] WS error — connection failed`)
+              const err = new Error('WebSocket connection failed')
+              this.onError?.(err)
+              this.emit('error', err)
+              resume(Effect.fail(err))
+            }
+          } catch (err) {
+            resume(Effect.fail(err as Error))
+          }
+        }),
+        Effect.timeout('15 seconds'),
+        Effect.mapError((err) => {
+          if (err instanceof Error) return err
+          return new Error(`Connection failed: ${String(err)}`)
+        }),
+      ),
+    )
   }
 
   disconnect(): void {
@@ -179,44 +189,59 @@ export class ChartBridge {
 
   private startHeartbeat(): void {
     this.stopHeartbeat()
-    this.heartbeatTimer = setInterval(() => {
-      if (this.ws?.readyState === 1) {
-        this.ws.send(JSON.stringify({ type: 'ping' }))
-      }
-    }, this.heartbeatInterval)
+    this._heartbeatFiber = Effect.runFork(
+      pipe(
+        Effect.repeat(
+          Effect.sync(() => {
+            if (this.ws?.readyState === 1) {
+              this.ws.send(JSON.stringify({ type: 'ping' }))
+            }
+          }),
+          Schedule.fixed(this.heartbeatInterval),
+        ),
+        Effect.asVoid,
+      ),
+    )
   }
 
   private stopHeartbeat(): void {
-    if (this.heartbeatTimer !== null) {
-      clearInterval(this.heartbeatTimer)
-      this.heartbeatTimer = null
+    if (this._heartbeatFiber) {
+      Fiber.interrupt(this._heartbeatFiber)
+      this._heartbeatFiber = null
     }
   }
 
   private scheduleReconnect(): void {
     this.cancelReconnect()
-    const base = this.reconnectDelay
     const attempt = this._reconnectAttempt
+    this._reconnectAttempt = attempt + 1
+
+    const base = this.reconnectDelay
     const exponential = Math.min(base * Math.pow(2, attempt), this.maxReconnectDelay)
     const jitter = 0.5 + Math.random() * 0.5
     const delay = Math.round(exponential * jitter)
 
-    this._reconnectAttempt = attempt + 1
-    console.info(
-      `[ChartBridge] reconnect scheduled in ${delay}ms (attempt ${attempt + 1})`,
+    this._reconnectFiber = Effect.runFork(
+      pipe(
+        Effect.sleep(delay),
+        Effect.tap(() =>
+          Effect.sync(() => {
+            if (!this.destroyed) {
+              console.info(
+                `[ChartBridge] reconnect scheduled in ${delay}ms (attempt ${attempt + 1})`,
+              )
+              this.connect().catch(() => {})
+            }
+          }),
+        ),
+      ),
     )
-
-    this.reconnectTimer = setTimeout(() => {
-      if (!this.destroyed) {
-        this.connect().catch(() => {})
-      }
-    }, delay)
   }
 
   private cancelReconnect(): void {
-    if (this.reconnectTimer !== null) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
+    if (this._reconnectFiber) {
+      Fiber.interrupt(this._reconnectFiber)
+      this._reconnectFiber = null
     }
   }
 
