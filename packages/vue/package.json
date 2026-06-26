@@ -46,7 +46,7 @@
     "dev": "vite --config preview/vite.config.ts",
     "build": "vite build",
     "build:wc": "cross-env BUILD_TARGET=web-component vite build",
-    "postbuild": "node -e \"require('fs').copyFileSync('dist/index.d.ts','dist/index.d.cts')\"",
+    "postbuild": "node -e \"var f='dist/index.d.ts';require('fs').existsSync(f)&&require('fs').copyFileSync(f,'dist/index.d.cts')\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "size": "size-limit",

@@ -30,6 +30,7 @@ mac:
   artifactName: ${productName}-${version}-${arch}.${ext}
 
 linux:
+  executableName: klinechart-desktop
   target:
     - target: AppImage
       arch:
