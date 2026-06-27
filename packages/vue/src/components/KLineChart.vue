@@ -1003,6 +1003,12 @@ function applyInitialSettings(ctrl: ChartController): void {
   // 受控主题优先，否则交由设置项决定
   if (props.theme) {
     ctrl.setTheme(props.theme)
+    if (chartSettings.value.theme !== props.theme) {
+      chartSettings.value = { ...chartSettings.value, theme: props.theme }
+      try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(chartSettings.value))
+      } catch {}
+    }
   } else {
     applyThemeFromSettings(initialSettings.theme as string)
   }
@@ -1151,11 +1157,18 @@ watch(
   { deep: true },
 )
 
-// 受控主题：外部 theme 变化时同步到控制器
+// 受控主题：外部 theme 变化时同步到控制器，并写回 chartSettings 和 localStorage
 watch(
   () => props.theme,
   (t) => {
-    if (t) controller.value?.setTheme(t)
+    if (!t || !controller.value) return
+    if (chartTheme.value === t) return
+    controller.value.setTheme(t)
+    const nextSettings = { ...chartSettings.value, theme: t }
+    chartSettings.value = nextSettings
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings))
+    } catch {}
   },
 )
 </script>
