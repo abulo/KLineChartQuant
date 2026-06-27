@@ -241,6 +241,8 @@ export class Chart {
             getLogicalScrollLeft: () => this.viewportManager.getLogicalScrollLeft(),
             getCurrentDpr: () => this.viewportManager.getEffectiveDpr(),
             getLeftLoadBufferWidth: () => this.dataManager.getLeftLoadBufferWidth(),
+            getContentWidth: () => this.dataManager.getContentWidth(),
+            getClientWidth: () => this.viewportManager.getViewport()?.viewWidth ?? this.dom.container?.clientWidth ?? 0,
             setScrollLeft: (v) => { this.viewportManager.setScrollLeft(v) },
             onZoomCommitted: (result) => {
                 this.opt = { ...this.opt, kWidth: result.kWidth, kGap: result.kGap }
