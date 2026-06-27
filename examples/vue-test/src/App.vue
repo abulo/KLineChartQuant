@@ -1,7 +1,6 @@
 <template>
   <div class="app-container" :data-theme="currentTheme">
     <KLineChart
-      v-model:is-fullscreen="isFullscreen"
       v-model:theme="currentTheme"
       :custom-data="customData"
     />
@@ -13,7 +12,6 @@ import { ref } from 'vue'
 import { CustomDataSource, KLineChart } from '@363045841yyt/klinechart'
 import demoData from './demo-data.json'
 
-const isFullscreen = ref(false)
 const currentTheme = ref<'light' | 'dark'>('dark')
 
 const customData = ref<CustomDataSource>(demoData as CustomDataSource)
