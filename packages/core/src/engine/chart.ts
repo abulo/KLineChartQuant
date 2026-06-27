@@ -735,7 +735,7 @@ export class Chart {
             lookbacks = createVolumeLookbacks([5, 10, 20, 60])
             this._volumeLookbacks = lookbacks
         }
-        pushToVolumeLookbacks(lookbacks, latest.volume)
+        pushToVolumeLookbacks(lookbacks, latest.volume ?? 0)
 
         const snapshot = this.buildMarketSnapshot(data)
         if (!snapshot) return
