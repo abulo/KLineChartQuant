@@ -501,7 +501,7 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
   border-radius: 999px;
   pointer-events: none;
-  transform: translateY(-1px), translateX(1px);
+  transform: translateY(-1px) translateX(1px);
 }
 
 /* --- 响应式 --- */

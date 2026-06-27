@@ -28,7 +28,11 @@ vi.mock('@363045841yyt/klinechart-core/controllers', async () => {
 })
 
 import KLineChart from '../components/KLineChart.vue'
-import { routerDataFetcher } from '@363045841yyt/klinechart-core/controllers'
+import { loadBuiltinIndicators, routerDataFetcher } from '@363045841yyt/klinechart-core/controllers'
+
+// ── Pre-load builtin indicators so IndicatorSelector mounted hook doesn't
+//    trigger in-flight dynamic imports after environment teardown ──
+await loadBuiltinIndicators()
 
 // ── jsdom environment shims ──
 function installMatchMedia(): void {
