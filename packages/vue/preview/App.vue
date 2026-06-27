@@ -9,24 +9,18 @@
     />
 
     <!-- 嵌入场景：模拟组件库在父容器中的使用 -->
-    <div
-      ref="embedContainerRef"
-      class="embed-container"
-      :class="{ 'is-fullscreen': isFullscreen }"
+    <KLineChart
+      ref="chartRef"
+      :mcp="mcpConfig"
+      :left-axis-width="60"
+      :custom-data="customData"
+      v-model:is-fullscreen="isFullscreen"
+      v-model:theme="currentTheme"
       :style="{ width: embedWidth, height: embedHeight }"
-    >
-      <KLineChart
-        ref="chartRef"
-        :mcp="mcpConfig"
-        :left-axis-width="60"
-        :custom-data="customData"
-        v-model:is-fullscreen="isFullscreen"
-        v-model:theme="currentTheme"
-      />
-    </div>
+    />
 
     <!-- Modal 场景 -->
-    <Teleport :to="teleportTarget">
+    <Teleport to="body">
       <Transition name="modal">
         <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
           <div class="modal-container">
@@ -35,7 +29,7 @@
               <button class="close-btn" @click="showModal = false">×</button>
             </header>
             <div class="modal-body">
-              <KLineChart v-model:theme="currentTheme" teleport-container=".embed-container" />
+              <KLineChart v-model:theme="currentTheme" />
             </div>
           </div>
         </div>
@@ -138,10 +132,7 @@ function toggleEmbedSize() {
 }
 
 const isFullscreen = ref(false)
-const embedContainerRef = ref<HTMLElement | null>(null)
 const currentTheme = ref<'light' | 'dark'>('light')
-
-const teleportTarget = computed<HTMLElement | string>(() => embedContainerRef.value ?? 'body')
 
 // ── 自定义数据源 Demo ──
 const useCustomData = ref(false)
@@ -172,28 +163,6 @@ function onToggleCustomData() {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.embed-container {
-  flex: 1;
-  min-height: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  --kmap-chart-height: 100%;
-  --kmap-chart-width: 100%;
-}
-
-.embed-container:fullscreen,
-.embed-container.is-fullscreen {
-  border: none;
-  margin: 0;
-  border-radius: 0;
-  width: 100vw !important;
-  height: 100vh !important;
-  background: #fff;
 }
 
 .modal-overlay {
@@ -278,15 +247,6 @@ function onToggleCustomData() {
 .app-container[data-theme='dark'] {
   background: #000000;
   color: #e5e7eb;
-}
-
-.app-container[data-theme='dark'] .embed-container {
-  border-color: #374151;
-}
-
-.app-container[data-theme='dark'] .embed-container:fullscreen,
-.app-container[data-theme='dark'] .embed-container.is-fullscreen {
-  background: #000000;
 }
 
 .app-container[data-theme='dark'] .modal-container {

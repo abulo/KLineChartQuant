@@ -189,9 +189,9 @@ describe('KLineChart internalization — fullscreen (uncontrolled)', () => {
         await nextTick()
 
         expect(fullscreenSpies.requestFullscreen).toHaveBeenCalledTimes(1)
-        // the element that received requestFullscreen is the chart wrapper
+        // the element that received requestFullscreen is the embed container (outermost wrapper)
         const calledOn = fullscreenSpies.requestFullscreen.mock.instances[0] as HTMLElement
-        expect(calledOn.classList.contains('chart-wrapper')).toBe(true)
+        expect(calledOn.classList.contains('embed-container')).toBe(true)
         // notification emit still fires
         expect(wrapper.emitted('toggleFullscreen')).toBeTruthy()
 

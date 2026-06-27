@@ -1,12 +1,10 @@
 <template>
   <div class="app-container" :data-theme="currentTheme">
-    <div class="embed-container" :class="{ 'is-fullscreen': isFullscreen }">
-      <KLineChart
-        v-model:is-fullscreen="isFullscreen"
-        v-model:theme="currentTheme"
-        :custom-data="customData"
-      />
-    </div>
+    <KLineChart
+      v-model:is-fullscreen="isFullscreen"
+      v-model:theme="currentTheme"
+      :custom-data="customData"
+    />
   </div>
 </template>
 
@@ -458,35 +456,8 @@ body {
   flex-direction: column;
 }
 
-.embed-container {
-  flex: 1;
-  min-height: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  --kmap-chart-height: 100%;
-  --kmap-chart-width: 100%;
-}
-
-.embed-container:fullscreen,
-.embed-container.is-fullscreen {
-  border: none;
-  margin: 0;
-  border-radius: 0;
-  width: 100vw !important;
-  height: 100vh !important;
-  background: #fff;
-}
-
 .app-container[data-theme='dark'] {
   background: #000;
   color: #e5e7eb;
-}
-
-.app-container[data-theme='dark'] .embed-container:fullscreen,
-.app-container[data-theme='dark'] .embed-container.is-fullscreen {
-  background: #000;
 }
 </style>

@@ -1,5 +1,11 @@
 <template>
-  <div ref="chartWrapperRef" class="chart-wrapper" :data-theme="chartTheme" :style="themeCssVars">
+  <div
+    ref="embedContainerRef"
+    class="embed-container"
+    :class="{ 'is-fullscreen': effectiveIsFullscreen }"
+    :data-theme="chartTheme"
+  >
+    <div ref="chartWrapperRef" class="chart-wrapper" :style="themeCssVars">
     <TopToolbar
       :symbol="currentSymbol"
       :k-line-level="kLineLevel"
@@ -178,6 +184,7 @@
       @reorder-sub-indicators="handleReorderSubIndicators"
     />
   </div>
+</div>
 </template>
 
 <script setup lang="ts">
@@ -379,6 +386,7 @@ function forcePercentAxis() {
 // ── DOM Template Refs ──
 const containerRef = ref<HTMLDivElement | null>(null)
 const chartMainRef = ref<HTMLDivElement | null>(null)
+const embedContainerRef = ref<HTMLDivElement | null>(null)
 const chartWrapperRef = ref<HTMLDivElement | null>(null)
 const tooltipLayerRef = ref<HTMLDivElement | null>(null)
 const toolbarRef = ref<InstanceType<typeof LeftToolbar> | null>(null)
@@ -420,7 +428,7 @@ function handleToggleFullscreen() {
 
   // 非受控模式：组件内部接管全屏 DOM 操作
   if (typeof document !== 'undefined') {
-    const el = chartWrapperRef.value
+    const el = embedContainerRef.value
     if (!document.fullscreenElement) {
       if (el && typeof el.requestFullscreen === 'function') {
         el.requestFullscreen().catch(() => {
@@ -1153,6 +1161,30 @@ watch(
 </script>
 
 <style scoped>
+.embed-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.embed-container.is-fullscreen,
+.embed-container:fullscreen {
+  border: none;
+  margin: 0;
+  outline: none;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #fff;
+}
+
+.embed-container[data-theme='dark'].is-fullscreen,
+.embed-container[data-theme='dark']:fullscreen {
+  background: #000;
+}
+
 .chart-wrapper {
   --kmap-height: var(--kmap-chart-height, 100%);
   --kmap-width: var(--kmap-chart-width, 100%);
