@@ -148,9 +148,7 @@ export class ChartPaneLayout {
       }
     })
 
-    this.deps.setKnownPaneIds(
-      this.paneRenderers.map((renderer) => renderer.getPane().id),
-    )
+    this.deps.setKnownPaneIds(this.paneRenderers.map((renderer) => renderer.getPane().id))
 
     this._paneSpecs = this._paneSpecs.map((spec, index) => ({
       ...spec,
@@ -163,7 +161,7 @@ export class ChartPaneLayout {
     for (const spec of specs) {
       const prev = this._internalPaneRatios.get(spec.id)
       const incoming = Number.isFinite(spec.ratio) ? spec.ratio : 0
-      const ratio = prev !== undefined ? prev : (incoming > 0 ? incoming : 1)
+      const ratio = prev !== undefined ? prev : incoming > 0 ? incoming : 1
       next.set(spec.id, ratio)
     }
     this._internalPaneRatios = next
@@ -173,7 +171,10 @@ export class ChartPaneLayout {
 
   private syncPaneRatiosToSpecs(): void {
     const visible = this._paneSpecs.filter((p) => p.visible !== false)
-    const visibleSum = visible.reduce((s, p) => s + (this._internalPaneRatios.get(p.id) ?? p.ratio ?? 0), 0)
+    const visibleSum = visible.reduce(
+      (s, p) => s + (this._internalPaneRatios.get(p.id) ?? p.ratio ?? 0),
+      0,
+    )
     const safeVisibleSum = visibleSum > 0 ? visibleSum : 1
 
     this._paneSpecs = this._paneSpecs.map((spec) => {
@@ -220,11 +221,14 @@ export class ChartPaneLayout {
   private computePaneHeightsByRatio(visibleSpecs: PaneSpec[], availableH: number): number[] {
     if (visibleSpecs.length === 0) return []
 
-    const ratios = visibleSpecs.map((spec) => this._internalPaneRatios.get(spec.id) ?? spec.ratio ?? 0)
+    const ratios = visibleSpecs.map(
+      (spec) => this._internalPaneRatios.get(spec.id) ?? spec.ratio ?? 0,
+    )
     const ratioSum = ratios.reduce((s, r) => s + (r > 0 ? r : 0), 0)
-    const safeRatios = ratioSum > 0
-      ? ratios.map((r) => (r > 0 ? r : 0) / ratioSum)
-      : visibleSpecs.map(() => 1 / visibleSpecs.length)
+    const safeRatios =
+      ratioSum > 0
+        ? ratios.map((r) => (r > 0 ? r : 0) / ratioSum)
+        : visibleSpecs.map(() => 1 / visibleSpecs.length)
 
     const heights = safeRatios.map((r) => Math.max(1, Math.round(availableH * r)))
     const mins = visibleSpecs.map((spec) => this.getPaneMinHeight(spec, availableH))
@@ -256,7 +260,10 @@ export class ChartPaneLayout {
 
     total = heights.reduce((s, h) => s + h, 0)
     if (total !== availableH && heights.length > 0) {
-      heights[heights.length - 1] = Math.max(1, (heights[heights.length - 1] ?? 1) + (availableH - total))
+      heights[heights.length - 1] = Math.max(
+        1,
+        (heights[heights.length - 1] ?? 1) + (availableH - total),
+      )
     }
 
     return heights
@@ -328,7 +335,10 @@ export class ChartPaneLayout {
 
   getPaneLayoutSpecs(): PaneSpec[] {
     const visible = this._paneSpecs.filter((p) => p.visible !== false)
-    const sum = visible.reduce((s, p) => s + (this._internalPaneRatios.get(p.id) ?? p.ratio ?? 0), 0)
+    const sum = visible.reduce(
+      (s, p) => s + (this._internalPaneRatios.get(p.id) ?? p.ratio ?? 0),
+      0,
+    )
     const safeSum = sum > 0 ? sum : 1
     return this._paneSpecs.map((spec) => {
       const base = this._internalPaneRatios.get(spec.id) ?? spec.ratio ?? 0
@@ -392,12 +402,11 @@ export class ChartPaneLayout {
       return
     }
 
-    const hasPricePane = this._paneSpecs.some((spec, index) => this.resolvePaneRole(spec, index) === 'price')
+    const hasPricePane = this._paneSpecs.some(
+      (spec, index) => this.resolvePaneRole(spec, index) === 'price',
+    )
     const role: PaneRole = hasPricePane ? 'indicator' : 'price'
-    this.applyPaneLayoutSpecs([
-      ...this._paneSpecs,
-      { id: paneId, ratio: 1, visible: true, role },
-    ])
+    this.applyPaneLayoutSpecs([...this._paneSpecs, { id: paneId, ratio: 1, visible: true, role }])
   }
 
   removePane(paneId: string): void {

@@ -33,58 +33,57 @@ import type { Layer, LayerRole } from './types'
  * factory they're calling and cast on retrieval.
  */
 export interface LayerFactory<TConfig = unknown> {
-    /** Stable id for this layer TYPE (not instance) — e.g. 'volume-profile'. */
-    typeId: string
-    role: LayerRole
-    /** Create a Layer instance; consumers pass any config + their store ref. */
-    create(config: TConfig): Layer
+  /** Stable id for this layer TYPE (not instance) — e.g. 'volume-profile'. */
+  typeId: string
+  role: LayerRole
+  /** Create a Layer instance; consumers pass any config + their store ref. */
+  create(config: TConfig): Layer
 }
 
 export interface LayerRegistry {
-    /**
-     * Register a factory. Returns nothing on success.
-     * Throws on duplicate `typeId` — duplicates are programmer errors
-     * (two systems trying to claim the same layer type id), not runtime
-     * conditions to be silently handled. The error message names the
-     * conflicting typeId so the caller can locate it.
-     */
-    register(factory: LayerFactory): void
-    /**
-     * Remove a factory by typeId. Returns true if a factory was removed,
-     * false if no such typeId was registered.
-     */
-    unregister(typeId: string): boolean
-    /** Look up a factory by typeId. Returns null when not registered. */
-    get(typeId: string): LayerFactory | null
-    /** Snapshot of all registered factories. Safe to iterate; do not mutate. */
-    list(): ReadonlyArray<LayerFactory>
+  /**
+   * Register a factory. Returns nothing on success.
+   * Throws on duplicate `typeId` — duplicates are programmer errors
+   * (two systems trying to claim the same layer type id), not runtime
+   * conditions to be silently handled. The error message names the
+   * conflicting typeId so the caller can locate it.
+   */
+  register(factory: LayerFactory): void
+  /**
+   * Remove a factory by typeId. Returns true if a factory was removed,
+   * false if no such typeId was registered.
+   */
+  unregister(typeId: string): boolean
+  /** Look up a factory by typeId. Returns null when not registered. */
+  get(typeId: string): LayerFactory | null
+  /** Snapshot of all registered factories. Safe to iterate; do not mutate. */
+  list(): ReadonlyArray<LayerFactory>
 }
 
 export function createLayerRegistry(): LayerRegistry {
-    // Map preserves insertion order, which makes `list()` deterministic —
-    // useful for snapshot tests and for UI surfaces (e.g. an "available
-    // layers" picker) that render the list in registration order.
-    const factories = new Map<string, LayerFactory>()
+  // Map preserves insertion order, which makes `list()` deterministic —
+  // useful for snapshot tests and for UI surfaces (e.g. an "available
+  // layers" picker) that render the list in registration order.
+  const factories = new Map<string, LayerFactory>()
 
-    const register = (factory: LayerFactory): void => {
-        if (factories.has(factory.typeId)) {
-            throw new KLineChartError(
-                'NOT_REGISTERED',
-                `LayerRegistry: typeId "${factory.typeId}" is already registered`,
-            )
-        }
-        factories.set(factory.typeId, factory)
+  const register = (factory: LayerFactory): void => {
+    if (factories.has(factory.typeId)) {
+      throw new KLineChartError(
+        'NOT_REGISTERED',
+        `LayerRegistry: typeId "${factory.typeId}" is already registered`,
+      )
     }
+    factories.set(factory.typeId, factory)
+  }
 
-    const unregister = (typeId: string): boolean => factories.delete(typeId)
+  const unregister = (typeId: string): boolean => factories.delete(typeId)
 
-    const get = (typeId: string): LayerFactory | null =>
-        factories.get(typeId) ?? null
+  const get = (typeId: string): LayerFactory | null => factories.get(typeId) ?? null
 
-    const list = (): ReadonlyArray<LayerFactory> =>
-        Array.from(factories.values()) as ReadonlyArray<LayerFactory>
+  const list = (): ReadonlyArray<LayerFactory> =>
+    Array.from(factories.values()) as ReadonlyArray<LayerFactory>
 
-    return { register, unregister, get, list }
+  return { register, unregister, get, list }
 }
 
 /**
@@ -99,19 +98,18 @@ export function createLayerRegistry(): LayerRegistry {
  * string literal types without an enum import — useful for config blobs.
  */
 export const BUILTIN_LAYER_TYPES = {
-    // Existing in v0 (handled by legacy renderers)
-    CANDLE: 'builtin:candle',
-    VOLUME: 'builtin:volume',
-    INDICATOR_MA: 'builtin:indicator:ma',
-    INDICATOR_BOLL: 'builtin:indicator:boll',
-    DRAWING: 'builtin:drawing',
-    CROSSHAIR: 'builtin:crosshair',
-    GRID: 'builtin:grid',
-    // P1 component layers (controllers from sibling agents will provide factories)
-    VOLUME_PROFILE: 'component:volume-profile',
-    ORDER_BOOK_HEATMAP: 'component:order-book-heatmap',
-    FOOTPRINT: 'component:footprint',
+  // Existing in v0 (handled by legacy renderers)
+  CANDLE: 'builtin:candle',
+  VOLUME: 'builtin:volume',
+  INDICATOR_MA: 'builtin:indicator:ma',
+  INDICATOR_BOLL: 'builtin:indicator:boll',
+  DRAWING: 'builtin:drawing',
+  CROSSHAIR: 'builtin:crosshair',
+  GRID: 'builtin:grid',
+  // P1 component layers (controllers from sibling agents will provide factories)
+  VOLUME_PROFILE: 'component:volume-profile',
+  ORDER_BOOK_HEATMAP: 'component:order-book-heatmap',
+  FOOTPRINT: 'component:footprint',
 } as const
 
-export type BuiltinLayerType =
-    (typeof BUILTIN_LAYER_TYPES)[keyof typeof BUILTIN_LAYER_TYPES]
+export type BuiltinLayerType = (typeof BUILTIN_LAYER_TYPES)[keyof typeof BUILTIN_LAYER_TYPES]

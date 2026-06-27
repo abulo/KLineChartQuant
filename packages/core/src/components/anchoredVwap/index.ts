@@ -9,9 +9,9 @@
 export { computeAnchoredVwap } from './computeAnchoredVwap'
 export { createAnchoredVwapController } from './createAnchoredVwapController'
 export type {
-    ActiveAnchor,
-    AnchorDefinition,
-    AnchoredVwapController,
-    AVWAPBar,
-    AVWAPPoint,
+  ActiveAnchor,
+  AnchorDefinition,
+  AnchoredVwapController,
+  AVWAPBar,
+  AVWAPPoint,
 } from './types'

@@ -26,7 +26,7 @@ const controller = createChartController({
   container: document.getElementById('chart'),
   data: [],
   initialZoomLevel: 3,
-  theme: 'light'
+  theme: 'light',
 })
 
 // Load data
@@ -43,24 +43,29 @@ controller.dispose()
 ## Exports
 
 ### Controllers
+
 - `createChartController` — Factory for creating chart instances
 - `ChartController` — Main controller interface
 
 ### Reactivity
+
 - `Signal<T>` — Reactive primitive for state management
 - `effect`, `peek` — Reactive utilities
 
 ### Engine
+
 - `ChartController` — Public chart interface (via `@363045841yyt/klinechart-core/controllers`)
 - `createChartController` — Factory for creating controller instances
 - Renderers (internal — use controllers facade)
 
 ### Plugin System
+
 - `PluginHost` — Plugin registration and lifecycle
 - `EventBus` — Cross-component communication
 - `StateStore` — Global state management
 
 ### Types
+
 - `KLineData` — Candlestick data point
 - `ChartViewport` — Viewport state
 - `InteractionSnapshot` — Interaction state
@@ -165,17 +170,17 @@ const semantic = new SemanticChartController(chartInstance)
 
 // Apply natural language config
 semantic.applyConfig({
-  "stockSymbol": "AAPL",
-  "dateRange": { "start": "2024-01-01", "end": "2024-06-01" },
-  "indicators": ["MA20", "MACD", "RSI"],
-  "chart": {
-    "chartType": "candlestick",
-    "theme": "dark",
-    "gridLines": { "horizontal": true, "vertical": false }
+  stockSymbol: 'AAPL',
+  dateRange: { start: '2024-01-01', end: '2024-06-01' },
+  indicators: ['MA20', 'MACD', 'RSI'],
+  chart: {
+    chartType: 'candlestick',
+    theme: 'dark',
+    gridLines: { horizontal: true, vertical: false },
   },
-  "display": {
-    "paneRatios": { "main": 0.6, "sub1": 0.4 }
-  }
+  display: {
+    paneRatios: { main: 0.6, sub1: 0.4 },
+  },
 })
 ```
 
@@ -186,6 +191,7 @@ semantic.applyConfig({
 - Safari 14+
 
 Requires support for:
+
 - ResizeObserver
 - Canvas 2D Context
 - ES2022 (or transpile)

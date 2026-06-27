@@ -48,17 +48,17 @@ export type CssEasing = string
  * AA contrast against both light- and dark-pane backgrounds.
  */
 export interface IndicatorPalette {
-    readonly i1: ColorValue
-    readonly i2: ColorValue
-    readonly i3: ColorValue
-    readonly i4: ColorValue
-    readonly i5: ColorValue
-    readonly i6: ColorValue
-    readonly i7: ColorValue
-    readonly i8: ColorValue
-    readonly i9: ColorValue
-    readonly i10: ColorValue
-    readonly indicatorAtr: ColorValue
+  readonly i1: ColorValue
+  readonly i2: ColorValue
+  readonly i3: ColorValue
+  readonly i4: ColorValue
+  readonly i5: ColorValue
+  readonly i6: ColorValue
+  readonly i7: ColorValue
+  readonly i8: ColorValue
+  readonly i9: ColorValue
+  readonly i10: ColorValue
+  readonly indicatorAtr: ColorValue
 }
 
 /**
@@ -72,11 +72,11 @@ export interface IndicatorPalette {
  * Text colors — importance levels for UI labels & annotations.
  */
 export interface TextColors {
-    readonly primary: ColorValue
-    readonly secondary: ColorValue
-    readonly tertiary: ColorValue
-    readonly weak: ColorValue
-    readonly white: ColorValue
+  readonly primary: ColorValue
+  readonly secondary: ColorValue
+  readonly tertiary: ColorValue
+  readonly weak: ColorValue
+  readonly white: ColorValue
 }
 
 /**
@@ -85,250 +85,250 @@ export interface TextColors {
  * (candleUpBody / candleDownBody); this group covers extras.
  */
 export interface PriceColors {
-    readonly lastPrice: ColorValue
+  readonly lastPrice: ColorValue
 }
 
 /**
  * Tag / label background colours — toolbar buttons, active states.
  */
 export interface TagBgColors {
-    readonly white: ColorValue
-    readonly lightGray: ColorValue
-    readonly pureWhite: ColorValue
-    readonly transparent: ColorValue
-    readonly active: ColorValue
-    readonly activeHover: ColorValue
-    readonly hover: ColorValue
+  readonly white: ColorValue
+  readonly lightGray: ColorValue
+  readonly pureWhite: ColorValue
+  readonly transparent: ColorValue
+  readonly active: ColorValue
+  readonly activeHover: ColorValue
+  readonly hover: ColorValue
 }
 
 /**
  * Border / stroke colours for UI chrome.
  */
 export interface BorderColors {
-    readonly dark: ColorValue
-    readonly medium: ColorValue
-    readonly light: ColorValue
-    readonly separator: ColorValue
-    readonly button: ColorValue
-    readonly chart: ColorValue
+  readonly dark: ColorValue
+  readonly medium: ColorValue
+  readonly light: ColorValue
+  readonly separator: ColorValue
+  readonly button: ColorValue
+  readonly chart: ColorValue
 }
 
 /** Moving-average line colours (MA5 / MA10 / MA20 / MA30 / MA60). */
 export interface MAColors {
-    readonly ma5: ColorValue
-    readonly ma10: ColorValue
-    readonly ma20: ColorValue
-    readonly ma30: ColorValue
-    readonly ma60: ColorValue
+  readonly ma5: ColorValue
+  readonly ma10: ColorValue
+  readonly ma20: ColorValue
+  readonly ma30: ColorValue
+  readonly ma60: ColorValue
 }
 
 /** Bollinger Bands stroke & fill colours. */
 export interface BOLLColors {
-    readonly upper: ColorValue
-    readonly middle: ColorValue
-    readonly lower: ColorValue
-    readonly bandFill: ColorValue
+  readonly upper: ColorValue
+  readonly middle: ColorValue
+  readonly lower: ColorValue
+  readonly bandFill: ColorValue
 }
 
 /** MACD indicator colours. */
 export interface MACDColors {
-    readonly dif: ColorValue
-    readonly dea: ColorValue
-    readonly barUp: ColorValue
-    readonly barUpLight: ColorValue
-    readonly barDown: ColorValue
-    readonly barDownLight: ColorValue
+  readonly dif: ColorValue
+  readonly dea: ColorValue
+  readonly barUp: ColorValue
+  readonly barUpLight: ColorValue
+  readonly barDown: ColorValue
+  readonly barDownLight: ColorValue
 }
 
 /** RSI indicator colours. */
 export interface RSIColors {
-    readonly rsi1: ColorValue
-    readonly rsi2: ColorValue
-    readonly rsi3: ColorValue
+  readonly rsi1: ColorValue
+  readonly rsi2: ColorValue
+  readonly rsi3: ColorValue
 }
 
 /** CCI indicator colours. */
 export interface CCIColors {
-    readonly cci: ColorValue
-    readonly overbought: ColorValue
-    readonly oversold: ColorValue
+  readonly cci: ColorValue
+  readonly overbought: ColorValue
+  readonly oversold: ColorValue
 }
 
 /** KDJ / Stochastic indicator colours. */
 export interface KDJColors {
-    readonly k: ColorValue
-    readonly d: ColorValue
-    readonly j: ColorValue
+  readonly k: ColorValue
+  readonly d: ColorValue
+  readonly j: ColorValue
 }
 
 /** MOM (Momentum) indicator colours. */
 export interface MOMColors {
-    readonly mom: ColorValue
-    readonly zero: ColorValue
+  readonly mom: ColorValue
+  readonly zero: ColorValue
 }
 
 /** WMSR (Williams %R) indicator colours. */
 export interface WMSRColors {
-    readonly wmsr: ColorValue
-    readonly overbought: ColorValue
-    readonly oversold: ColorValue
+  readonly wmsr: ColorValue
+  readonly overbought: ColorValue
+  readonly oversold: ColorValue
 }
 
 /** KST (Know Sure Thing) indicator colours. */
 export interface KSTColors {
-    readonly kst: ColorValue
-    readonly signal: ColorValue
+  readonly kst: ColorValue
+  readonly signal: ColorValue
 }
 
 /** EXPMA (Exponential MA) indicator colours. */
 export interface EXPMAColors {
-    readonly fast: ColorValue
-    readonly slow: ColorValue
+  readonly fast: ColorValue
+  readonly slow: ColorValue
 }
 
 /** ENE (Envelope) indicator colours. */
 export interface ENEColors {
-    readonly upper: ColorValue
-    readonly middle: ColorValue
-    readonly lower: ColorValue
-    readonly bandFill: ColorValue
+  readonly upper: ColorValue
+  readonly middle: ColorValue
+  readonly lower: ColorValue
+  readonly bandFill: ColorValue
 }
 
 /** Generic label colours (tooltip-like overlays). */
 export interface LabelColors {
-    readonly bg: ColorValue
-    readonly text: ColorValue
+  readonly bg: ColorValue
+  readonly text: ColorValue
 }
 
 /** Last-price marker label colours. */
 export interface LastPriceLabelColors {
-    readonly bg: ColorValue
+  readonly bg: ColorValue
 }
 
 /** Volume-price relationship markers. */
 export interface VolumePriceColors {
-    readonly riseWith: ColorValue
-    readonly riseWithout: ColorValue
-    readonly fallWith: ColorValue
-    readonly fallWithout: ColorValue
+  readonly riseWith: ColorValue
+  readonly riseWithout: ColorValue
+  readonly fallWith: ColorValue
+  readonly fallWithout: ColorValue
 }
 
 /** Structure (SMC) indicator — HH/HL/LH/LL/CHoCH/BOS. */
 export interface StructureColors {
-    readonly hh: ColorValue
-    readonly hl: ColorValue
-    readonly lh: ColorValue
-    readonly ll: ColorValue
-    readonly choch: ColorValue
-    readonly bos: ColorValue
+  readonly hh: ColorValue
+  readonly hl: ColorValue
+  readonly lh: ColorValue
+  readonly ll: ColorValue
+  readonly choch: ColorValue
+  readonly bos: ColorValue
 }
 
 /** Zones / FVG / Order-Block indicator colours. */
 export interface ZonesColors {
-    readonly fvgBullFill: ColorValue
-    readonly fvgBearFill: ColorValue
-    readonly fvgBullBorder: ColorValue
-    readonly fvgBearBorder: ColorValue
-    readonly obBullFill: ColorValue
-    readonly obBearFill: ColorValue
+  readonly fvgBullFill: ColorValue
+  readonly fvgBearFill: ColorValue
+  readonly fvgBullBorder: ColorValue
+  readonly fvgBearBorder: ColorValue
+  readonly obBullFill: ColorValue
+  readonly obBearFill: ColorValue
 }
 
 export interface ColorTokens {
-    // Chart-wide background + foreground
-    readonly background: ColorValue
-    readonly foreground: ColorValue
-    readonly chartBackground: ColorValue
+  // Chart-wide background + foreground
+  readonly background: ColorValue
+  readonly foreground: ColorValue
+  readonly chartBackground: ColorValue
 
-    // Candle / OHLC bar
-    readonly candleUpBody: ColorValue
-    readonly candleUpBorder: ColorValue
-    readonly candleUpWick: ColorValue
-    readonly candleDownBody: ColorValue
-    readonly candleDownBorder: ColorValue
-    readonly candleDownWick: ColorValue
-    readonly candleDojiBorder: ColorValue
+  // Candle / OHLC bar
+  readonly candleUpBody: ColorValue
+  readonly candleUpBorder: ColorValue
+  readonly candleUpWick: ColorValue
+  readonly candleDownBody: ColorValue
+  readonly candleDownBorder: ColorValue
+  readonly candleDownWick: ColorValue
+  readonly candleDojiBorder: ColorValue
 
-    // Volume bars (paired with candle bull/bear)
-    readonly volumeUp: ColorValue
-    readonly volumeDown: ColorValue
-    readonly volumeNeutral: ColorValue
+  // Volume bars (paired with candle bull/bear)
+  readonly volumeUp: ColorValue
+  readonly volumeDown: ColorValue
+  readonly volumeNeutral: ColorValue
 
-    // Price + time axes
-    readonly axisText: ColorValue
-    readonly axisLine: ColorValue
-    readonly axisTick: ColorValue
+  // Price + time axes
+  readonly axisText: ColorValue
+  readonly axisLine: ColorValue
+  readonly axisTick: ColorValue
 
-    // Grid
-    readonly gridMajor: ColorValue
-    readonly gridMinor: ColorValue
+  // Grid
+  readonly gridMajor: ColorValue
+  readonly gridMinor: ColorValue
 
-    // Crosshair
-    readonly crosshairLine: ColorValue
-    readonly crosshairLabelBg: ColorValue
-    readonly crosshairLabelText: ColorValue
+  // Crosshair
+  readonly crosshairLine: ColorValue
+  readonly crosshairLabelBg: ColorValue
+  readonly crosshairLabelText: ColorValue
 
-    // Selection / hover
-    readonly selectionFill: ColorValue
-    readonly selectionStroke: ColorValue
+  // Selection / hover
+  readonly selectionFill: ColorValue
+  readonly selectionStroke: ColorValue
 
-    // Tooltip / legend
-    readonly tooltipBg: ColorValue
-    readonly tooltipText: ColorValue
-    readonly tooltipBorder: ColorValue
+  // Tooltip / legend
+  readonly tooltipBg: ColorValue
+  readonly tooltipText: ColorValue
+  readonly tooltipBorder: ColorValue
 
-    // Footprint / heatmap / volume profile (specialised components)
-    readonly heatmapColdest: ColorValue
-    readonly heatmapHottest: ColorValue
-    readonly volumeProfileFill: ColorValue
-    readonly volumeProfilePoc: ColorValue
-    readonly volumeProfileValueArea: ColorValue
-    readonly footprintAsk: ColorValue
-    readonly footprintBid: ColorValue
-    readonly footprintImbalance: ColorValue
+  // Footprint / heatmap / volume profile (specialised components)
+  readonly heatmapColdest: ColorValue
+  readonly heatmapHottest: ColorValue
+  readonly volumeProfileFill: ColorValue
+  readonly volumeProfilePoc: ColorValue
+  readonly volumeProfileValueArea: ColorValue
+  readonly footprintAsk: ColorValue
+  readonly footprintBid: ColorValue
+  readonly footprintImbalance: ColorValue
 
-    // Alerts
-    readonly alertActive: ColorValue
-    readonly alertTriggered: ColorValue
-    readonly alertMuted: ColorValue
+  // Alerts
+  readonly alertActive: ColorValue
+  readonly alertTriggered: ColorValue
+  readonly alertMuted: ColorValue
 
-    // Time-share (分时图) specific colors
-    readonly timeSharePriceLine: ColorValue
-    readonly timeShareAvgLine: ColorValue
-    readonly timeShareAreaUp: ColorValue
-    readonly timeShareAreaDown: ColorValue
-    readonly timeSharePreClose: ColorValue
-    readonly timeShareVolume: ColorValue
+  // Time-share (分时图) specific colors
+  readonly timeSharePriceLine: ColorValue
+  readonly timeShareAvgLine: ColorValue
+  readonly timeShareAreaUp: ColorValue
+  readonly timeShareAreaDown: ColorValue
+  readonly timeSharePreClose: ColorValue
+  readonly timeShareVolume: ColorValue
 
-    // Anchored VWAP / MTF overlay accents
-    readonly avwapLine: ColorValue
-    readonly avwapBand: ColorValue
-    readonly mtfOverlay: ColorValue
+  // Anchored VWAP / MTF overlay accents
+  readonly avwapLine: ColorValue
+  readonly avwapBand: ColorValue
+  readonly mtfOverlay: ColorValue
 
-    // Indicator palette (composes ColorTokens)
-    readonly palette: IndicatorPalette
+  // Indicator palette (composes ColorTokens)
+  readonly palette: IndicatorPalette
 
-    // ── Legacy indicator colours (from engine/theme/colors) ──
-    readonly text: TextColors
-    readonly price: PriceColors
-    readonly tagBg: TagBgColors
-    readonly border: BorderColors
-    readonly ma: MAColors
-    readonly boll: BOLLColors
-    readonly macd: MACDColors
-    readonly rsi: RSIColors
-    readonly cci: CCIColors
-    readonly kdj: KDJColors
-    readonly mom: MOMColors
-    readonly wmsr: WMSRColors
-    readonly kst: KSTColors
-    readonly expma: EXPMAColors
-    readonly ene: ENEColors
-    readonly label: LabelColors
-    readonly lastPriceLabel: LastPriceLabelColors
-    readonly volumePrice: VolumePriceColors
-    readonly structure: StructureColors
-    readonly zones: ZonesColors
-    readonly wmsrGrid: ColorValue
+  // ── Legacy indicator colours (from engine/theme/colors) ──
+  readonly text: TextColors
+  readonly price: PriceColors
+  readonly tagBg: TagBgColors
+  readonly border: BorderColors
+  readonly ma: MAColors
+  readonly boll: BOLLColors
+  readonly macd: MACDColors
+  readonly rsi: RSIColors
+  readonly cci: CCIColors
+  readonly kdj: KDJColors
+  readonly mom: MOMColors
+  readonly wmsr: WMSRColors
+  readonly kst: KSTColors
+  readonly expma: EXPMAColors
+  readonly ene: ENEColors
+  readonly label: LabelColors
+  readonly lastPriceLabel: LastPriceLabelColors
+  readonly volumePrice: VolumePriceColors
+  readonly structure: StructureColors
+  readonly zones: ZonesColors
+  readonly wmsrGrid: ColorValue
 }
 
 /**
@@ -337,31 +337,31 @@ export interface ColorTokens {
  * scales linearly up to 32px, then doubles.
  */
 export interface SpacingTokens {
-    readonly none: CssLength    // '0'
-    readonly xxs: CssLength     // '2px'
-    readonly xs: CssLength      // '4px'
-    readonly sm: CssLength      // '8px'
-    readonly md: CssLength      // '12px'
-    readonly lg: CssLength      // '16px'
-    readonly xl: CssLength      // '24px'
-    readonly xxl: CssLength     // '32px'
-    readonly xxxl: CssLength    // '64px'
+  readonly none: CssLength // '0'
+  readonly xxs: CssLength // '2px'
+  readonly xs: CssLength // '4px'
+  readonly sm: CssLength // '8px'
+  readonly md: CssLength // '12px'
+  readonly lg: CssLength // '16px'
+  readonly xl: CssLength // '24px'
+  readonly xxl: CssLength // '32px'
+  readonly xxxl: CssLength // '64px'
 }
 
 /**
  * Typography stack. Renderers compose a font shorthand from these.
  */
 export interface TypographyTokens {
-    readonly fontFamily: string             // Includes fallbacks
-    readonly fontFamilyMono: string         // For numeric tick labels
-    readonly fontSizeSm: CssLength          // '10px' (axis ticks)
-    readonly fontSizeMd: CssLength          // '12px' (default body)
-    readonly fontSizeLg: CssLength          // '14px' (legends)
-    readonly fontWeightRegular: number      // 400
-    readonly fontWeightMedium: number       // 500
-    readonly fontWeightBold: number         // 700
-    readonly lineHeightTight: number        // 1.2
-    readonly lineHeightStandard: number     // 1.4
+  readonly fontFamily: string // Includes fallbacks
+  readonly fontFamilyMono: string // For numeric tick labels
+  readonly fontSizeSm: CssLength // '10px' (axis ticks)
+  readonly fontSizeMd: CssLength // '12px' (default body)
+  readonly fontSizeLg: CssLength // '14px' (legends)
+  readonly fontWeightRegular: number // 400
+  readonly fontWeightMedium: number // 500
+  readonly fontWeightBold: number // 700
+  readonly lineHeightTight: number // 1.2
+  readonly lineHeightStandard: number // 1.4
 }
 
 /**
@@ -369,31 +369,31 @@ export interface TypographyTokens {
  * but the tokens exist so the same easing is reused everywhere.
  */
 export interface MotionTokens {
-    readonly durationInstant: CssDuration   // '0ms' (default for finance — no jitter)
-    readonly durationFast: CssDuration      // '120ms'
-    readonly durationModerate: CssDuration  // '200ms'
-    readonly easingStandard: CssEasing      // 'cubic-bezier(0.4, 0, 0.2, 1)'
-    readonly easingDecelerate: CssEasing    // 'cubic-bezier(0, 0, 0.2, 1)'
+  readonly durationInstant: CssDuration // '0ms' (default for finance — no jitter)
+  readonly durationFast: CssDuration // '120ms'
+  readonly durationModerate: CssDuration // '200ms'
+  readonly easingStandard: CssEasing // 'cubic-bezier(0.4, 0, 0.2, 1)'
+  readonly easingDecelerate: CssEasing // 'cubic-bezier(0, 0, 0.2, 1)'
 }
 
 /**
  * Complete theme — all four token families.
  */
 export interface Theme {
-    readonly name: string
-    readonly colors: ColorTokens
-    readonly spacing: SpacingTokens
-    readonly typography: TypographyTokens
-    readonly motion: MotionTokens
+  readonly name: string
+  readonly colors: ColorTokens
+  readonly spacing: SpacingTokens
+  readonly typography: TypographyTokens
+  readonly motion: MotionTokens
 }
 
 /**
  * Convenience: deep-Partial used for `mergeTheme(base, override)`.
  */
 export type ThemeOverride = {
-    readonly [K in keyof Theme]?: K extends 'name'
-        ? string
-        : Theme[K] extends object
-            ? Partial<Theme[K]>
-            : Theme[K]
+  readonly [K in keyof Theme]?: K extends 'name'
+    ? string
+    : Theme[K] extends object
+      ? Partial<Theme[K]>
+      : Theme[K]
 }

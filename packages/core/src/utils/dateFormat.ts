@@ -6,10 +6,10 @@
 // ========== 模块级复用的 Intl.DateTimeFormat 实例 ==========
 // Intl.DateTimeFormat 构造极其昂贵（~36ms），必须复用
 const YMD_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
 })
 
 // ========== 缓存配置 ==========
@@ -25,11 +25,11 @@ const ymdCache = new Map<number, string>()
  * formatDateToYYYYMMDDNoDash(1736793600000) // "20250114"
  */
 function formatDateToYYYYMMDDNoDash(timestamp: number): string {
-    const d = new Date(timestamp)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}${month}${day}`
+  const d = new Date(timestamp)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}${month}${day}`
 }
 
 /**
@@ -40,11 +40,11 @@ function formatDateToYYYYMMDDNoDash(timestamp: number): string {
  * getCurrentDateYYYYMMDD() // "20250114"（根据实际日期）
  */
 function getCurrentDateYYYYMMDD(): string {
-    const d = new Date()
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}${month}${day}`
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}${month}${day}`
 }
 
 /**
@@ -56,29 +56,31 @@ function getCurrentDateYYYYMMDD(): string {
  * formatDateToYYYYMMDD(1736793600000) // "2025-01-14"
  */
 export function formatDateToYYYYMMDD(timestamp: number): string {
-    // 缓存命中检查
-    const cached = ymdCache.get(timestamp)
-    if (cached !== undefined) return cached
+  // 缓存命中检查
+  const cached = ymdCache.get(timestamp)
+  if (cached !== undefined) return cached
 
-    // 使用复用的 formatter，避免每次构造开销
-    const parts = YMD_FORMATTER.formatToParts(new Date(timestamp))
+  // 使用复用的 formatter，避免每次构造开销
+  const parts = YMD_FORMATTER.formatToParts(new Date(timestamp))
 
-    // 用 for 循环替代 .reduce，避免临时对象分配
-    let y = '', m = '', d = ''
-    for (let i = 0; i < parts.length; i++) {
-        const p = parts[i]
-        if (p.type === 'year') y = p.value
-        else if (p.type === 'month') m = p.value
-        else if (p.type === 'day') d = p.value
-    }
+  // 用 for 循环替代 .reduce，避免临时对象分配
+  let y = '',
+    m = '',
+    d = ''
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i]
+    if (p.type === 'year') y = p.value
+    else if (p.type === 'month') m = p.value
+    else if (p.type === 'day') d = p.value
+  }
 
-    const result = `${y}-${m}-${d}`
+  const result = `${y}-${m}-${d}`
 
-    // 写入缓存，防膨胀
-    if (ymdCache.size >= YMD_CACHE_SIZE) ymdCache.clear()
-    ymdCache.set(timestamp, result)
+  // 写入缓存，防膨胀
+  if (ymdCache.size >= YMD_CACHE_SIZE) ymdCache.clear()
+  ymdCache.set(timestamp, result)
 
-    return result
+  return result
 }
 
 // ========== formatMonthOrYear 缓存 ==========
@@ -96,21 +98,22 @@ const monthYearCache = new Map<number, { text: string; isYear: boolean }>()
  * formatMonthOrYear(1706745600000) // { text: "2月", isYear: false } (2024年2月)
  */
 export function formatMonthOrYear(timestamp: number): { text: string; isYear: boolean } {
-    // 缓存命中检查
-    const cached = monthYearCache.get(timestamp)
-    if (cached !== undefined) return cached
+  // 缓存命中检查
+  const cached = monthYearCache.get(timestamp)
+  if (cached !== undefined) return cached
 
-    const d = new Date(timestamp)
-    const year = d.getFullYear()
-    const month = d.getMonth() + 1
-    // 当年 1 月：直接标注年份；其它月份：标注"X月"
-    const result = month === 1 ? { text: String(year), isYear: true } : { text: `${month}月`, isYear: false }
+  const d = new Date(timestamp)
+  const year = d.getFullYear()
+  const month = d.getMonth() + 1
+  // 当年 1 月：直接标注年份；其它月份：标注"X月"
+  const result =
+    month === 1 ? { text: String(year), isYear: true } : { text: `${month}月`, isYear: false }
 
-    // 写入缓存，防膨胀
-    if (monthYearCache.size >= MONTH_YEAR_CACHE_SIZE) monthYearCache.clear()
-    monthYearCache.set(timestamp, result)
+  // 写入缓存，防膨胀
+  if (monthYearCache.size >= MONTH_YEAR_CACHE_SIZE) monthYearCache.clear()
+  monthYearCache.set(timestamp, result)
 
-    return result
+  return result
 }
 
 /**
@@ -131,8 +134,8 @@ export function formatMonthOrYear(timestamp: number): { text: string; isYear: bo
  * monthKey(1736793600000) // 24301 (2025*12 + 0)
  */
 function monthKey(timestamp: number): number {
-    const d = new Date(timestamp)
-    return d.getFullYear() * 12 + d.getMonth()
+  const d = new Date(timestamp)
+  return d.getFullYear() * 12 + d.getMonth()
 }
 
 // ========== 便捷别名 ==========
@@ -147,7 +150,7 @@ function monthKey(timestamp: number): number {
  */
 export function formatTimestamp(
   timestamp: number,
-  options?: { timeZone?: string; showTime?: boolean }
+  options?: { timeZone?: string; showTime?: boolean },
 ): string {
   const timeZone = options?.timeZone ?? 'Asia/Shanghai'
   const showTime = options?.showTime ?? false
@@ -159,7 +162,11 @@ export function formatTimestamp(
     ...(showTime ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}),
   })
   const parts = formatter.formatToParts(new Date(timestamp))
-  let y = '', m = '', d = '', h = '', min = ''
+  let y = '',
+    m = '',
+    d = '',
+    h = '',
+    min = ''
   for (const p of parts) {
     if (p.type === 'year') y = p.value
     else if (p.type === 'month') m = p.value
@@ -190,7 +197,7 @@ export const formatYMDShanghai = formatDateToYYYYMMDD
  * 查找每个月份第一个K线的索引
  * @param data - K线数据数组（按时间升序排列）
  * @returns 月边界索引数组，例如 [0, 30, 60] 表示第0、30、60个K线分别是每月的第一个交易日
- * 
+ *
  * @example
  * // 假设数据：[1/2, 1/3, 2/1, 2/2, 3/1, 3/2]
  * findMonthBoundaries(data) // [0, 2, 4]
@@ -208,39 +215,39 @@ let _cacheResult: number[] = []
  * 结果按数据引用缓存，同一份数据多次调用直接返回缓存
  */
 export function findMonthBoundaries(
-    data: Array<{ timestamp: number } | undefined>,
-    monthKeys?: Int32Array,
+  data: Array<{ timestamp: number } | undefined>,
+  monthKeys?: Int32Array,
 ): number[] {
-    if (data.length === 0) return []
+  if (data.length === 0) return []
 
-    // 缓存命中：同一引用 + 同长度 + 首尾时间戳不变
-    if (_cacheDataRef === data && _cacheLen === data.length) {
-        const firstTs = data[0]?.timestamp
-        const lastTs = data[data.length - 1]?.timestamp
-        if (firstTs === _cacheFirstTs && lastTs === _cacheLastTs) {
-            return _cacheResult
-        }
+  // 缓存命中：同一引用 + 同长度 + 首尾时间戳不变
+  if (_cacheDataRef === data && _cacheLen === data.length) {
+    const firstTs = data[0]?.timestamp
+    const lastTs = data[data.length - 1]?.timestamp
+    if (firstTs === _cacheFirstTs && lastTs === _cacheLastTs) {
+      return _cacheResult
     }
+  }
 
-    const boundaries: number[] = [0]
-    let lastKey = monthKeys ? monthKeys[0] : monthKey(data[0]!.timestamp)
+  const boundaries: number[] = [0]
+  let lastKey = monthKeys ? monthKeys[0] : monthKey(data[0]!.timestamp)
 
-    for (let i = 1; i < data.length; i++) {
-        const cur = data[i]
-        if (!cur) continue
-        const curKey = monthKeys ? monthKeys[i] : monthKey(cur.timestamp)
-        if (curKey !== lastKey) {
-            boundaries.push(i)
-            lastKey = curKey
-        }
+  for (let i = 1; i < data.length; i++) {
+    const cur = data[i]
+    if (!cur) continue
+    const curKey = monthKeys ? monthKeys[i] : monthKey(cur.timestamp)
+    if (curKey !== lastKey) {
+      boundaries.push(i)
+      lastKey = curKey
     }
+  }
 
-    _cacheDataRef = data
-    _cacheLen = data.length
-    _cacheFirstTs = data[0]?.timestamp ?? 0
-    _cacheLastTs = data[data.length - 1]?.timestamp ?? 0
-    _cacheResult = boundaries
-    return boundaries
+  _cacheDataRef = data
+  _cacheLen = data.length
+  _cacheFirstTs = data[0]?.timestamp ?? 0
+  _cacheLastTs = data[data.length - 1]?.timestamp ?? 0
+  _cacheResult = boundaries
+  return boundaries
 }
 
 // ========== 日边界查找 + 日标签格式化 ==========
@@ -249,44 +256,44 @@ export function findMonthBoundaries(
  * 查找每天第一个K线的索引
  */
 export function findDayBoundaries(
-    data: Array<{ timestamp: number } | undefined>,
-    dayKeys?: Int32Array,
+  data: Array<{ timestamp: number } | undefined>,
+  dayKeys?: Int32Array,
 ): number[] {
-    if (data.length === 0) return []
+  if (data.length === 0) return []
 
-    const boundaries: number[] = [0]
-    let lastKey = dayKeys ? dayKeys[0] : dayKey(data[0]!.timestamp)
+  const boundaries: number[] = [0]
+  let lastKey = dayKeys ? dayKeys[0] : dayKey(data[0]!.timestamp)
 
-    for (let i = 1; i < data.length; i++) {
-        const cur = data[i]
-        if (!cur) continue
-        const curKey = dayKeys ? dayKeys[i] : dayKey(cur.timestamp)
-        if (curKey !== lastKey) {
-            boundaries.push(i)
-            lastKey = curKey
-        }
+  for (let i = 1; i < data.length; i++) {
+    const cur = data[i]
+    if (!cur) continue
+    const curKey = dayKeys ? dayKeys[i] : dayKey(cur.timestamp)
+    if (curKey !== lastKey) {
+      boundaries.push(i)
+      lastKey = curKey
     }
+  }
 
-    return boundaries
+  return boundaries
 }
 
 function dayKey(timestamp: number): number {
-    const d = new Date(timestamp)
-    return d.getFullYear() * 366 + getDayOfYear(d)
+  const d = new Date(timestamp)
+  return d.getFullYear() * 366 + getDayOfYear(d)
 }
 
 /**
  * 格式化日期为 "MM-DD" 或年初显示 "YYYY-MM-DD"
  */
 export function formatDay(timestamp: number): { text: string; isYear: boolean } {
-    const d = new Date(timestamp)
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    const isYear = d.getMonth() === 0 && d.getDate() === 1
-    if (isYear) {
-        return { text: `${d.getFullYear()}-${month}-${day}`, isYear }
-    }
-    return { text: `${month}-${day}`, isYear }
+  const d = new Date(timestamp)
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const isYear = d.getMonth() === 0 && d.getDate() === 1
+  if (isYear) {
+    return { text: `${d.getFullYear()}-${month}-${day}`, isYear }
+  }
+  return { text: `${month}-${day}`, isYear }
 }
 
 // ========== 时分标签缓存 ==========
@@ -314,9 +321,7 @@ export function formatTimeLabel(timestamp: number): string {
 
 // 兼容 getDayOfYear — fallback when not on Date prototype
 function getDayOfYear(date: Date): number {
-    const start = new Date(date.getFullYear(), 0, 0)
-    const diff = date.getTime() - start.getTime()
-    return Math.floor(diff / 86400000)
+  const start = new Date(date.getFullYear(), 0, 0)
+  const diff = date.getTime() - start.getTime()
+  return Math.floor(diff / 86400000)
 }
-
-

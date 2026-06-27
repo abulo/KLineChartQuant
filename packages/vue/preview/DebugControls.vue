@@ -39,8 +39,19 @@
         @click="$emit('toggle-custom-data')"
         :title="customDataActive ? '切换到 Fetcher 数据源' : '切换到自定义数据源'"
       >
-        <svg class="debug-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+        <svg
+          class="debug-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <ellipse cx="12" cy="5" rx="9" ry="3" />
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
         </svg>
       </button>
     </div>
@@ -80,149 +91,149 @@
 </template>
 
 <script setup lang="ts">
-import { VERSION, CORE_VERSION } from '../src/version'
+  import { VERSION, CORE_VERSION } from '../src/version'
 
-defineProps<{
-  customDataActive: boolean
-  theme: 'light' | 'dark'
-}>()
+  defineProps<{
+    customDataActive: boolean
+    theme: 'light' | 'dark'
+  }>()
 
-const version = `Vue@${VERSION}-Core@${CORE_VERSION}`
+  const version = `Vue@${VERSION}-Core@${CORE_VERSION}`
 
-defineEmits<{
-  'open-modal': []
-  'toggle-embed-size': []
-  'toggle-custom-data': []
-}>()
+  defineEmits<{
+    'open-modal': []
+    'toggle-embed-size': []
+    'toggle-custom-data': []
+  }>()
 </script>
 
 <style scoped>
-.debug-controls {
-  position: relative;
-  padding: 8px 16px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #e8e8e8;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  align-self: stretch;
-}
-
-.debug-left,
-.debug-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.debug-link {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  background: #fff;
-  color: #333;
-  text-decoration: none;
-}
-
-.debug-link:hover {
-  color: #1890ff;
-  border-color: #1890ff;
-}
-
-.version-badge {
-  padding: 2px 8px;
-  border-radius: 12px;
-  border: 1px solid #d9d9d9;
-  background: #fff;
-  color: #666;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.debug-controls button {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.debug-controls button:hover {
-  border-color: #1890ff;
-  color: #1890ff;
-}
-
-.debug-icon {
-  width: 20px;
-  height: 20px;
-}
-
-@media (max-width: 640px) {
   .debug-controls {
-    padding: 8px 12px;
+    position: relative;
+    padding: 8px 16px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e8e8e8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    align-self: stretch;
   }
 
-  .debug-left {
-    gap: 4px;
-  }
-
+  .debug-left,
   .debug-right {
-    gap: 4px;
-    margin-left: auto;
-    order: 0;
-    flex-shrink: 1;
-    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .debug-link {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    background: #fff;
+    color: #333;
+    text-decoration: none;
+  }
+
+  .debug-link:hover {
+    color: #1890ff;
+    border-color: #1890ff;
   }
 
   .version-badge {
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex-shrink: 1;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    color: #666;
+    font-size: 12px;
+    font-family: monospace;
   }
-}
 
-.debug-controls[data-theme='dark'] {
-  background: #1f2937;
-  border-color: #374151;
-}
+  .debug-controls button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-.debug-controls[data-theme='dark'] .debug-link {
-  background: #374151;
-  border-color: #4b5563;
-  color: #d1d5db;
-}
+  .debug-controls button:hover {
+    border-color: #1890ff;
+    color: #1890ff;
+  }
 
-.debug-controls[data-theme='dark'] .debug-link:hover {
-  border-color: #60a5fa;
-  color: #60a5fa;
-}
+  .debug-icon {
+    width: 20px;
+    height: 20px;
+  }
 
-.debug-controls[data-theme='dark'] button {
-  background: #374151;
-  border-color: #4b5563;
-  color: #d1d5db;
-}
+  @media (max-width: 640px) {
+    .debug-controls {
+      padding: 8px 12px;
+    }
 
-.debug-controls[data-theme='dark'] button:hover {
-  border-color: #60a5fa;
-  color: #60a5fa;
-}
+    .debug-left {
+      gap: 4px;
+    }
 
-.debug-controls[data-theme='dark'] .version-badge {
-  color: #9ca3af;
-  background: #374151;
-  border-color: #4b5563;
-}
+    .debug-right {
+      gap: 4px;
+      margin-left: auto;
+      order: 0;
+      flex-shrink: 1;
+      min-width: 0;
+    }
+
+    .version-badge {
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex-shrink: 1;
+    }
+  }
+
+  .debug-controls[data-theme='dark'] {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .debug-controls[data-theme='dark'] .debug-link {
+    background: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+  }
+
+  .debug-controls[data-theme='dark'] .debug-link:hover {
+    border-color: #60a5fa;
+    color: #60a5fa;
+  }
+
+  .debug-controls[data-theme='dark'] button {
+    background: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+  }
+
+  .debug-controls[data-theme='dark'] button:hover {
+    border-color: #60a5fa;
+    color: #60a5fa;
+  }
+
+  .debug-controls[data-theme='dark'] .version-badge {
+    color: #9ca3af;
+    background: #374151;
+    border-color: #4b5563;
+  }
 </style>

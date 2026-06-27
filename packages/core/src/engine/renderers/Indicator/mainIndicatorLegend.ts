@@ -64,7 +64,11 @@ export function createMainIndicatorLegendRendererPlugin(options: {
     draw(context: RenderContext) {
       const { overlayCtx, data, range, crosshairIndex } = context
       const klineData = data as KLineData[]
-      const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
+      const colors = resolveThemeColors(
+        context.theme,
+        context.isAsiaMarket,
+        context.colorPresetSettings,
+      )
       if (!klineData.length || !overlayCtx) return
 
       const fontSize = 12
@@ -296,9 +300,10 @@ export function createMainIndicatorLegendRendererPlugin(options: {
         }
       }
 
-      const scheduler = pluginHost && typeof pluginHost.getService === 'function'
-        ? pluginHost.getService<IndicatorScheduler>('indicatorScheduler')
-        : undefined
+      const scheduler =
+        pluginHost && typeof pluginHost.getService === 'function'
+          ? pluginHost.getService<IndicatorScheduler>('indicatorScheduler')
+          : undefined
 
       const mainIndicators = scheduler?.getMainIndicators() ?? []
       for (const meta of mainIndicators) {
@@ -341,11 +346,24 @@ export function createMainIndicatorLegendRendererPlugin(options: {
                 x += measureTextWidth(overlayCtx, valText) + gap
               }
             }
-          }
+          },
         })
       }
 
-      pushComparisonLegendRows(context, klineData, targetIndex, range, rows, config.yPaddingPx, overlayCtx, legendX, legendYOffset, lineHeight, gap, colors)
+      pushComparisonLegendRows(
+        context,
+        klineData,
+        targetIndex,
+        range,
+        rows,
+        config.yPaddingPx,
+        overlayCtx,
+        legendX,
+        legendYOffset,
+        lineHeight,
+        gap,
+        colors,
+      )
 
       rows.forEach((row, index) => row.draw(index))
       overlayCtx.restore()
@@ -432,7 +450,8 @@ function pushComparisonLegendRows(
 
         const sign = pct > 0 ? '+' : ''
         const pctText = `${sign}${pct.toFixed(2)}%`
-        overlayCtx.fillStyle = pct > 0 ? colors.candleUpBody : pct < 0 ? colors.candleDownBody : colors.text.primary
+        overlayCtx.fillStyle =
+          pct > 0 ? colors.candleUpBody : pct < 0 ? colors.candleDownBody : colors.text.primary
         overlayCtx.fillText(pctText, x, y)
       },
     })
@@ -446,7 +465,10 @@ function findBaselineByDate(data: ReadonlyArray<KLineData>, date: string): KLine
   return null
 }
 
-function findBaselineByTimestamp(data: ReadonlyArray<KLineData>, timestamp: number): KLineData | null {
+function findBaselineByTimestamp(
+  data: ReadonlyArray<KLineData>,
+  timestamp: number,
+): KLineData | null {
   for (const item of data) {
     if (item.timestamp >= timestamp) return item
   }

@@ -97,7 +97,7 @@ export type PrimitiveRendererSet = {
     ctx: CanvasRenderingContext2D,
     primitive: LinePrimitive,
     viewportClip: { left: number; top: number; right: number; bottom: number },
-    dpr: number
+    dpr: number,
   ) => void
   area: (ctx: CanvasRenderingContext2D, primitive: AreaPrimitive, dpr: number) => void
   text: (ctx: CanvasRenderingContext2D, primitive: TextPrimitive, dpr: number) => void
@@ -127,7 +127,7 @@ function clipLineToRect(
   y1: number,
   x2: number,
   y2: number,
-  rect: { left: number; top: number; right: number; bottom: number }
+  rect: { left: number; top: number; right: number; bottom: number },
 ): { a: { x: number; y: number }; b: { x: number; y: number } } | null {
   const INSIDE = 0
   const LEFT = 1
@@ -191,7 +191,7 @@ function clipLineToRect(
 
 function extendLineToViewport(
   primitive: LinePrimitive,
-  viewportClip: { left: number; top: number; right: number; bottom: number }
+  viewportClip: { left: number; top: number; right: number; bottom: number },
 ): { a: { x: number; y: number }; b: { x: number; y: number } } | null {
   const { a, b, extend = 'none' } = primitive
   if (extend === 'none') {
@@ -202,7 +202,8 @@ function extendLineToViewport(
   const dy = b.y - a.y
   if (dx === 0 && dy === 0) return null
 
-  const distance = Math.max(viewportClip.right - viewportClip.left, viewportClip.bottom - viewportClip.top) * 4
+  const distance =
+    Math.max(viewportClip.right - viewportClip.left, viewportClip.bottom - viewportClip.top) * 4
   let start = a
   let end = b
 
@@ -309,7 +310,10 @@ export function createDefaultPrimitiveRendererSet(): PrimitiveRendererSet {
   }
 }
 
-export function createTwoPointLineDefinition(kind: DrawingKind, extend: LinePrimitive['extend']): DrawingDefinition {
+export function createTwoPointLineDefinition(
+  kind: DrawingKind,
+  extend: LinePrimitive['extend'],
+): DrawingDefinition {
   return {
     kind,
     minAnchors: 2,
@@ -347,7 +351,13 @@ export function createSingleAnchorLineDefinition(kind: DrawingKind): DrawingDefi
       if (kind === 'horizontal-line') {
         return {
           primitives: [
-            { kind: 'line', a: { x: 0, y: point.y }, b: { x: right, y: point.y }, showEndpoints: false, style: drawing.style },
+            {
+              kind: 'line',
+              a: { x: 0, y: point.y },
+              b: { x: right, y: point.y },
+              showEndpoints: false,
+              style: drawing.style,
+            },
             { kind: 'point', point, style: drawing.style },
           ],
         }
@@ -356,7 +366,13 @@ export function createSingleAnchorLineDefinition(kind: DrawingKind): DrawingDefi
       if (kind === 'horizontal-ray') {
         return {
           primitives: [
-            { kind: 'line', a: point, b: { x: right, y: point.y }, showEndpoints: false, style: drawing.style },
+            {
+              kind: 'line',
+              a: point,
+              b: { x: right, y: point.y },
+              showEndpoints: false,
+              style: drawing.style,
+            },
             { kind: 'point', point, style: drawing.style },
           ],
         }
@@ -365,7 +381,13 @@ export function createSingleAnchorLineDefinition(kind: DrawingKind): DrawingDefi
       if (kind === 'vertical-line') {
         return {
           primitives: [
-            { kind: 'line', a: { x: point.x, y: 0 }, b: { x: point.x, y: bottom }, showEndpoints: false, style: drawing.style },
+            {
+              kind: 'line',
+              a: { x: point.x, y: 0 },
+              b: { x: point.x, y: bottom },
+              showEndpoints: false,
+              style: drawing.style,
+            },
             { kind: 'point', point, style: drawing.style },
           ],
         }
@@ -374,8 +396,20 @@ export function createSingleAnchorLineDefinition(kind: DrawingKind): DrawingDefi
       // cross-line: 十字线，显示水平和垂直线，锚点显示一个点，边缘不显示端点
       return {
         primitives: [
-          { kind: 'line', a: { x: 0, y: point.y }, b: { x: right, y: point.y }, showEndpoints: false, style: drawing.style },
-          { kind: 'line', a: { x: point.x, y: 0 }, b: { x: point.x, y: bottom }, showEndpoints: false, style: drawing.style },
+          {
+            kind: 'line',
+            a: { x: 0, y: point.y },
+            b: { x: right, y: point.y },
+            showEndpoints: false,
+            style: drawing.style,
+          },
+          {
+            kind: 'line',
+            a: { x: point.x, y: 0 },
+            b: { x: point.x, y: bottom },
+            showEndpoints: false,
+            style: drawing.style,
+          },
           { kind: 'point', point, style: drawing.style },
         ],
       }
@@ -434,14 +468,17 @@ export function createParallelChannelDefinition(): DrawingDefinition {
       const dx = p2.x - p1.x
       const dy = p2.y - p1.y
       const p4 = { x: p3.x + dx, y: p3.y + dy }
-      const extend = (drawing.params as { extend?: LinePrimitive['extend'] } | undefined)?.extend ?? 'none'
+      const extend =
+        (drawing.params as { extend?: LinePrimitive['extend'] } | undefined)?.extend ?? 'none'
 
       // 计算 p4 对应的锚点信息（用于轴标签注册）
       const p4Index = third.index + (second.index - first.index)
       const p4Time = third.time
         ? (typeof third.time === 'string' ? new Date(third.time).getTime() : third.time) +
-          ((typeof second.time === 'string' ? new Date(second.time).getTime() : second.time ?? 0) -
-           (typeof first.time === 'string' ? new Date(first.time).getTime() : first.time ?? 0))
+          ((typeof second.time === 'string'
+            ? new Date(second.time).getTime()
+            : (second.time ?? 0)) -
+            (typeof first.time === 'string' ? new Date(first.time).getTime() : (first.time ?? 0)))
         : undefined
 
       return {
@@ -456,7 +493,12 @@ export function createParallelChannelDefinition(): DrawingDefinition {
           { kind: 'line', a: p3, b: p4, extend, style: drawing.style },
         ],
         computedAnchors: [
-          { id: `${drawing.id}-p4`, index: p4Index, time: p4Time, price: third.price + (second.price - first.price) },
+          {
+            id: `${drawing.id}-p4`,
+            index: p4Index,
+            time: p4Time,
+            price: third.price + (second.price - first.price),
+          },
         ],
       }
     },
@@ -523,8 +565,10 @@ export function createDisjointChannelDefinition(): DrawingDefinition {
       const p4Price = third.price - (second.price - first.price)
       const p4Time = third.time
         ? (typeof third.time === 'string' ? new Date(third.time).getTime() : third.time) -
-          ((typeof second.time === 'string' ? new Date(second.time).getTime() : second.time ?? 0) -
-           (typeof first.time === 'string' ? new Date(first.time).getTime() : first.time ?? 0))
+          ((typeof second.time === 'string'
+            ? new Date(second.time).getTime()
+            : (second.time ?? 0)) -
+            (typeof first.time === 'string' ? new Date(first.time).getTime() : (first.time ?? 0)))
         : undefined
 
       return {
@@ -541,9 +585,7 @@ export function createDisjointChannelDefinition(): DrawingDefinition {
           // 斜率 -k 的线
           { kind: 'line', a: p3, b: p4, style: drawing.style },
         ],
-        computedAnchors: [
-          { id: `${drawing.id}-p4`, index: p4Index, time: p4Time, price: p4Price },
-        ],
+        computedAnchors: [{ id: `${drawing.id}-p4`, index: p4Index, time: p4Time, price: p4Price }],
       }
     },
   }
@@ -561,8 +603,14 @@ export function createRegressionChannelDefinition(): DrawingDefinition {
       const secondIndex = getAnchorDataIndex(second, context.seriesData)
       if (firstIndex < 0 && secondIndex < 0) return { primitives: [] }
 
-      const clampedFirstIndex = Math.min(Math.max(Math.round(first.index), 0), context.seriesData.length - 1)
-      const clampedSecondIndex = Math.min(Math.max(Math.round(second.index), 0), context.seriesData.length - 1)
+      const clampedFirstIndex = Math.min(
+        Math.max(Math.round(first.index), 0),
+        context.seriesData.length - 1,
+      )
+      const clampedSecondIndex = Math.min(
+        Math.max(Math.round(second.index), 0),
+        context.seriesData.length - 1,
+      )
       const startIndex = Math.min(clampedFirstIndex, clampedSecondIndex)
       const endIndex = Math.max(clampedFirstIndex, clampedSecondIndex)
       const slice = context.seriesData.slice(startIndex, endIndex + 1)
@@ -574,12 +622,38 @@ export function createRegressionChannelDefinition(): DrawingDefinition {
       const firstValue = regression.intercept
       const lastValue = regression.intercept + regression.slope * (slice.length - 1)
 
-      const startAnchor = { id: `${drawing.id}-reg-start`, index: Math.round(first.index), time: context.seriesData[startIndex]!.timestamp, price: firstValue }
-      const endAnchor = { id: `${drawing.id}-reg-end`, index: Math.round(second.index), time: context.seriesData[endIndex]!.timestamp, price: lastValue }
-      const upperStartAnchor = { ...startAnchor, id: `${drawing.id}-reg-upper-start`, price: firstValue + offset }
-      const upperEndAnchor = { ...endAnchor, id: `${drawing.id}-reg-upper-end`, price: lastValue + offset }
-      const lowerStartAnchor = { ...startAnchor, id: `${drawing.id}-reg-lower-start`, price: firstValue - offset }
-      const lowerEndAnchor = { ...endAnchor, id: `${drawing.id}-reg-lower-end`, price: lastValue - offset }
+      const startAnchor = {
+        id: `${drawing.id}-reg-start`,
+        index: Math.round(first.index),
+        time: context.seriesData[startIndex]!.timestamp,
+        price: firstValue,
+      }
+      const endAnchor = {
+        id: `${drawing.id}-reg-end`,
+        index: Math.round(second.index),
+        time: context.seriesData[endIndex]!.timestamp,
+        price: lastValue,
+      }
+      const upperStartAnchor = {
+        ...startAnchor,
+        id: `${drawing.id}-reg-upper-start`,
+        price: firstValue + offset,
+      }
+      const upperEndAnchor = {
+        ...endAnchor,
+        id: `${drawing.id}-reg-upper-end`,
+        price: lastValue + offset,
+      }
+      const lowerStartAnchor = {
+        ...startAnchor,
+        id: `${drawing.id}-reg-lower-start`,
+        price: firstValue - offset,
+      }
+      const lowerEndAnchor = {
+        ...endAnchor,
+        id: `${drawing.id}-reg-lower-end`,
+        price: lastValue - offset,
+      }
 
       const middleA = context.toScreen(startAnchor)
       const middleB = context.toScreen(endAnchor)
@@ -597,7 +671,12 @@ export function createRegressionChannelDefinition(): DrawingDefinition {
             style: drawing.style,
           },
           // 中间回归线使用虚线
-          { kind: 'line', a: middleA, b: middleB, style: { ...drawing.style, strokeStyle: 'dashed' } },
+          {
+            kind: 'line',
+            a: middleA,
+            b: middleB,
+            style: { ...drawing.style, strokeStyle: 'dashed' },
+          },
           { kind: 'line', a: upperA, b: upperB, style: drawing.style },
           { kind: 'line', a: lowerA, b: lowerB, style: drawing.style },
         ],

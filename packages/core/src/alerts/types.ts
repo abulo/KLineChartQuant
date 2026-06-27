@@ -35,35 +35,35 @@ import type { Signal } from '../reactivity/signal'
  * fires from missing data).
  */
 export interface MarketSnapshot {
-    /** Latest closed bar; `null` for an empty stream. */
-    bar: {
-        timestamp: number
-        open: number
-        high: number
-        low: number
-        close: number
-        volume: number
-    } | null
-    /** Latest scalar value per indicator id (keyed by your indicator instance id). */
-    indicators: Readonly<Record<string, number>>
-    /**
-     * Average volume across the last N bars, keyed by N. Required for the
-     * `volume-spike` predicate to be O(1) — the caller maintains the rolling
-     * mean elsewhere.
-     */
-    rollingVolume: Readonly<Record<number, number>>
-    /** Optional advanced components (filled only when those components are mounted). */
-    volumeProfile?: { poc: number; vah: number; val: number }
-    orderBook?: {
-        medianBidSize: number
-        medianAskSize: number
-        maxBidSize: number
-        maxAskSize: number
-    }
-    footprint?: {
-        latestBarMaxImbalanceRatio: number
-        latestBarImbalanceCount: number
-    }
+  /** Latest closed bar; `null` for an empty stream. */
+  bar: {
+    timestamp: number
+    open: number
+    high: number
+    low: number
+    close: number
+    volume: number
+  } | null
+  /** Latest scalar value per indicator id (keyed by your indicator instance id). */
+  indicators: Readonly<Record<string, number>>
+  /**
+   * Average volume across the last N bars, keyed by N. Required for the
+   * `volume-spike` predicate to be O(1) — the caller maintains the rolling
+   * mean elsewhere.
+   */
+  rollingVolume: Readonly<Record<number, number>>
+  /** Optional advanced components (filled only when those components are mounted). */
+  volumeProfile?: { poc: number; vah: number; val: number }
+  orderBook?: {
+    medianBidSize: number
+    medianAskSize: number
+    maxBidSize: number
+    maxAskSize: number
+  }
+  footprint?: {
+    latestBarMaxImbalanceRatio: number
+    latestBarImbalanceCount: number
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -79,35 +79,35 @@ export type IndicatorCrossPairDirection = 'a-above-b' | 'a-below-b' | 'any'
  * to handle it.
  */
 export type AlertPredicate =
-    | { kind: 'price-cross'; price: number; direction: CrossDirection }
-    | { kind: 'price-in-range'; min: number; max: number }
-    | { kind: 'price-out-of-range'; min: number; max: number }
-    | {
-          kind: 'indicator-cross'
-          indicatorId: string
-          threshold: number
-          direction: CrossDirection
-      }
-    | {
-          kind: 'indicator-cross-indicator'
-          aId: string
-          bId: string
-          direction: IndicatorCrossPairDirection
-      }
-    | { kind: 'volume-spike'; multipleOfAvg: number; lookbackBars: number }
-    | { kind: 'volume-profile-poc-touch'; bandPercent: number }
-    | { kind: 'order-book-wall'; sizeMultipleOfMedian: number }
-    | {
-          kind: 'footprint-imbalance'
-          minImbalanceRatio: number
-          consecutivePriceLevels: number
-      }
-    /**
-     * Escape hatch. The `evaluate` function runs INSIDE a try/catch in the
-     * controller — a throwing custom predicate must not crash the alert pass.
-     * Custom predicates CANNOT be serialised; see `ruleSchema.ts`.
-     */
-    | { kind: 'custom'; evaluate: (snapshot: MarketSnapshot) => boolean }
+  | { kind: 'price-cross'; price: number; direction: CrossDirection }
+  | { kind: 'price-in-range'; min: number; max: number }
+  | { kind: 'price-out-of-range'; min: number; max: number }
+  | {
+      kind: 'indicator-cross'
+      indicatorId: string
+      threshold: number
+      direction: CrossDirection
+    }
+  | {
+      kind: 'indicator-cross-indicator'
+      aId: string
+      bId: string
+      direction: IndicatorCrossPairDirection
+    }
+  | { kind: 'volume-spike'; multipleOfAvg: number; lookbackBars: number }
+  | { kind: 'volume-profile-poc-touch'; bandPercent: number }
+  | { kind: 'order-book-wall'; sizeMultipleOfMedian: number }
+  | {
+      kind: 'footprint-imbalance'
+      minImbalanceRatio: number
+      consecutivePriceLevels: number
+    }
+  /**
+   * Escape hatch. The `evaluate` function runs INSIDE a try/catch in the
+   * controller — a throwing custom predicate must not crash the alert pass.
+   * Custom predicates CANNOT be serialised; see `ruleSchema.ts`.
+   */
+  | { kind: 'custom'; evaluate: (snapshot: MarketSnapshot) => boolean }
 
 export type AlertPredicateKind = AlertPredicate['kind']
 
@@ -116,29 +116,29 @@ export type AlertPredicateKind = AlertPredicate['kind']
 // ---------------------------------------------------------------------------
 
 export interface AlertRule {
-    id: string
-    name: string
-    predicate: AlertPredicate
-    enabled: boolean
-    /** Fire once and then auto-disable. */
-    oneShot: boolean
-    /**
-     * For non-oneShot rules, suppress re-fires within this window (ms after
-     * the last fire). Undefined / 0 = no cooldown.
-     */
-    cooldownMs?: number
-    /** Free-form metadata propagated onto fired events. */
-    metadata?: Readonly<Record<string, unknown>>
+  id: string
+  name: string
+  predicate: AlertPredicate
+  enabled: boolean
+  /** Fire once and then auto-disable. */
+  oneShot: boolean
+  /**
+   * For non-oneShot rules, suppress re-fires within this window (ms after
+   * the last fire). Undefined / 0 = no cooldown.
+   */
+  cooldownMs?: number
+  /** Free-form metadata propagated onto fired events. */
+  metadata?: Readonly<Record<string, unknown>>
 }
 
 export interface AlertEvent {
-    ruleId: string
-    ruleName: string
-    /** ms since epoch, passed in by the caller as `now`. */
-    triggeredAt: number
-    /** Snapshot of the bar that triggered the rule (copied, not referenced). */
-    snapshotBar: MarketSnapshot['bar']
-    metadata?: Readonly<Record<string, unknown>>
+  ruleId: string
+  ruleName: string
+  /** ms since epoch, passed in by the caller as `now`. */
+  triggeredAt: number
+  /** Snapshot of the bar that triggered the rule (copied, not referenced). */
+  snapshotBar: MarketSnapshot['bar']
+  metadata?: Readonly<Record<string, unknown>>
 }
 
 // ---------------------------------------------------------------------------
@@ -146,32 +146,32 @@ export interface AlertEvent {
 // ---------------------------------------------------------------------------
 
 export interface AlertController {
-    /** Current rules, in insertion order. Reactive. */
-    readonly rules: Signal<ReadonlyArray<AlertRule>>
-    /** Bounded ring of recent events, newest last. Reactive. */
-    readonly events: Signal<ReadonlyArray<AlertEvent>>
+  /** Current rules, in insertion order. Reactive. */
+  readonly rules: Signal<ReadonlyArray<AlertRule>>
+  /** Bounded ring of recent events, newest last. Reactive. */
+  readonly events: Signal<ReadonlyArray<AlertEvent>>
 
-    /** Add a rule; returns false if a rule with the same id already exists. */
-    addRule(rule: AlertRule): boolean
-    removeRule(id: string): boolean
-    setRuleEnabled(id: string, enabled: boolean): boolean
-    /** Patch any field except `id`. Returns false if the id is unknown. */
-    updateRule(id: string, patch: Partial<Omit<AlertRule, 'id'>>): boolean
+  /** Add a rule; returns false if a rule with the same id already exists. */
+  addRule(rule: AlertRule): boolean
+  removeRule(id: string): boolean
+  setRuleEnabled(id: string, enabled: boolean): boolean
+  /** Patch any field except `id`. Returns false if the id is unknown. */
+  updateRule(id: string, patch: Partial<Omit<AlertRule, 'id'>>): boolean
 
-    /**
-     * Evaluate every enabled rule against the snapshot. Returns the events
-     * fired on this call (also appended to the `events` signal).
-     */
-    evaluate(snapshot: MarketSnapshot, now: number): ReadonlyArray<AlertEvent>
+  /**
+   * Evaluate every enabled rule against the snapshot. Returns the events
+   * fired on this call (also appended to the `events` signal).
+   */
+  evaluate(snapshot: MarketSnapshot, now: number): ReadonlyArray<AlertEvent>
 
-    clearEvents(): void
-    /** Per-fire listener; returns an unsubscribe. */
-    onEvent(listener: (event: AlertEvent) => void): () => void
+  clearEvents(): void
+  /** Per-fire listener; returns an unsubscribe. */
+  onEvent(listener: (event: AlertEvent) => void): () => void
 
-    dispose(): void
+  dispose(): void
 }
 
 export interface AlertControllerOptions {
-    /** Maximum size of the `events` ring buffer. Default 100. */
-    maxEvents?: number
+  /** Maximum size of the `events` ring buffer. Default 100. */
+  maxEvents?: number
 }

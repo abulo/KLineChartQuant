@@ -22,14 +22,11 @@ export interface ChartSnapshotInput {
   alerts?: ReadonlyArray<ChartAlertsEntry>
 }
 
-export function serialize(
-  snapshot: ChartSnapshotInput,
-): SerializedChartState {
+export function serialize(snapshot: ChartSnapshotInput): SerializedChartState {
   const controllers: SerializedChartState['controllers'] = {}
   if (snapshot.viewport !== undefined) controllers.viewport = snapshot.viewport
   if (snapshot.theme !== undefined) controllers.theme = snapshot.theme
-  if (snapshot.indicators !== undefined)
-    controllers.indicators = snapshot.indicators
+  if (snapshot.indicators !== undefined) controllers.indicators = snapshot.indicators
   if (snapshot.alerts !== undefined) controllers.alerts = snapshot.alerts
   const out: SerializedChartState = {
     schemaVersion: SCHEMA_VERSION,
@@ -44,13 +41,15 @@ function validateViewport(vp: unknown): boolean {
   if (vp === undefined) return true
   if (typeof vp !== 'object' || vp === null) return false
   const o = vp as Record<string, unknown>
-  return typeof o.zoomLevel === 'number' && typeof o.visibleFrom === 'number' && typeof o.visibleTo === 'number'
+  return (
+    typeof o.zoomLevel === 'number' &&
+    typeof o.visibleFrom === 'number' &&
+    typeof o.visibleTo === 'number'
+  )
 }
 
 // fallow-ignore-next-line complexity
-function validateControllers(
-  c: unknown,
-): c is SerializedChartState['controllers'] {
+function validateControllers(c: unknown): c is SerializedChartState['controllers'] {
   if (typeof c !== 'object' || c === null) return false
   const ctrl = c as Record<string, unknown>
 
@@ -73,10 +72,7 @@ export function deserialize(json: string): SerializedChartState {
     )
   }
   if (typeof parsed !== 'object' || parsed === null) {
-    throw new ChartSerializationError(
-      'NOT_OBJECT',
-      'SerializedChartState root must be an object.',
-    )
+    throw new ChartSerializationError('NOT_OBJECT', 'SerializedChartState root must be an object.')
   }
   const root = parsed as Partial<SerializedChartState>
   if (root.schemaVersion !== SCHEMA_VERSION) {
@@ -85,20 +81,14 @@ export function deserialize(json: string): SerializedChartState {
       `Expected schemaVersion ${SCHEMA_VERSION}, got ${String(root.schemaVersion)}.`,
     )
   }
-  if (
-    typeof root.snapshotTakenAt !== 'string' ||
-    Number.isNaN(Date.parse(root.snapshotTakenAt))
-  ) {
+  if (typeof root.snapshotTakenAt !== 'string' || Number.isNaN(Date.parse(root.snapshotTakenAt))) {
     throw new ChartSerializationError(
       'INVALID_TIMESTAMP',
       'snapshotTakenAt must be an ISO 8601 string.',
     )
   }
   if (typeof root.controllers !== 'object' || root.controllers === null) {
-    throw new ChartSerializationError(
-      'MISSING_CONTROLLERS',
-      'controllers object is required.',
-    )
+    throw new ChartSerializationError('MISSING_CONTROLLERS', 'controllers object is required.')
   }
   if (!validateControllers(root.controllers)) {
     throw new ChartSerializationError(

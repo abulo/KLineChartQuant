@@ -16,25 +16,28 @@ import { getPhysicalKLineConfig } from '../utils/klineConfig'
  * @param dpr        设备像素比
  */
 export function getVisibleRange(
-    scrollLeft: number,
-    viewWidth: number,
-    kWidth: number,
-    kGap: number,
-    totalDataCount: number,
-    dpr: number = 1
+  scrollLeft: number,
+  viewWidth: number,
+  kWidth: number,
+  kGap: number,
+  totalDataCount: number,
+  dpr: number = 1,
 ): { start: number; end: number } {
-    // 使用统一的物理像素配置，确保与 calcKLinePositions 完全一致
-    const { unitPx, startXPx } = getPhysicalKLineConfig(kWidth, kGap, dpr)
+  // 使用统一的物理像素配置，确保与 calcKLinePositions 完全一致
+  const { unitPx, startXPx } = getPhysicalKLineConfig(kWidth, kGap, dpr)
 
-    // scrollLeft 和 viewWidth 转换到物理像素空间
-    const scrollLeftPx = scrollLeft * dpr
-    const viewWidthPx = viewWidth * dpr
+  // scrollLeft 和 viewWidth 转换到物理像素空间
+  const scrollLeftPx = scrollLeft * dpr
+  const viewWidthPx = viewWidth * dpr
 
-    // 计算可见范围（物理像素空间整数运算）
-    const start = Math.floor((scrollLeftPx - startXPx) / unitPx) - 1
-    const end = Math.min(totalDataCount, Math.ceil((scrollLeftPx + viewWidthPx - startXPx) / unitPx) + 1)
+  // 计算可见范围（物理像素空间整数运算）
+  const start = Math.floor((scrollLeftPx - startXPx) / unitPx) - 1
+  const end = Math.min(
+    totalDataCount,
+    Math.ceil((scrollLeftPx + viewWidthPx - startXPx) / unitPx) + 1,
+  )
 
-    return { start, end }
+  return { start, end }
 }
 
 /**
@@ -48,20 +51,24 @@ export function getVisibleRange(
  * - `endIndex` 为开区间（不包含）
  * - 若区间内无有效数据，会返回兜底范围 `{ maxPrice: 100, minPrice: 0 }`
  */
-export function getVisiblePriceRange(data: KLineData[], startIndex: number, endIndex: number): PriceRange {
-    let maxPrice = -Infinity
-    let minPrice = Infinity
+export function getVisiblePriceRange(
+  data: KLineData[],
+  startIndex: number,
+  endIndex: number,
+): PriceRange {
+  let maxPrice = -Infinity
+  let minPrice = Infinity
 
-    for (let i = startIndex; i < endIndex && i < data.length; i++) {
-        const e = data[i]
-        if (!e) continue
-        if (e.high > maxPrice) maxPrice = e.high
-        if (e.low < minPrice) minPrice = e.low
-    }
+  for (let i = startIndex; i < endIndex && i < data.length; i++) {
+    const e = data[i]
+    if (!e) continue
+    if (e.high > maxPrice) maxPrice = e.high
+    if (e.low < minPrice) minPrice = e.low
+  }
 
-    if (!Number.isFinite(maxPrice) || !Number.isFinite(minPrice)) {
-        return { maxPrice: 100, minPrice: 0 }
-    }
+  if (!Number.isFinite(maxPrice) || !Number.isFinite(minPrice)) {
+    return { maxPrice: 100, minPrice: 0 }
+  }
 
-    return { maxPrice, minPrice }
+  return { maxPrice, minPrice }
 }

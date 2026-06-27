@@ -15,10 +15,10 @@ import type { Signal } from '@363045841yyt/klinechart-core/reactivity'
  * the caller is then responsible for unsubscribing.
  */
 export function coreSignalToVueRef<T>(signal: Signal<T>): Ref<T> {
-    const ref = shallowRef(signal.peek()) as Ref<T>
-    const unsub = signal.subscribe(() => {
-        ref.value = signal.peek()
-    })
-    onScopeDispose(unsub)
-    return ref
+  const ref = shallowRef(signal.peek()) as Ref<T>
+  const unsub = signal.subscribe(() => {
+    ref.value = signal.peek()
+  })
+  onScopeDispose(unsub)
+  return ref
 }

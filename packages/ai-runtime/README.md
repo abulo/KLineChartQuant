@@ -39,20 +39,20 @@ await start()
 
 ```vue
 <script setup lang="ts">
-import KLineChart from '@363045841yyt/klinechart'
-import { executeTool } from '@363045841yyt/klinechart-ai-runtime'
+  import KLineChart from '@363045841yyt/klinechart'
+  import { executeTool } from '@363045841yyt/klinechart-ai-runtime'
 
-const chartRef = ref<InstanceType<typeof KLineChart> | null>(null)
+  const chartRef = ref<InstanceType<typeof KLineChart> | null>(null)
 
-const mcpConfig = {
-  wsUrl: 'ws://localhost:8080',
-  autoReconnect: true,
-  onToolCall: (call) => {
-    const ctrl = chartRef.value?.getController?.()
-    if (!ctrl) return { success: false, error: 'Controller not ready' }
-    return executeTool(ctrl, call)
-  },
-}
+  const mcpConfig = {
+    wsUrl: 'ws://localhost:8080',
+    autoReconnect: true,
+    onToolCall: (call) => {
+      const ctrl = chartRef.value?.getController?.()
+      if (!ctrl) return { success: false, error: 'Controller not ready' }
+      return executeTool(ctrl, call)
+    },
+  }
 </script>
 
 <template>
@@ -73,23 +73,23 @@ Then call tools like `chart.zoomToLevel` with `{ "level": 5 }`.
 
 ### Main entry (`@363045841yyt/klinechart-ai-runtime`)
 
-| Export | Description |
-|--------|-------------|
-| `executeTool` | Dispatch a tool call to a chart controller |
-| `ALL_TOOLS` | Array of all supported tool schemas |
-| `TOOL_GROUPS` | Grouped tool definitions |
-| `findTool(name)` | Look up a tool schema by name |
-| `describeVolumeProfileState` | Generate VP state summary |
-| `describeAnchoredVwap` | Generate anchored VWAP summary |
-| `describeFootprintLatestBar` | Generate footprint summary |
-| `describeAlerts` | Generate alerts summary |
-| `serialize` / `deserialize` | Chart state serialization |
-| `SessionRegistry` | WebSocket session manager |
+| Export                       | Description                                |
+| ---------------------------- | ------------------------------------------ |
+| `executeTool`                | Dispatch a tool call to a chart controller |
+| `ALL_TOOLS`                  | Array of all supported tool schemas        |
+| `TOOL_GROUPS`                | Grouped tool definitions                   |
+| `findTool(name)`             | Look up a tool schema by name              |
+| `describeVolumeProfileState` | Generate VP state summary                  |
+| `describeAnchoredVwap`       | Generate anchored VWAP summary             |
+| `describeFootprintLatestBar` | Generate footprint summary                 |
+| `describeAlerts`             | Generate alerts summary                    |
+| `serialize` / `deserialize`  | Chart state serialization                  |
+| `SessionRegistry`            | WebSocket session manager                  |
 
 ### MCP Server (`@363045841yyt/klinechart-ai-runtime/mcp-server`)
 
-| Export | Description |
-|--------|-------------|
+| Export                     | Description                            |
+| -------------------------- | -------------------------------------- |
 | `createMcpServer(options)` | Create MCP + WebSocket server instance |
 
 ### Create with MCP (`@363045841yyt/klinechart-ai-runtime/create-with-mcp`)
@@ -117,13 +117,13 @@ Legacy helper — prefer `executeTool` + `mcp` prop pattern above.
 
 ## Available Tools
 
-| Tool | Description |
-|------|-------------|
-| `chart.zoomToLevel` | Zoom to a specific level |
-| `chart.setTheme` | Switch between light/dark theme |
-| `indicators.add` | Add an indicator by definition ID |
-| `indicators.remove` | Remove an indicator by instance ID |
-| `indicators.updateParams` | Update indicator parameters |
+| Tool                      | Description                        |
+| ------------------------- | ---------------------------------- |
+| `chart.zoomToLevel`       | Zoom to a specific level           |
+| `chart.setTheme`          | Switch between light/dark theme    |
+| `indicators.add`          | Add an indicator by definition ID  |
+| `indicators.remove`       | Remove an indicator by instance ID |
+| `indicators.updateParams` | Update indicator parameters        |
 
 ## License
 

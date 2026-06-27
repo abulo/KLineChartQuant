@@ -41,7 +41,9 @@ export function createSingleLineTitleInfo(config: SingleLineTitleInfoConfig): Ge
     const resolvedColor = color ?? (getColor ? getColor(resolveThemeColors('light')) : 'inherit')
     const resolvedParams = getParams
       ? getParams(state.params as Record<string, unknown>)
-      : defaultPeriod !== undefined ? [(_params.period as number) ?? defaultPeriod] : []
+      : defaultPeriod !== undefined
+        ? [(_params.period as number) ?? defaultPeriod]
+        : []
 
     return {
       name,

@@ -75,7 +75,10 @@ export class TimeShareBuffer implements DataBufferLike {
     this._loadingSignal.set(true)
 
     const timeShareService: {
-      readonly fetch: (s: SymbolSpec, date?: number) => EffectType<ReadonlyArray<TimeShareData>, unknown>
+      readonly fetch: (
+        s: SymbolSpec,
+        date?: number,
+      ) => EffectType<ReadonlyArray<TimeShareData>, unknown>
     } = {
       fetch: (s, date) =>
         Effect.tryPromise(() => {

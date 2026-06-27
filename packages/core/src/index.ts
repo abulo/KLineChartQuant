@@ -8,16 +8,12 @@ export { generateUUID } from './utils/uuid'
 
 // ── Batch 1: Error taxonomy ───────────────────────────────────────────────
 export {
-    KLineChartError,
-    isKLineChartError,
-    type KLineChartErrorCode,
-    type KLineChartErrorOptions,
+  KLineChartError,
+  isKLineChartError,
+  type KLineChartErrorCode,
+  type KLineChartErrorOptions,
 } from './errors'
-export {
-    getRecoveryHint,
-    formatKLineChartError,
-    type FormatErrorOptions,
-} from './errors-help'
+export { getRecoveryHint, formatKLineChartError, type FormatErrorOptions } from './errors-help'
 
 // ── Batch 2: Framework-agnostic foundation ────────────────────────────────
 export * from './input'

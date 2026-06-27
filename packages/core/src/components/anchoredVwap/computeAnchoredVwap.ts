@@ -76,99 +76,99 @@ import { KLineChartError } from '../../errors'
  *   Closes API audit BLOCKER-002 (export * leakage taxonomy).
  */
 export function computeAnchoredVwap(
-    bars: ReadonlyArray<AVWAPBar>,
-    anchorIndex: number,
-    includeBands: boolean,
+  bars: ReadonlyArray<AVWAPBar>,
+  anchorIndex: number,
+  includeBands: boolean,
 ): ReadonlyArray<AVWAPPoint> {
-    if (bars.length === 0) return []
+  if (bars.length === 0) return []
 
-    if (anchorIndex < 0 || anchorIndex >= bars.length) {
-        throw new KLineChartError(
-            'AVWAP_ANCHOR_OUT_OF_RANGE',
-            `anchoredVwap: anchorIndex ${anchorIndex} is out of range ` +
-                `for bars of length ${bars.length}`,
-        )
+  if (anchorIndex < 0 || anchorIndex >= bars.length) {
+    throw new KLineChartError(
+      'AVWAP_ANCHOR_OUT_OF_RANGE',
+      `anchoredVwap: anchorIndex ${anchorIndex} is out of range ` +
+        `for bars of length ${bars.length}`,
+    )
+  }
+
+  const out: AVWAPPoint[] = []
+
+  // Running sums, advanced bar-by-bar.
+  let sumVwp = 0
+  let sumVol = 0
+  let sumSqDev = 0
+
+  // `prevVwap` carries forward when a bar has zero volume but the
+  // cumulative volume so far is > 0. Initial value `NaN` flags the
+  // "anchor bar volume 0" case (see the docstring).
+  let prevVwap = Number.NaN
+
+  for (let i = anchorIndex; i < bars.length; i++) {
+    const bar = bars[i]
+    // Guard against sparse arrays / undefined entries. `Float64Array`
+    // would never have this hole, but plain arrays might.
+    if (bar === undefined) continue
+
+    const tp = (bar.high + bar.low + bar.close) / 3
+    const v = bar.volume
+
+    // First update cumulative volume + vwp. A v === 0 bar is a no-op
+    // here and the running totals stay where they were.
+    if (v > 0) {
+      sumVwp += tp * v
+      sumVol += v
     }
 
-    const out: AVWAPPoint[] = []
-
-    // Running sums, advanced bar-by-bar.
-    let sumVwp = 0
-    let sumVol = 0
-    let sumSqDev = 0
-
-    // `prevVwap` carries forward when a bar has zero volume but the
-    // cumulative volume so far is > 0. Initial value `NaN` flags the
-    // "anchor bar volume 0" case (see the docstring).
-    let prevVwap = Number.NaN
-
-    for (let i = anchorIndex; i < bars.length; i++) {
-        const bar = bars[i]
-        // Guard against sparse arrays / undefined entries. `Float64Array`
-        // would never have this hole, but plain arrays might.
-        if (bar === undefined) continue
-
-        const tp = (bar.high + bar.low + bar.close) / 3
-        const v = bar.volume
-
-        // First update cumulative volume + vwp. A v === 0 bar is a no-op
-        // here and the running totals stay where they were.
-        if (v > 0) {
-            sumVwp += tp * v
-            sumVol += v
-        }
-
-        let vwap: number
-        if (sumVol > 0) {
-            vwap = sumVwp / sumVol
-            prevVwap = vwap
-        } else {
-            // No volume ever ingested — emit NaN. This only happens when
-            // the anchor bar and every bar since it has v === 0.
-            vwap = Number.NaN
-        }
-
-        // Bands: the *prevailing* AVWAP at bar j is the mean used to weigh
-        // sqDev. That's exactly the `vwap` we just computed. Important:
-        // if v === 0 the squared-deviation contribution is also 0, so we
-        // can skip the term entirely (which also avoids touching `tp`
-        // when `vwap` is NaN).
-        if (includeBands && v > 0 && Number.isFinite(vwap)) {
-            const diff = tp - vwap
-            sumSqDev += diff * diff * v
-        }
-
-        let upper1 = vwap
-        let lower1 = vwap
-        let upper2 = vwap
-        let lower2 = vwap
-        if (includeBands && sumVol > 0 && Number.isFinite(vwap)) {
-            const variance = sumSqDev / sumVol
-            // Numerical safety: variance can be a tiny negative on
-            // catastrophic cancellation. Treat as 0.
-            const stdDev = Math.sqrt(variance > 0 ? variance : 0)
-            upper1 = vwap + stdDev
-            lower1 = vwap - stdDev
-            upper2 = vwap + 2 * stdDev
-            lower2 = vwap - 2 * stdDev
-        }
-
-        out.push({
-            barIndex: i,
-            vwap,
-            upper1,
-            lower1,
-            upper2,
-            lower2,
-            cumulativeVolume: sumVol,
-        })
-
-        // `prevVwap` is kept up to date for documentation/clarity even
-        // though we don't currently read it (the `sumVol > 0` branch above
-        // assigns directly). Left in place to make the carry-forward
-        // semantics explicit to future readers.
-        void prevVwap
+    let vwap: number
+    if (sumVol > 0) {
+      vwap = sumVwp / sumVol
+      prevVwap = vwap
+    } else {
+      // No volume ever ingested — emit NaN. This only happens when
+      // the anchor bar and every bar since it has v === 0.
+      vwap = Number.NaN
     }
 
-    return out
+    // Bands: the *prevailing* AVWAP at bar j is the mean used to weigh
+    // sqDev. That's exactly the `vwap` we just computed. Important:
+    // if v === 0 the squared-deviation contribution is also 0, so we
+    // can skip the term entirely (which also avoids touching `tp`
+    // when `vwap` is NaN).
+    if (includeBands && v > 0 && Number.isFinite(vwap)) {
+      const diff = tp - vwap
+      sumSqDev += diff * diff * v
+    }
+
+    let upper1 = vwap
+    let lower1 = vwap
+    let upper2 = vwap
+    let lower2 = vwap
+    if (includeBands && sumVol > 0 && Number.isFinite(vwap)) {
+      const variance = sumSqDev / sumVol
+      // Numerical safety: variance can be a tiny negative on
+      // catastrophic cancellation. Treat as 0.
+      const stdDev = Math.sqrt(variance > 0 ? variance : 0)
+      upper1 = vwap + stdDev
+      lower1 = vwap - stdDev
+      upper2 = vwap + 2 * stdDev
+      lower2 = vwap - 2 * stdDev
+    }
+
+    out.push({
+      barIndex: i,
+      vwap,
+      upper1,
+      lower1,
+      upper2,
+      lower2,
+      cumulativeVolume: sumVol,
+    })
+
+    // `prevVwap` is kept up to date for documentation/clarity even
+    // though we don't currently read it (the `sumVol > 0` branch above
+    // assigns directly). Left in place to make the carry-forward
+    // semantics explicit to future readers.
+    void prevVwap
+  }
+
+  return out
 }

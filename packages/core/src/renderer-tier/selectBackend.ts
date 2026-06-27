@@ -27,10 +27,10 @@
 
 import { KLineChartError } from '../errors'
 import {
-    RENDERER_TIER_RANK,
-    type DetectRendererTierOptions,
-    type RendererTier,
-    type RendererTierResult,
+  RENDERER_TIER_RANK,
+  type DetectRendererTierOptions,
+  type RendererTier,
+  type RendererTierResult,
 } from './types'
 import { detectRendererTier, isTierAtLeast } from './detectRendererTier'
 
@@ -53,7 +53,7 @@ export type BackendFactory<T = unknown> = () => T
  * absence of any rendering capability; there is nothing to register.
  */
 export type BackendRegistry<T = unknown> = Partial<
-    Record<Exclude<RendererTier, 'none'>, BackendFactory<T> | null>
+  Record<Exclude<RendererTier, 'none'>, BackendFactory<T> | null>
 >
 
 /**
@@ -64,49 +64,45 @@ export type BackendRegistry<T = unknown> = Partial<
  * `tier: 'none'` and `factory: null`.
  */
 export interface BackendSelection<T = unknown> {
-    readonly tier: RendererTier
-    readonly factory: BackendFactory<T> | null
-    readonly fallbackChain: ReadonlyArray<RendererTier>
-    readonly reason: string
-    /**
-     * The original tier-detection result. Useful for telemetry — when
-     * `tier < detection.tier` the consumer knows the host could have
-     * done better but the registry was the binding constraint.
-     */
-    readonly detection: RendererTierResult
+  readonly tier: RendererTier
+  readonly factory: BackendFactory<T> | null
+  readonly fallbackChain: ReadonlyArray<RendererTier>
+  readonly reason: string
+  /**
+   * The original tier-detection result. Useful for telemetry — when
+   * `tier < detection.tier` the consumer knows the host could have
+   * done better but the registry was the binding constraint.
+   */
+  readonly detection: RendererTierResult
 }
 
 export interface SelectBackendOptions<T = unknown> {
-    readonly registry: BackendRegistry<T>
-    /**
-     * Tier-detection probes pass-through for tests. Same shape as
-     * {@link DetectRendererTierOptions}.
-     */
-    readonly detect?: DetectRendererTierOptions
-    /**
-     * Optional pre-computed detection result. When provided, the selector
-     * skips `detectRendererTier()` and uses this directly. Useful when
-     * the caller cached the detection at app startup.
-     */
-    readonly detection?: RendererTierResult
-    /**
-     * Optional floor — refuse to select a backend below this tier even
-     * if a lower-tier factory is registered. Used by features that need
-     * GPU compute (`minimum: 'webgl2'`). When the floor can't be met,
-     * the result has `tier: 'none'` and `factory: null`.
-     */
-    readonly minimum?: RendererTier
+  readonly registry: BackendRegistry<T>
+  /**
+   * Tier-detection probes pass-through for tests. Same shape as
+   * {@link DetectRendererTierOptions}.
+   */
+  readonly detect?: DetectRendererTierOptions
+  /**
+   * Optional pre-computed detection result. When provided, the selector
+   * skips `detectRendererTier()` and uses this directly. Useful when
+   * the caller cached the detection at app startup.
+   */
+  readonly detection?: RendererTierResult
+  /**
+   * Optional floor — refuse to select a backend below this tier even
+   * if a lower-tier factory is registered. Used by features that need
+   * GPU compute (`minimum: 'webgl2'`). When the floor can't be met,
+   * the result has `tier: 'none'` and `factory: null`.
+   */
+  readonly minimum?: RendererTier
 }
 
 // ---------------------------------------------------------------------------
 // Selection
 // ---------------------------------------------------------------------------
 
-const SEARCH_ORDER: ReadonlyArray<Exclude<RendererTier, 'none'>> = [
-    'webgpu',
-    'webgl2',
-    'canvas2d',
-]
+const SEARCH_ORDER: ReadonlyArray<Exclude<RendererTier, 'none'>> = ['webgpu', 'webgl2', 'canvas2d']
 
 /**
  * Pick the highest registered backend at or below the detected tier
@@ -124,63 +120,61 @@ const SEARCH_ORDER: ReadonlyArray<Exclude<RendererTier, 'none'>> = [
  *     log('renderer downgrade', sel.detection.tier, '→', sel.tier, sel.reason)
  *   }
  */
-export function selectBackend<T = unknown>(
-    opts: SelectBackendOptions<T>,
-): BackendSelection<T> {
-    const detection = opts.detection ?? detectRendererTier(opts.detect)
-    const detectedTier = detection.tier
-    const minimum = opts.minimum ?? 'none'
+export function selectBackend<T = unknown>(opts: SelectBackendOptions<T>): BackendSelection<T> {
+  const detection = opts.detection ?? detectRendererTier(opts.detect)
+  const detectedTier = detection.tier
+  const minimum = opts.minimum ?? 'none'
 
-    // Validate the minimum is a known tier; reject 'none' as a minimum
-    // because a 'none' floor is meaningless — nothing can be below it.
-    if (!(minimum in RENDERER_TIER_RANK)) {
-        throw new KLineChartError(
-            'INVALID_PARAM',
-            `selectBackend: minimum must be a RendererTier, got ${JSON.stringify(minimum)}`,
-        )
+  // Validate the minimum is a known tier; reject 'none' as a minimum
+  // because a 'none' floor is meaningless — nothing can be below it.
+  if (!(minimum in RENDERER_TIER_RANK)) {
+    throw new KLineChartError(
+      'INVALID_PARAM',
+      `selectBackend: minimum must be a RendererTier, got ${JSON.stringify(minimum)}`,
+    )
+  }
+
+  const chain: RendererTier[] = []
+  // Search from the detected tier downwards through SEARCH_ORDER.
+  for (const candidate of SEARCH_ORDER) {
+    // Skip tiers above the detected ceiling.
+    if (RENDERER_TIER_RANK[candidate] > RENDERER_TIER_RANK[detectedTier]) {
+      continue
     }
-
-    const chain: RendererTier[] = []
-    // Search from the detected tier downwards through SEARCH_ORDER.
-    for (const candidate of SEARCH_ORDER) {
-        // Skip tiers above the detected ceiling.
-        if (RENDERER_TIER_RANK[candidate] > RENDERER_TIER_RANK[detectedTier]) {
-            continue
-        }
-        chain.push(candidate)
-        // Skip below the configured minimum.
-        if (!isTierAtLeast(candidate, minimum)) {
-            // No further candidate will satisfy the minimum.
-            break
-        }
-        const factory = opts.registry[candidate] ?? null
-        if (factory !== null) {
-            return {
-                tier: candidate,
-                factory,
-                fallbackChain: chain,
-                reason:
-                    candidate === detectedTier
-                        ? `direct match: detected ${candidate} and ${candidate} backend is registered`
-                        : `downgrade: detected ${detectedTier}, but only ${candidate} backend is registered`,
-                detection,
-            }
-        }
+    chain.push(candidate)
+    // Skip below the configured minimum.
+    if (!isTierAtLeast(candidate, minimum)) {
+      // No further candidate will satisfy the minimum.
+      break
     }
-
-    return {
-        tier: 'none',
-        factory: null,
+    const factory = opts.registry[candidate] ?? null
+    if (factory !== null) {
+      return {
+        tier: candidate,
+        factory,
         fallbackChain: chain,
         reason:
-            detectedTier === 'none'
-                ? `host has no renderable tier`
-                : `no registered backend at or below detected ${detectedTier}` +
-                  (opts.minimum !== undefined && opts.minimum !== 'none'
-                      ? ` (minimum=${opts.minimum})`
-                      : ''),
+          candidate === detectedTier
+            ? `direct match: detected ${candidate} and ${candidate} backend is registered`
+            : `downgrade: detected ${detectedTier}, but only ${candidate} backend is registered`,
         detection,
+      }
     }
+  }
+
+  return {
+    tier: 'none',
+    factory: null,
+    fallbackChain: chain,
+    reason:
+      detectedTier === 'none'
+        ? `host has no renderable tier`
+        : `no registered backend at or below detected ${detectedTier}` +
+          (opts.minimum !== undefined && opts.minimum !== 'none'
+            ? ` (minimum=${opts.minimum})`
+            : ''),
+    detection,
+  }
 }
 
 /**
@@ -188,14 +182,11 @@ export function selectBackend<T = unknown>(
  * could be selected. Use when a renderable backend is mandatory.
  */
 export function selectBackendOrThrow<T = unknown>(
-    opts: SelectBackendOptions<T>,
+  opts: SelectBackendOptions<T>,
 ): BackendSelection<T> & { factory: BackendFactory<T> } {
-    const sel = selectBackend(opts)
-    if (sel.factory === null) {
-        throw new KLineChartError(
-            'INVALID_STATE',
-            `selectBackendOrThrow: ${sel.reason}`,
-        )
-    }
-    return sel as BackendSelection<T> & { factory: BackendFactory<T> }
+  const sel = selectBackend(opts)
+  if (sel.factory === null) {
+    throw new KLineChartError('INVALID_STATE', `selectBackendOrThrow: ${sel.reason}`)
+  }
+  return sel as BackendSelection<T> & { factory: BackendFactory<T> }
 }

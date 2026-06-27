@@ -6,9 +6,7 @@ function stubSignal<T>(val: T): Signal<T> {
   return { peek: () => val, subscribe: () => () => {} } as unknown as Signal<T>
 }
 
-function createMockChart(
-  overrides?: Partial<ChartController>,
-): ChartController {
+function createMockChart(overrides?: Partial<ChartController>): ChartController {
   return {
     catalog: [
       { id: 'MA', label: 'MA', role: 'main' as const, params: [] },
@@ -288,7 +286,15 @@ describe('executeTool', () => {
         input: { symbol: 'AAPL' },
       })
       expect(chart.setSymbols).toHaveBeenCalledWith([
-        { symbol: 'AAPL', exchange: undefined, period: undefined, adjust: undefined, source: undefined, startDate: undefined, endDate: undefined },
+        {
+          symbol: 'AAPL',
+          exchange: undefined,
+          period: undefined,
+          adjust: undefined,
+          source: undefined,
+          startDate: undefined,
+          endDate: undefined,
+        },
       ])
       expect(result.success).toBe(true)
     })
@@ -300,7 +306,15 @@ describe('executeTool', () => {
         input: { symbol: '600519', exchange: 'SSE', period: 'daily', adjust: 'qfq' },
       })
       expect(chart.setSymbols).toHaveBeenCalledWith([
-        { symbol: '600519', exchange: 'SSE', period: 'daily', adjust: 'qfq', source: undefined, startDate: undefined, endDate: undefined },
+        {
+          symbol: '600519',
+          exchange: 'SSE',
+          period: 'daily',
+          adjust: 'qfq',
+          source: undefined,
+          startDate: undefined,
+          endDate: undefined,
+        },
       ])
       expect(result.success).toBe(true)
     })
@@ -309,9 +323,7 @@ describe('executeTool', () => {
   describe('data.appendData', () => {
     it('calls chart.appendData with bar array', () => {
       const chart = createMockChart()
-      const bars = [
-        { timestamp: 1000, open: 100, high: 101, low: 99, close: 100.5, volume: 10000 },
-      ]
+      const bars = [{ timestamp: 1000, open: 100, high: 101, low: 99, close: 100.5, volume: 10000 }]
       const result = executeTool(chart, {
         name: 'data.appendData',
         input: { bars },
@@ -324,9 +336,7 @@ describe('executeTool', () => {
   describe('data.updateData', () => {
     it('calls chart.updateData with bar array', () => {
       const chart = createMockChart()
-      const bars = [
-        { open: 101, high: 102, low: 100, close: 101.5, volume: 12000 },
-      ]
+      const bars = [{ open: 101, high: 102, low: 100, close: 101.5, volume: 12000 }]
       const result = executeTool(chart, {
         name: 'data.updateData',
         input: { bars },
@@ -406,16 +416,16 @@ describe('executeTool', () => {
         name: 'drawing.add',
         input: { kind: 'horizontal-line', anchors: [{ barIndex: 0, price: 150 }] },
       })
-    expect(chart.getFullDrawings).toHaveBeenCalledOnce()
-    expect(chart.setDrawings).toHaveBeenCalledOnce()
-    const passed = (chart.setDrawings as any).mock.calls[0][0] as any[]
-    expect(passed.length).toBe(1)
-    expect(passed[0].kind).toBe('horizontal-line')
-    expect(passed[0].anchors).toHaveLength(1)
-    expect(passed[0].anchors[0].index).toBe(0)
-    expect(passed[0].anchors[0].price).toBe(150)
-    expect(result.success).toBe(true)
-    expect((result.data as Record<string, unknown>)?.drawingId).toBeTypeOf('string')
+      expect(chart.getFullDrawings).toHaveBeenCalledOnce()
+      expect(chart.setDrawings).toHaveBeenCalledOnce()
+      const passed = (chart.setDrawings as any).mock.calls[0][0] as any[]
+      expect(passed.length).toBe(1)
+      expect(passed[0].kind).toBe('horizontal-line')
+      expect(passed[0].anchors).toHaveLength(1)
+      expect(passed[0].anchors[0].index).toBe(0)
+      expect(passed[0].anchors[0].price).toBe(150)
+      expect(result.success).toBe(true)
+      expect((result.data as Record<string, unknown>)?.drawingId).toBeTypeOf('string')
     })
 
     it('appends to existing drawings', () => {
@@ -489,9 +499,7 @@ describe('executeTool', () => {
   describe('markers.update', () => {
     it('calls chart.updateCustomMarkers with markers array', () => {
       const chart = createMockChart()
-      const markers = [
-        { id: 'm1', date: '2024-01-15', shape: 'arrow_up', label: { text: 'High' } },
-      ]
+      const markers = [{ id: 'm1', date: '2024-01-15', shape: 'arrow_up', label: { text: 'High' } }]
       const result = executeTool(chart, {
         name: 'markers.update',
         input: { markers },

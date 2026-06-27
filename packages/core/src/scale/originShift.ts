@@ -47,18 +47,18 @@ import { KLineChartError } from '../errors'
  */
 
 export interface OriginShiftPolicy {
-    /** Current reference value. Subtract this from any price before upload. */
-    readonly ref: number
-    /** Subtract `ref` from `value`. The fp32-safe number to upload. */
-    shift(value: number): number
-    /**
-     * Maybe rebaseline. Returns `true` iff `ref` was updated.
-     *
-     * Policy: rebaseline only when
-     *   `|currentMid - ref| / currentRange > threshold`.
-     * On rebaseline, `ref` becomes `currentMid`.
-     */
-    maybeRebaseline(currentMid: number, currentRange: number): boolean
+  /** Current reference value. Subtract this from any price before upload. */
+  readonly ref: number
+  /** Subtract `ref` from `value`. The fp32-safe number to upload. */
+  shift(value: number): number
+  /**
+   * Maybe rebaseline. Returns `true` iff `ref` was updated.
+   *
+   * Policy: rebaseline only when
+   *   `|currentMid - ref| / currentRange > threshold`.
+   * On rebaseline, `ref` becomes `currentMid`.
+   */
+  maybeRebaseline(currentMid: number, currentRange: number): boolean
 }
 
 const DEFAULT_THRESHOLD = 0.01
@@ -71,41 +71,47 @@ const DEFAULT_THRESHOLD = 0.01
  *   for stable user code. Closes API audit BLOCKER-002.
  */
 export function createOriginShiftPolicy(
-    initialRef: number,
-    threshold: number = DEFAULT_THRESHOLD,
+  initialRef: number,
+  threshold: number = DEFAULT_THRESHOLD,
 ): OriginShiftPolicy {
-    if (!Number.isFinite(initialRef)) {
-        throw new KLineChartError('INVALID_PARAM', `createOriginShiftPolicy: initialRef must be finite, got ${initialRef}`)
-    }
-    if (!Number.isFinite(threshold) || threshold < 0) {
-        throw new KLineChartError('INVALID_PARAM', `createOriginShiftPolicy: threshold must be >= 0, got ${threshold}`)
-    }
+  if (!Number.isFinite(initialRef)) {
+    throw new KLineChartError(
+      'INVALID_PARAM',
+      `createOriginShiftPolicy: initialRef must be finite, got ${initialRef}`,
+    )
+  }
+  if (!Number.isFinite(threshold) || threshold < 0) {
+    throw new KLineChartError(
+      'INVALID_PARAM',
+      `createOriginShiftPolicy: threshold must be >= 0, got ${threshold}`,
+    )
+  }
 
-    let ref = initialRef
+  let ref = initialRef
 
-    const policy: OriginShiftPolicy = {
-        get ref() {
-            return ref
-        },
-        shift(value: number): number {
-            return value - ref
-        },
-        maybeRebaseline(currentMid: number, currentRange: number): boolean {
-            // Degenerate range — refuse to rebaseline. Caller handles this elsewhere.
-            if (!Number.isFinite(currentMid) || !Number.isFinite(currentRange) || currentRange <= 0) {
-                return false
-            }
+  const policy: OriginShiftPolicy = {
+    get ref() {
+      return ref
+    },
+    shift(value: number): number {
+      return value - ref
+    },
+    maybeRebaseline(currentMid: number, currentRange: number): boolean {
+      // Degenerate range — refuse to rebaseline. Caller handles this elsewhere.
+      if (!Number.isFinite(currentMid) || !Number.isFinite(currentRange) || currentRange <= 0) {
+        return false
+      }
 
-            const drift = Math.abs(currentMid - ref)
-            const normalized = drift / currentRange
+      const drift = Math.abs(currentMid - ref)
+      const normalized = drift / currentRange
 
-            if (normalized > threshold) {
-                ref = currentMid
-                return true
-            }
-            return false
-        },
-    }
+      if (normalized > threshold) {
+        ref = currentMid
+        return true
+      }
+      return false
+    },
+  }
 
-    return policy
+  return policy
 }

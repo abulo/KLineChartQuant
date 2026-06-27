@@ -49,7 +49,9 @@ describe('DataFetcher registry', () => {
 
   it('fetcherSupportsPeriod returns true for exact match', () => {
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: ['daily', 'weekly'] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
     expect(fetcherSupportsPeriod('test', 'daily')).toBe(true)
@@ -58,7 +60,9 @@ describe('DataFetcher registry', () => {
 
   it('fetcherSupportsPeriod returns false for unsupported period', () => {
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: ['weekly'] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
     expect(fetcherSupportsPeriod('test', 'daily')).toBe(false)
@@ -67,7 +71,9 @@ describe('DataFetcher registry', () => {
 
   it('fetcherSupportsPeriod accepts wildcard * for any period', () => {
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: ['*'] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
     expect(fetcherSupportsPeriod('test', 'daily')).toBe(true)
@@ -77,7 +83,9 @@ describe('DataFetcher registry', () => {
 
   it('fetcherSupportsPeriod returns false for empty capabilities', () => {
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: [] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
     expect(fetcherSupportsPeriod('test', 'daily')).toBe(false)
@@ -85,7 +93,9 @@ describe('DataFetcher registry', () => {
 
   it('fetcherSupportsPeriod returns false when capabilities not set', () => {
     @DataFetcher({ name: 'test', displayName: 'Test' })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
     expect(fetcherSupportsPeriod('test', 'daily')).toBe(false)
@@ -97,7 +107,9 @@ describe('DataFetcher registry', () => {
 
   it('clearRegisteredFetchersForTest removes all definitions', () => {
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: ['daily'] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
     expect(getRegisteredFetcher('test')).toBeDefined()
@@ -113,11 +125,15 @@ describe('routerDataFetcher capability check', () => {
   })
 
   it('passes through request when period is supported', async () => {
-    const data: KLineData[] = [{ timestamp: 1000, open: 100, high: 110, low: 90, close: 105, volume: 1000 }]
+    const data: KLineData[] = [
+      { timestamp: 1000, open: 100, high: 110, low: 90, close: 105, volume: 1000 },
+    ]
     mockFetch.mockResolvedValue(data)
 
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: ['daily'] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
     const result = await routerDataFetcher('test', defaultConfig)
@@ -126,11 +142,15 @@ describe('routerDataFetcher capability check', () => {
   })
 
   it('passes through request when capabilities are wildcard', async () => {
-    const data: KLineData[] = [{ timestamp: 1000, open: 100, high: 110, low: 90, close: 105, volume: 1000 }]
+    const data: KLineData[] = [
+      { timestamp: 1000, open: 100, high: 110, low: 90, close: 105, volume: 1000 },
+    ]
     mockFetch.mockResolvedValue(data)
 
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: ['*'] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
     const result = await routerDataFetcher('test', { ...defaultConfig, period: '5min' })
@@ -139,54 +159,69 @@ describe('routerDataFetcher capability check', () => {
 
   it('throws when period is not in capabilities', async () => {
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: ['weekly'] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
-    await expect(
-      routerDataFetcher('test', defaultConfig),
-    ).rejects.toThrow(/does not support period/)
+    await expect(routerDataFetcher('test', defaultConfig)).rejects.toThrow(
+      /does not support period/,
+    )
   })
 
   it('throws with error message listing supported capabilities', async () => {
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: ['weekly', 'monthly'] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
-    await expect(
-      routerDataFetcher('test', { ...defaultConfig, period: '5min' }),
-    ).rejects.toThrow(/weekly, monthly/)
+    await expect(routerDataFetcher('test', { ...defaultConfig, period: '5min' })).rejects.toThrow(
+      /weekly, monthly/,
+    )
   })
 
   it('throws when capabilities is empty array', async () => {
     @DataFetcher({ name: 'test', displayName: 'Test', capabilities: [] })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
-    await expect(
-      routerDataFetcher('test', defaultConfig),
-    ).rejects.toThrow(/does not support period/)
+    await expect(routerDataFetcher('test', defaultConfig)).rejects.toThrow(
+      /does not support period/,
+    )
   })
 
   it('throws when capabilities is not set', async () => {
     @DataFetcher({ name: 'test', displayName: 'Test' })
-    class TestFetcher { static fetcher = fetchFn }
+    class TestFetcher {
+      static fetcher = fetchFn
+    }
     void TestFetcher
 
-    await expect(
-      routerDataFetcher('test', defaultConfig),
-    ).rejects.toThrow(/does not support period/)
+    await expect(routerDataFetcher('test', defaultConfig)).rejects.toThrow(
+      /does not support period/,
+    )
   })
 
   it('falls back to registered baostock for unknown source', async () => {
-    const data: KLineData[] = [{ timestamp: 2000, open: 200, high: 210, low: 190, close: 205, volume: 2000 }]
+    const data: KLineData[] = [
+      { timestamp: 2000, open: 200, high: 210, low: 190, close: 205, volume: 2000 },
+    ]
     const baostockFn = vi.fn<DataFetcherFn>().mockResolvedValue(data)
 
     @DataFetcher({ name: 'baostock', displayName: 'BaoStock', capabilities: ['*'] })
-    class BaoStockStub { static fetcher = baostockFn }
+    class BaoStockStub {
+      static fetcher = baostockFn
+    }
     void BaoStockStub
 
     const result = await routerDataFetcher('nonexistent', defaultConfig)
     expect(result).toBe(data)
-    expect(baostockFn).toHaveBeenCalledWith('nonexistent', expect.objectContaining({ period: 'daily' }))
+    expect(baostockFn).toHaveBeenCalledWith(
+      'nonexistent',
+      expect.objectContaining({ period: 'daily' }),
+    )
   })
 })

@@ -1,5 +1,5 @@
 export {
-    createCrosshairSync,
-    type CrosshairSync,
-    type CrosshairPosition,
+  createCrosshairSync,
+  type CrosshairSync,
+  type CrosshairPosition,
 } from './createCrosshairSync'

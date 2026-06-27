@@ -83,9 +83,8 @@ export class ChartViewportManager {
       dpr = window.devicePixelRatio || 1
     } else {
       // 浏览器：优先使用 ResizeObserver devicePixelContentBoxSize 提供的精确 DPR
-      dpr = this.preciseDpr > 0
-        ? this.preciseDpr
-        : Math.round((window.devicePixelRatio || 1) * 64) / 64
+      dpr =
+        this.preciseDpr > 0 ? this.preciseDpr : Math.round((window.devicePixelRatio || 1) * 64) / 64
     }
     if (dpr < 1) dpr = 1
     return dpr
@@ -120,7 +119,9 @@ export class ChartViewportManager {
 
     // 初始化 scrollLeft 缓存
     this.cachedScrollLeft = target.scrollLeft
-    this.onScroll = () => { this.cachedScrollLeft = target.scrollLeft }
+    this.onScroll = () => {
+      this.cachedScrollLeft = target.scrollLeft
+    }
     target.addEventListener('scroll', this.onScroll, { passive: true })
 
     this.resizeObserver = new ResizeObserver((entries) => {
@@ -139,9 +140,9 @@ export class ChartViewportManager {
       if ((import.meta as any).env?.MODE !== 'production') {
         console.log(
           `[Chart] resize observer: ` +
-          `size ${prevWidth}x${prevHeight} -> ${this.observedSize.width}x${this.observedSize.height} ` +
-          `dpr ${prevDpr} -> ${this.preciseDpr} ` +
-          `changed: ${widthChanged || heightChanged ? 'size' : ''}${widthChanged || heightChanged && dprChanged ? '+' : ''}${dprChanged ? 'dpr' : ''}`
+            `size ${prevWidth}x${prevHeight} -> ${this.observedSize.width}x${this.observedSize.height} ` +
+            `dpr ${prevDpr} -> ${this.preciseDpr} ` +
+            `changed: ${widthChanged || heightChanged ? 'size' : ''}${widthChanged || (heightChanged && dprChanged) ? '+' : ''}${dprChanged ? 'dpr' : ''}`,
         )
       }
       if (widthChanged || heightChanged || dprChanged) {
@@ -150,7 +151,9 @@ export class ChartViewportManager {
     })
 
     try {
-      this.resizeObserver.observe(target, { box: 'device-pixel-content-box' as ResizeObserverBoxOptions })
+      this.resizeObserver.observe(target, {
+        box: 'device-pixel-content-box' as ResizeObserverBoxOptions,
+      })
     } catch {
       this.resizeObserver.observe(target)
     }
@@ -200,16 +203,23 @@ export class ChartViewportManager {
    * fallback 到 DOM clientWidth/clientHeight。
    * plotHeight 为 viewHeight 扣除底部轴高度。
    */
-  private resolveViewportDimensions(): { viewWidth: number; viewHeight: number; plotWidth: number; plotHeight: number } | null {
+  private resolveViewportDimensions(): {
+    viewWidth: number
+    viewHeight: number
+    plotWidth: number
+    plotHeight: number
+  } | null {
     const container = this.deps.getDom().container
     if (!container) return null
 
-    const viewWidth = this.observedSize.width > 0
-      ? this.observedSize.width
-      : Math.max(1, Math.round(container.clientWidth))
-    const viewHeight = this.observedSize.height > 0
-      ? this.observedSize.height
-      : Math.max(1, Math.round(container.clientHeight))
+    const viewWidth =
+      this.observedSize.width > 0
+        ? this.observedSize.width
+        : Math.max(1, Math.round(container.clientWidth))
+    const viewHeight =
+      this.observedSize.height > 0
+        ? this.observedSize.height
+        : Math.max(1, Math.round(container.clientHeight))
     const plotWidth = Math.round(viewWidth)
     const plotHeight = Math.round(viewHeight - this.deps.getBottomAxisHeight())
 
@@ -281,13 +291,14 @@ export class ChartViewportManager {
    */
   private applyViewportState(vp: Viewport): void {
     const prevViewport = this._internalViewport
-    const viewportChanged = !prevViewport
-      || prevViewport.viewWidth !== vp.viewWidth
-      || prevViewport.viewHeight !== vp.viewHeight
-      || prevViewport.plotWidth !== vp.plotWidth
-      || prevViewport.plotHeight !== vp.plotHeight
-      || prevViewport.scrollLeft !== vp.scrollLeft
-      || prevViewport.dpr !== vp.dpr
+    const viewportChanged =
+      !prevViewport ||
+      prevViewport.viewWidth !== vp.viewWidth ||
+      prevViewport.viewHeight !== vp.viewHeight ||
+      prevViewport.plotWidth !== vp.plotWidth ||
+      prevViewport.plotHeight !== vp.plotHeight ||
+      prevViewport.scrollLeft !== vp.scrollLeft ||
+      prevViewport.dpr !== vp.dpr
 
     this._internalViewport = vp
     if (viewportChanged) {

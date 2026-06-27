@@ -59,13 +59,19 @@ export class ChartZoomController {
 
   handleWheel(deltaY: number, viewportX: number): void {
     const delta = deltaY > 0 ? -1 : 1
-    const targetLevel = Math.max(1, Math.min(this.deps.zoomLevelCount, this._currentZoomLevel + delta))
+    const targetLevel = Math.max(
+      1,
+      Math.min(this.deps.zoomLevelCount, this._currentZoomLevel + delta),
+    )
     if (targetLevel === this._currentZoomLevel) return
     this.applyZoom(targetLevel, viewportX)
   }
 
   handlePinch(delta: number, centerClientX: number): void {
-    const targetLevel = Math.max(1, Math.min(this.deps.zoomLevelCount, this._currentZoomLevel + delta))
+    const targetLevel = Math.max(
+      1,
+      Math.min(this.deps.zoomLevelCount, this._currentZoomLevel + delta),
+    )
     if (targetLevel === this._currentZoomLevel) return
     this.applyZoom(targetLevel, centerClientX)
   }
@@ -98,7 +104,8 @@ export class ChartZoomController {
     const contentWidth = this.deps.getContentWidth()
     const clientWidth = this.deps.getClientWidth()
     const maxScroll = Math.max(0, contentWidth - clientWidth)
-    const clampedScrollLeft = Math.round(Math.max(0, Math.min(domScrollLeft, maxScroll)) * dpr) / dpr
+    const clampedScrollLeft =
+      Math.round(Math.max(0, Math.min(domScrollLeft, maxScroll)) * dpr) / dpr
     this._currentZoomLevel = result.targetLevel
     this.deps.setScrollLeft(clampedScrollLeft)
     this.deps.onZoomCommitted({

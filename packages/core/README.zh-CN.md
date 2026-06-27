@@ -26,7 +26,7 @@ const controller = createChartController({
   container: document.getElementById('chart'),
   data: [],
   initialZoomLevel: 3,
-  theme: 'light'
+  theme: 'light',
 })
 
 // 加载数据
@@ -43,24 +43,29 @@ controller.dispose()
 ## 导出内容
 
 ### 控制器
+
 - `createChartController` —— 创建图表实例的工厂函数
 - `ChartController` —— 主控制器接口
 
 ### 响应式系统
+
 - `Signal<T>` —— 用于状态管理的响应式原语
 - `effect`、`peek` —— 响应式工具函数
 
 ### 引擎
+
 - `ChartController` —— 公开图表接口（通过 `@363045841yyt/klinechart-core/controllers` 导入）
 - `createChartController` —— 创建控制器实例的工厂函数
 - 渲染器（内部使用 —— 请通过 controllers 门面访问）
 
 ### 插件系统
+
 - `PluginHost` —— 插件注册与生命周期管理
 - `EventBus` —— 跨组件通信
 - `StateStore` —— 全局状态管理
 
 ### 类型
+
 - `KLineData` —— K 线数据点
 - `ChartViewport` —— 视口状态
 - `InteractionSnapshot` —— 交互状态
@@ -165,17 +170,17 @@ const semantic = new SemanticChartController(chartInstance)
 
 // 应用自然语言配置
 semantic.applyConfig({
-  "stockSymbol": "AAPL",
-  "dateRange": { "start": "2024-01-01", "end": "2024-06-01" },
-  "indicators": ["MA20", "MACD", "RSI"],
-  "chart": {
-    "chartType": "candlestick",
-    "theme": "dark",
-    "gridLines": { "horizontal": true, "vertical": false }
+  stockSymbol: 'AAPL',
+  dateRange: { start: '2024-01-01', end: '2024-06-01' },
+  indicators: ['MA20', 'MACD', 'RSI'],
+  chart: {
+    chartType: 'candlestick',
+    theme: 'dark',
+    gridLines: { horizontal: true, vertical: false },
   },
-  "display": {
-    "paneRatios": { "main": 0.6, "sub1": 0.4 }
-  }
+  display: {
+    paneRatios: { main: 0.6, sub1: 0.4 },
+  },
 })
 ```
 
@@ -186,6 +191,7 @@ semantic.applyConfig({
 - Safari 14+
 
 需要支持以下特性：
+
 - ResizeObserver
 - Canvas 2D Context
 - ES2022（或转译）

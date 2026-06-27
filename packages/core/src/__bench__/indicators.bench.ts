@@ -43,45 +43,45 @@ import { computeSchaffTrendCycle } from '../indicators/schaffTrendCycle'
 // ---------------------------------------------------------------------------
 
 function buildCloseArray(n: number): Float64Array {
-    const out = new Float64Array(n)
-    const base = 100
-    for (let i = 0; i < n; i++) {
-        // Deterministic walk: sin + cos so the indicator state actually
-        // moves around (a flat input lets some indicators short-circuit).
-        out[i] = base + Math.sin(i / 7) * 5 + Math.cos(i / 5) * 2
-    }
-    return out
+  const out = new Float64Array(n)
+  const base = 100
+  for (let i = 0; i < n; i++) {
+    // Deterministic walk: sin + cos so the indicator state actually
+    // moves around (a flat input lets some indicators short-circuit).
+    out[i] = base + Math.sin(i / 7) * 5 + Math.cos(i / 5) * 2
+  }
+  return out
 }
 
 function buildOhlcBars(n: number): Array<{
-    high: number
-    low: number
-    close: number
+  high: number
+  low: number
+  close: number
 }> {
-    const closes = buildCloseArray(n)
-    const out: Array<{ high: number; low: number; close: number }> = new Array(n)
-    for (let i = 0; i < n; i++) {
-        const c = closes[i]!
-        out[i] = { high: c + 1.5, low: c - 1.5, close: c }
-    }
-    return out
+  const closes = buildCloseArray(n)
+  const out: Array<{ high: number; low: number; close: number }> = new Array(n)
+  for (let i = 0; i < n; i++) {
+    const c = closes[i]!
+    out[i] = { high: c + 1.5, low: c - 1.5, close: c }
+  }
+  return out
 }
 
 function buildOhlcWithOpen(n: number): Array<{
-    open: number
-    high: number
-    low: number
-    close: number
+  open: number
+  high: number
+  low: number
+  close: number
 }> {
-    const closes = buildCloseArray(n)
-    const out: Array<{ open: number; high: number; low: number; close: number }> = new Array(n)
-    for (let i = 0; i < n; i++) {
-        const c = closes[i]!
-        // Open = previous close (or self at i=0). Gives a non-degenerate body.
-        const o = i === 0 ? c : closes[i - 1]!
-        out[i] = { open: o, high: Math.max(o, c) + 0.5, low: Math.min(o, c) - 0.5, close: c }
-    }
-    return out
+  const closes = buildCloseArray(n)
+  const out: Array<{ open: number; high: number; low: number; close: number }> = new Array(n)
+  for (let i = 0; i < n; i++) {
+    const c = closes[i]!
+    // Open = previous close (or self at i=0). Gives a non-degenerate body.
+    const o = i === 0 ? c : closes[i - 1]!
+    out[i] = { open: o, high: Math.max(o, c) + 0.5, low: Math.min(o, c) - 0.5, close: c }
+  }
+  return out
 }
 
 const close10k = buildCloseArray(10_000)
@@ -96,56 +96,56 @@ const ohlc100k = buildOhlcWithOpen(100_000)
 // ---------------------------------------------------------------------------
 
 describe('MA family @ 10k bars (close-only)', () => {
-    bench('ALMA (period=21)', () => {
-        computeALMA(close10k, { period: 21 })
-    })
+  bench('ALMA (period=21)', () => {
+    computeALMA(close10k, { period: 21 })
+  })
 
-    bench('T3 (period=21, volumeFactor=0.7)', () => {
-        computeT3(close10k, { period: 21, volumeFactor: 0.7 })
-    })
+  bench('T3 (period=21, volumeFactor=0.7)', () => {
+    computeT3(close10k, { period: 21, volumeFactor: 0.7 })
+  })
 
-    bench('ZLEMA (period=21)', () => {
-        computeZLEMA(close10k, { period: 21 })
-    })
+  bench('ZLEMA (period=21)', () => {
+    computeZLEMA(close10k, { period: 21 })
+  })
 
-    bench('LSMA (period=21)', () => {
-        computeLSMA(close10k, { period: 21 })
-    })
+  bench('LSMA (period=21)', () => {
+    computeLSMA(close10k, { period: 21 })
+  })
 
-    bench('VIDYA (period=21, cmoPeriod=9)', () => {
-        computeVIDYA(close10k, { period: 21, cmoPeriod: 9 })
-    })
+  bench('VIDYA (period=21, cmoPeriod=9)', () => {
+    computeVIDYA(close10k, { period: 21, cmoPeriod: 9 })
+  })
 
-    bench('FRAMA (period=16)', () => {
-        // FRAMA requires `period` even and >= 4
-        computeFRAMA(close10k, { period: 16 })
-    })
+  bench('FRAMA (period=16)', () => {
+    // FRAMA requires `period` even and >= 4
+    computeFRAMA(close10k, { period: 16 })
+  })
 })
 
 describe('MA family @ 100k bars (close-only)', () => {
-    bench('ALMA (period=21)', () => {
-        computeALMA(close100k, { period: 21 })
-    })
+  bench('ALMA (period=21)', () => {
+    computeALMA(close100k, { period: 21 })
+  })
 
-    bench('T3 (period=21, volumeFactor=0.7)', () => {
-        computeT3(close100k, { period: 21, volumeFactor: 0.7 })
-    })
+  bench('T3 (period=21, volumeFactor=0.7)', () => {
+    computeT3(close100k, { period: 21, volumeFactor: 0.7 })
+  })
 
-    bench('ZLEMA (period=21)', () => {
-        computeZLEMA(close100k, { period: 21 })
-    })
+  bench('ZLEMA (period=21)', () => {
+    computeZLEMA(close100k, { period: 21 })
+  })
 
-    bench('LSMA (period=21)', () => {
-        computeLSMA(close100k, { period: 21 })
-    })
+  bench('LSMA (period=21)', () => {
+    computeLSMA(close100k, { period: 21 })
+  })
 
-    bench('VIDYA (period=21, cmoPeriod=9)', () => {
-        computeVIDYA(close100k, { period: 21, cmoPeriod: 9 })
-    })
+  bench('VIDYA (period=21, cmoPeriod=9)', () => {
+    computeVIDYA(close100k, { period: 21, cmoPeriod: 9 })
+  })
 
-    bench('FRAMA (period=16)', () => {
-        computeFRAMA(close100k, { period: 16 })
-    })
+  bench('FRAMA (period=16)', () => {
+    computeFRAMA(close100k, { period: 16 })
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -153,63 +153,63 @@ describe('MA family @ 100k bars (close-only)', () => {
 // ---------------------------------------------------------------------------
 
 describe('Oscillators @ 10k bars', () => {
-    bench('StochRSI (period=14, kPeriod=3, dPeriod=3)', () => {
-        computeStochRSI(close10k, { period: 14, kPeriod: 3, dPeriod: 3 })
-    })
+  bench('StochRSI (period=14, kPeriod=3, dPeriod=3)', () => {
+    computeStochRSI(close10k, { period: 14, kPeriod: 3, dPeriod: 3 })
+  })
 
-    bench('Awesome Oscillator (fast=5, slow=34)', () => {
-        computeAwesomeOscillator(hl10k, { fast: 5, slow: 34 })
-    })
+  bench('Awesome Oscillator (fast=5, slow=34)', () => {
+    computeAwesomeOscillator(hl10k, { fast: 5, slow: 34 })
+  })
 
-    bench('Ultimate Oscillator (p1=7, p2=14, p3=28)', () => {
-        computeUltimateOscillator(ohlc10k, { p1: 7, p2: 14, p3: 28 })
-    })
+  bench('Ultimate Oscillator (p1=7, p2=14, p3=28)', () => {
+    computeUltimateOscillator(ohlc10k, { p1: 7, p2: 14, p3: 28 })
+  })
 
-    bench('DPO (period=20)', () => {
-        computeDPO(close10k, { period: 20 })
-    })
+  bench('DPO (period=20)', () => {
+    computeDPO(close10k, { period: 20 })
+  })
 
-    bench('Fisher Transform (period=10)', () => {
-        computeFisherTransform(hl10k, { period: 10 })
-    })
+  bench('Fisher Transform (period=10)', () => {
+    computeFisherTransform(hl10k, { period: 10 })
+  })
 
-    bench('Schaff Trend Cycle (fast=23, slow=50, cycle=10)', () => {
-        computeSchaffTrendCycle(close10k, {
-            fast: 23,
-            slow: 50,
-            cycle: 10,
-            factor: 0.5,
-        })
+  bench('Schaff Trend Cycle (fast=23, slow=50, cycle=10)', () => {
+    computeSchaffTrendCycle(close10k, {
+      fast: 23,
+      slow: 50,
+      cycle: 10,
+      factor: 0.5,
     })
+  })
 })
 
 describe('Oscillators @ 100k bars', () => {
-    bench('StochRSI (period=14, kPeriod=3, dPeriod=3)', () => {
-        computeStochRSI(close100k, { period: 14, kPeriod: 3, dPeriod: 3 })
-    })
+  bench('StochRSI (period=14, kPeriod=3, dPeriod=3)', () => {
+    computeStochRSI(close100k, { period: 14, kPeriod: 3, dPeriod: 3 })
+  })
 
-    bench('Awesome Oscillator (fast=5, slow=34)', () => {
-        computeAwesomeOscillator(hl100k, { fast: 5, slow: 34 })
-    })
+  bench('Awesome Oscillator (fast=5, slow=34)', () => {
+    computeAwesomeOscillator(hl100k, { fast: 5, slow: 34 })
+  })
 
-    bench('Ultimate Oscillator (p1=7, p2=14, p3=28)', () => {
-        computeUltimateOscillator(ohlc100k, { p1: 7, p2: 14, p3: 28 })
-    })
+  bench('Ultimate Oscillator (p1=7, p2=14, p3=28)', () => {
+    computeUltimateOscillator(ohlc100k, { p1: 7, p2: 14, p3: 28 })
+  })
 
-    bench('DPO (period=20)', () => {
-        computeDPO(close100k, { period: 20 })
-    })
+  bench('DPO (period=20)', () => {
+    computeDPO(close100k, { period: 20 })
+  })
 
-    bench('Fisher Transform (period=10)', () => {
-        computeFisherTransform(hl100k, { period: 10 })
-    })
+  bench('Fisher Transform (period=10)', () => {
+    computeFisherTransform(hl100k, { period: 10 })
+  })
 
-    bench('Schaff Trend Cycle (fast=23, slow=50, cycle=10)', () => {
-        computeSchaffTrendCycle(close100k, {
-            fast: 23,
-            slow: 50,
-            cycle: 10,
-            factor: 0.5,
-        })
+  bench('Schaff Trend Cycle (fast=23, slow=50, cycle=10)', () => {
+    computeSchaffTrendCycle(close100k, {
+      fast: 23,
+      slow: 50,
+      cycle: 10,
+      factor: 0.5,
     })
+  })
 })

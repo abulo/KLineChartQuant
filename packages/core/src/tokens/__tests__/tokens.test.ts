@@ -19,12 +19,12 @@
 import { describe, it, expect } from 'vitest'
 
 import {
-    lightTheme,
-    darkTheme,
-    mergeTheme,
-    type Theme,
-    type ColorTokens,
-    type IndicatorPalette,
+  lightTheme,
+  darkTheme,
+  mergeTheme,
+  type Theme,
+  type ColorTokens,
+  type IndicatorPalette,
 } from '..'
 
 // ---------------------------------------------------------------------------
@@ -37,28 +37,28 @@ const RGBA = /^rgba?\(/
 const HSLA = /^hsla?\(/
 
 function parseHex(color: string): { r: number; g: number; b: number } | null {
-    if (!HEX.test(color)) return null
-    const r = parseInt(color.slice(1, 3), 16)
-    const g = parseInt(color.slice(3, 5), 16)
-    const b = parseInt(color.slice(5, 7), 16)
-    return { r, g, b }
+  if (!HEX.test(color)) return null
+  const r = parseInt(color.slice(1, 3), 16)
+  const g = parseInt(color.slice(3, 5), 16)
+  const b = parseInt(color.slice(5, 7), 16)
+  return { r, g, b }
 }
 
 function relativeLuminance(c: string): number {
-    const p = parseHex(c)
-    if (p === null) throw new Error(`relativeLuminance: ${c} not parseable`)
-    const linear = (v: number): number => {
-        const s = v / 255
-        return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
-    }
-    return 0.2126 * linear(p.r) + 0.7152 * linear(p.g) + 0.0722 * linear(p.b)
+  const p = parseHex(c)
+  if (p === null) throw new Error(`relativeLuminance: ${c} not parseable`)
+  const linear = (v: number): number => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  }
+  return 0.2126 * linear(p.r) + 0.7152 * linear(p.g) + 0.0722 * linear(p.b)
 }
 
 function contrast(a: string, b: string): number {
-    const la = relativeLuminance(a)
-    const lb = relativeLuminance(b)
-    const [hi, lo] = la > lb ? [la, lb] : [lb, la]
-    return (hi + 0.05) / (lo + 0.05)
+  const la = relativeLuminance(a)
+  const lb = relativeLuminance(b)
+  const [hi, lo] = la > lb ? [la, lb] : [lb, la]
+  return (hi + 0.05) / (lo + 0.05)
 }
 
 // ---------------------------------------------------------------------------
@@ -66,41 +66,39 @@ function contrast(a: string, b: string): number {
 // ---------------------------------------------------------------------------
 
 function keysSorted(o: object): string[] {
-    return Object.keys(o).sort()
+  return Object.keys(o).sort()
 }
 
 describe('theme parity', () => {
-    it('lightTheme and darkTheme expose the same top-level families', () => {
-        expect(keysSorted(lightTheme)).toEqual(keysSorted(darkTheme))
-    })
+  it('lightTheme and darkTheme expose the same top-level families', () => {
+    expect(keysSorted(lightTheme)).toEqual(keysSorted(darkTheme))
+  })
 
-    it.each([
-        ['colors', (t: Theme) => t.colors],
-        ['spacing', (t: Theme) => t.spacing],
-        ['typography', (t: Theme) => t.typography],
-        ['motion', (t: Theme) => t.motion],
-    ] as const)('family %s has the same key set in both themes', (_name, pick) => {
-        expect(keysSorted(pick(lightTheme))).toEqual(keysSorted(pick(darkTheme)))
-    })
+  it.each([
+    ['colors', (t: Theme) => t.colors],
+    ['spacing', (t: Theme) => t.spacing],
+    ['typography', (t: Theme) => t.typography],
+    ['motion', (t: Theme) => t.motion],
+  ] as const)('family %s has the same key set in both themes', (_name, pick) => {
+    expect(keysSorted(pick(lightTheme))).toEqual(keysSorted(pick(darkTheme)))
+  })
 
-    it('palette has the same i1..i10 keys in both themes', () => {
-        expect(keysSorted(lightTheme.colors.palette)).toEqual(
-            keysSorted(darkTheme.colors.palette),
-        )
-        expect(keysSorted(lightTheme.colors.palette)).toEqual([
-            'i1',
-            'i10',
-            'i2',
-            'i3',
-            'i4',
-            'i5',
-            'i6',
-            'i7',
-            'i8',
-            'i9',
-            'indicatorAtr',
-        ])
-    })
+  it('palette has the same i1..i10 keys in both themes', () => {
+    expect(keysSorted(lightTheme.colors.palette)).toEqual(keysSorted(darkTheme.colors.palette))
+    expect(keysSorted(lightTheme.colors.palette)).toEqual([
+      'i1',
+      'i10',
+      'i2',
+      'i3',
+      'i4',
+      'i5',
+      'i6',
+      'i7',
+      'i8',
+      'i9',
+      'indicatorAtr',
+    ])
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -108,33 +106,30 @@ describe('theme parity', () => {
 // ---------------------------------------------------------------------------
 
 function colorEntries(c: ColorTokens, prefix = ''): Array<[string, string]> {
-    const out: Array<[string, string]> = []
-    for (const [k, v] of Object.entries(c)) {
-        const key = prefix ? `${prefix}.${k}` : k
-        if (typeof v === 'object' && v !== null) {
-            out.push(...colorEntries(v as unknown as ColorTokens, key))
-        } else {
-            out.push([key, v as string])
-        }
+  const out: Array<[string, string]> = []
+  for (const [k, v] of Object.entries(c)) {
+    const key = prefix ? `${prefix}.${k}` : k
+    if (typeof v === 'object' && v !== null) {
+      out.push(...colorEntries(v as unknown as ColorTokens, key))
+    } else {
+      out.push([key, v as string])
     }
-    return out
+  }
+  return out
 }
 
 describe('color value validity', () => {
-    for (const theme of [lightTheme, darkTheme]) {
-        for (const [key, value] of colorEntries(theme.colors)) {
-            it(`${theme.name}: ${key} is a valid CSS color string`, () => {
-                // Top-level tokens are hex; legacy compatibility groups
-                // may use rgba/hsl/transparent.
-                const valid =
-                    HEX.test(value) ||
-                    RGBA.test(value) ||
-                    HSLA.test(value) ||
-                    value === 'transparent'
-                expect(valid).toBe(true)
-            })
-        }
+  for (const theme of [lightTheme, darkTheme]) {
+    for (const [key, value] of colorEntries(theme.colors)) {
+      it(`${theme.name}: ${key} is a valid CSS color string`, () => {
+        // Top-level tokens are hex; legacy compatibility groups
+        // may use rgba/hsl/transparent.
+        const valid =
+          HEX.test(value) || RGBA.test(value) || HSLA.test(value) || value === 'transparent'
+        expect(valid).toBe(true)
+      })
     }
+  }
 })
 
 // ---------------------------------------------------------------------------
@@ -142,34 +137,28 @@ describe('color value validity', () => {
 // ---------------------------------------------------------------------------
 
 function hexBase(c: string): string {
-    // Drop alpha if present so contrast is measured against the unmuted hue.
-    return c.length === 9 ? c.slice(0, 7) : c
+  // Drop alpha if present so contrast is measured against the unmuted hue.
+  return c.length === 9 ? c.slice(0, 7) : c
 }
 
 describe('WCAG AA contrast — candle bull/bear vs background (≥ 3:1)', () => {
-    for (const theme of [lightTheme, darkTheme]) {
-        for (const role of ['candleUpBody', 'candleDownBody'] as const) {
-            it(`${theme.name}: ${role}`, () => {
-                const ratio = contrast(
-                    hexBase(theme.colors[role]),
-                    hexBase(theme.colors.background),
-                )
-                expect(ratio).toBeGreaterThanOrEqual(3)
-            })
-        }
+  for (const theme of [lightTheme, darkTheme]) {
+    for (const role of ['candleUpBody', 'candleDownBody'] as const) {
+      it(`${theme.name}: ${role}`, () => {
+        const ratio = contrast(hexBase(theme.colors[role]), hexBase(theme.colors.background))
+        expect(ratio).toBeGreaterThanOrEqual(3)
+      })
     }
+  }
 })
 
 describe('WCAG AA contrast — foreground text vs background (≥ 4.5:1)', () => {
-    for (const theme of [lightTheme, darkTheme]) {
-        it(`${theme.name}`, () => {
-            const ratio = contrast(
-                hexBase(theme.colors.foreground),
-                hexBase(theme.colors.background),
-            )
-            expect(ratio).toBeGreaterThanOrEqual(4.5)
-        })
-    }
+  for (const theme of [lightTheme, darkTheme]) {
+    it(`${theme.name}`, () => {
+      const ratio = contrast(hexBase(theme.colors.foreground), hexBase(theme.colors.background))
+      expect(ratio).toBeGreaterThanOrEqual(4.5)
+    })
+  }
 })
 
 // ---------------------------------------------------------------------------
@@ -177,41 +166,41 @@ describe('WCAG AA contrast — foreground text vs background (≥ 4.5:1)', () =>
 // ---------------------------------------------------------------------------
 
 describe('mergeTheme', () => {
-    it('returns a new theme; never mutates the base', () => {
-        const before = JSON.stringify(lightTheme)
-        const merged = mergeTheme(lightTheme, {
-            name: 'custom',
-            colors: { candleUpBody: '#111111' },
-        })
-        expect(JSON.stringify(lightTheme)).toBe(before)
-        expect(merged).not.toBe(lightTheme)
+  it('returns a new theme; never mutates the base', () => {
+    const before = JSON.stringify(lightTheme)
+    const merged = mergeTheme(lightTheme, {
+      name: 'custom',
+      colors: { candleUpBody: '#111111' },
     })
+    expect(JSON.stringify(lightTheme)).toBe(before)
+    expect(merged).not.toBe(lightTheme)
+  })
 
-    it('override wins for each specified key; base wins elsewhere', () => {
-        const merged = mergeTheme(lightTheme, {
-            colors: { candleUpBody: '#111111' },
-        })
-        expect(merged.colors.candleUpBody).toBe('#111111')
-        expect(merged.colors.candleDownBody).toBe(lightTheme.colors.candleDownBody)
-        expect(merged.colors.background).toBe(lightTheme.colors.background)
+  it('override wins for each specified key; base wins elsewhere', () => {
+    const merged = mergeTheme(lightTheme, {
+      colors: { candleUpBody: '#111111' },
     })
+    expect(merged.colors.candleUpBody).toBe('#111111')
+    expect(merged.colors.candleDownBody).toBe(lightTheme.colors.candleDownBody)
+    expect(merged.colors.background).toBe(lightTheme.colors.background)
+  })
 
-    it('palette merges per-key, not whole-replace', () => {
-        const merged = mergeTheme(lightTheme, {
-            colors: { palette: { i1: '#000000' } as IndicatorPalette },
-        })
-        expect(merged.colors.palette.i1).toBe('#000000')
-        expect(merged.colors.palette.i2).toBe(lightTheme.colors.palette.i2)
-        expect(merged.colors.palette.i10).toBe(lightTheme.colors.palette.i10)
+  it('palette merges per-key, not whole-replace', () => {
+    const merged = mergeTheme(lightTheme, {
+      colors: { palette: { i1: '#000000' } as IndicatorPalette },
     })
+    expect(merged.colors.palette.i1).toBe('#000000')
+    expect(merged.colors.palette.i2).toBe(lightTheme.colors.palette.i2)
+    expect(merged.colors.palette.i10).toBe(lightTheme.colors.palette.i10)
+  })
 
-    it('name override propagates', () => {
-        const merged = mergeTheme(lightTheme, { name: 'corporate' })
-        expect(merged.name).toBe('corporate')
-    })
+  it('name override propagates', () => {
+    const merged = mergeTheme(lightTheme, { name: 'corporate' })
+    expect(merged.name).toBe('corporate')
+  })
 
-    it('no override returns a structurally-equal theme', () => {
-        const merged = mergeTheme(lightTheme, {})
-        expect(merged).toEqual(lightTheme)
-    })
+  it('no override returns a structurally-equal theme', () => {
+    const merged = mergeTheme(lightTheme, {})
+    expect(merged).toEqual(lightTheme)
+  })
 })

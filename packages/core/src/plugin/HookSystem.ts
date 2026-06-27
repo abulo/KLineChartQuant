@@ -9,11 +9,7 @@ export class HookSystem {
   /**
    * 注册钩子
    */
-  tap<T = unknown, R = unknown>(
-    hookName: string,
-    fn: HookFn<T, R>,
-    priority = 0
-  ): void {
+  tap<T = unknown, R = unknown>(hookName: string, fn: HookFn<T, R>, priority = 0): void {
     if (!this.hooks.has(hookName)) {
       this.hooks.set(hookName, [])
     }
@@ -44,7 +40,7 @@ export class HookSystem {
   async call<T = unknown, R = unknown>(
     hookName: string,
     context: T,
-    options?: HookCallOptions
+    options?: HookCallOptions,
   ): Promise<R[]> {
     const descriptors = this.hooks.get(hookName)
     if (!descriptors || descriptors.length === 0) {

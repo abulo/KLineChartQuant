@@ -86,11 +86,7 @@ describe('TOOL_GROUPS coverage', () => {
   it('INDICATOR_TOOLS includes add/remove/updateParams', () => {
     const names = INDICATOR_TOOLS.map((t) => t.name)
     expect(names).toEqual(
-      expect.arrayContaining([
-        'indicators.add',
-        'indicators.remove',
-        'indicators.updateParams',
-      ]),
+      expect.arrayContaining(['indicators.add', 'indicators.remove', 'indicators.updateParams']),
     )
   })
 
@@ -110,32 +106,18 @@ describe('TOOL_GROUPS coverage', () => {
   it('DRAWING_TOOLS includes setTool/add/clear/remove', () => {
     const names = DRAWING_TOOLS.map((t) => t.name)
     expect(names).toEqual(
-      expect.arrayContaining([
-        'drawing.setTool',
-        'drawing.add',
-        'drawing.clear',
-        'drawing.remove',
-      ]),
+      expect.arrayContaining(['drawing.setTool', 'drawing.add', 'drawing.clear', 'drawing.remove']),
     )
   })
 
   it('MARKER_TOOLS includes update/clear', () => {
     const names = MARKER_TOOLS.map((t) => t.name)
-    expect(names).toEqual(
-      expect.arrayContaining([
-        'markers.update',
-        'markers.clear',
-      ]),
-    )
+    expect(names).toEqual(expect.arrayContaining(['markers.update', 'markers.clear']))
   })
 
   it('SETTINGS_TOOLS includes update', () => {
     const names = SETTINGS_TOOLS.map((t) => t.name)
-    expect(names).toEqual(
-      expect.arrayContaining([
-        'settings.update',
-      ]),
-    )
+    expect(names).toEqual(expect.arrayContaining(['settings.update']))
   })
 
   it('ALERT_TOOLS includes the two add-variants + remove', () => {
@@ -148,12 +130,7 @@ describe('TOOL_GROUPS coverage', () => {
   it('REPLAY_TOOLS includes seek/play/pause/setSpeed', () => {
     const names = REPLAY_TOOLS.map((t) => t.name)
     expect(names).toEqual(
-      expect.arrayContaining([
-        'replay.seekTo',
-        'replay.play',
-        'replay.pause',
-        'replay.setSpeed',
-      ]),
+      expect.arrayContaining(['replay.seekTo', 'replay.play', 'replay.pause', 'replay.setSpeed']),
     )
   })
 })

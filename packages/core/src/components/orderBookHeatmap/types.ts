@@ -27,10 +27,10 @@ import type { Signal } from '../../reactivity'
  * correct under bursty traffic (no setInterval).
  */
 export interface OrderBookDelta {
-    side: 'bid' | 'ask'
-    price: number
-    size: number
-    timestamp: number
+  side: 'bid' | 'ask'
+  price: number
+  size: number
+  timestamp: number
 }
 
 // ---------------------------------------------------------------------------
@@ -46,9 +46,9 @@ export interface OrderBookDelta {
  * first). Each entry is `[price, size]`.
  */
 export interface BookSnapshot {
-    readonly bids: ReadonlyArray<readonly [number, number]>
-    readonly asks: ReadonlyArray<readonly [number, number]>
-    readonly timestamp: number
+  readonly bids: ReadonlyArray<readonly [number, number]>
+  readonly asks: ReadonlyArray<readonly [number, number]>
+  readonly timestamp: number
 }
 
 // ---------------------------------------------------------------------------
@@ -56,21 +56,21 @@ export interface BookSnapshot {
 // ---------------------------------------------------------------------------
 
 export interface OrderBookStateOptions {
-    /** quantize all input prices to this tick (e.g. 0.01 = cents) */
-    tickSize: number
-    /** keep at most this many levels per side; oldest-by-distance dropped */
-    maxLevels?: number
+  /** quantize all input prices to this tick (e.g. 0.01 = cents) */
+  tickSize: number
+  /** keep at most this many levels per side; oldest-by-distance dropped */
+  maxLevels?: number
 }
 
 export interface OrderBookState {
-    /** Apply one delta. `size === 0` removes the level. */
-    applyDelta(delta: OrderBookDelta): void
-    /** Take a fresh snapshot (prices dequantized). */
-    snapshot(): BookSnapshot
-    /** Empty both sides. */
-    clear(): void
-    /** Latest timestamp seen via {@link applyDelta}. */
-    lastTimestamp(): number
+  /** Apply one delta. `size === 0` removes the level. */
+  applyDelta(delta: OrderBookDelta): void
+  /** Take a fresh snapshot (prices dequantized). */
+  snapshot(): BookSnapshot
+  /** Empty both sides. */
+  clear(): void
+  /** Latest timestamp seen via {@link applyDelta}. */
+  lastTimestamp(): number
 }
 
 // ---------------------------------------------------------------------------
@@ -78,12 +78,12 @@ export interface OrderBookState {
 // ---------------------------------------------------------------------------
 
 export interface SnapshotRing {
-    readonly capacity: number
-    push(snapshot: BookSnapshot): void
-    /** snapshots oldest → newest; never contains gaps */
-    toArray(): ReadonlyArray<BookSnapshot>
-    size(): number
-    clear(): void
+  readonly capacity: number
+  push(snapshot: BookSnapshot): void
+  /** snapshots oldest → newest; never contains gaps */
+  toArray(): ReadonlyArray<BookSnapshot>
+  size(): number
+  clear(): void
 }
 
 // ---------------------------------------------------------------------------
@@ -91,18 +91,18 @@ export interface SnapshotRing {
 // ---------------------------------------------------------------------------
 
 export interface DeltaArchive {
-    append(delta: OrderBookDelta): void
-    /** inclusive range; deltas with `from <= ts <= to` */
-    range(fromTimestamp: number, toTimestamp: number): ReadonlyArray<OrderBookDelta>
-    size(): number
-    clear(): void
-    /** drop oldest deltas until total size ≤ maxSize */
-    trim(maxSize: number): void
+  append(delta: OrderBookDelta): void
+  /** inclusive range; deltas with `from <= ts <= to` */
+  range(fromTimestamp: number, toTimestamp: number): ReadonlyArray<OrderBookDelta>
+  size(): number
+  clear(): void
+  /** drop oldest deltas until total size ≤ maxSize */
+  trim(maxSize: number): void
 }
 
 export interface DeltaArchiveOptions {
-    /** when set, the archive self-trims after each {@link DeltaArchive.append} */
-    maxSize?: number
+  /** when set, the archive self-trims after each {@link DeltaArchive.append} */
+  maxSize?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -110,12 +110,12 @@ export interface DeltaArchiveOptions {
 // ---------------------------------------------------------------------------
 
 export interface LogColorScale {
-    /** returns intensity in [0,1] for the given size */
-    intensity(size: number): number
-    /** swap the size range (does not retroactively rescale anything) */
-    setRange(sizeMin: number, sizeMax: number): void
-    /** current range (for callers that need to mirror it into GPU uniforms) */
-    range(): { sizeMin: number; sizeMax: number }
+  /** returns intensity in [0,1] for the given size */
+  intensity(size: number): number
+  /** swap the size range (does not retroactively rescale anything) */
+  setRange(sizeMin: number, sizeMax: number): void
+  /** current range (for callers that need to mirror it into GPU uniforms) */
+  range(): { sizeMin: number; sizeMax: number }
 }
 
 // ---------------------------------------------------------------------------
@@ -123,46 +123,46 @@ export interface LogColorScale {
 // ---------------------------------------------------------------------------
 
 export interface HeatmapControllerConfig {
-    tickSize: number
-    snapshotIntervalMs: number
-    snapshotRingCapacity: number
-    deltaArchiveMaxSize: number
-    logColorRange: { sizeMin: number; sizeMax: number }
+  tickSize: number
+  snapshotIntervalMs: number
+  snapshotRingCapacity: number
+  deltaArchiveMaxSize: number
+  logColorRange: { sizeMin: number; sizeMax: number }
 }
 
 export interface HeatmapState {
-    readonly latestSnapshot: BookSnapshot | null
-    readonly snapshotCount: number
-    readonly deltaCount: number
+  readonly latestSnapshot: BookSnapshot | null
+  readonly snapshotCount: number
+  readonly deltaCount: number
 }
 
 export interface HeatmapController {
-    readonly state: Signal<HeatmapState>
+  readonly state: Signal<HeatmapState>
 
-    /**
-     * Ingest one L2 delta — canonical method, aligned with the cross-controller
-     * `ingest()` convention (VolumeProfile, Footprint). Closes API audit
-     * BLOCKER-001 (5-verb intake proliferation).
-     */
-    ingest(delta: OrderBookDelta): void
+  /**
+   * Ingest one L2 delta — canonical method, aligned with the cross-controller
+   * `ingest()` convention (VolumeProfile, Footprint). Closes API audit
+   * BLOCKER-001 (5-verb intake proliferation).
+   */
+  ingest(delta: OrderBookDelta): void
 
-    /**
-     * @deprecated since 0.1.0-alpha.1 — use {@link HeatmapController.ingest}.
-     * Kept as a non-removing alias for at least 6 months for migration.
-     */
-    ingestDelta(delta: OrderBookDelta): void
-    /** Force a snapshot now using the controller's current state. */
-    forceSnapshot(): void
-    /**
-     * Reconstruct snapshots at a regular cadence by replaying the delta archive.
-     * `from` is the first snapshot timestamp, `to` is exclusive upper bound.
-     */
-    replay(
-        fromTimestamp: number,
-        toTimestamp: number,
-        snapshotIntervalMs: number,
-    ): ReadonlyArray<BookSnapshot>
+  /**
+   * @deprecated since 0.1.0-alpha.1 — use {@link HeatmapController.ingest}.
+   * Kept as a non-removing alias for at least 6 months for migration.
+   */
+  ingestDelta(delta: OrderBookDelta): void
+  /** Force a snapshot now using the controller's current state. */
+  forceSnapshot(): void
+  /**
+   * Reconstruct snapshots at a regular cadence by replaying the delta archive.
+   * `from` is the first snapshot timestamp, `to` is exclusive upper bound.
+   */
+  replay(
+    fromTimestamp: number,
+    toTimestamp: number,
+    snapshotIntervalMs: number,
+  ): ReadonlyArray<BookSnapshot>
 
-    setConfig(next: Partial<HeatmapControllerConfig>): void
-    dispose(): void
+  setConfig(next: Partial<HeatmapControllerConfig>): void
+  dispose(): void
 }

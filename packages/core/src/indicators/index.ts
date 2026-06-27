@@ -20,20 +20,8 @@ export { computeFRAMA, type FramaOptions } from './frama'
 
 // Oscillator completion pack (tick 8 b-10)
 export { computeStochRSI, type StochRsiOptions } from './stochRSI'
-export {
-    computeAwesomeOscillator,
-    type AwesomeOscillatorOptions,
-} from './awesomeOscillator'
-export {
-    computeUltimateOscillator,
-    type UltimateOscillatorOptions,
-} from './ultimateOscillator'
+export { computeAwesomeOscillator, type AwesomeOscillatorOptions } from './awesomeOscillator'
+export { computeUltimateOscillator, type UltimateOscillatorOptions } from './ultimateOscillator'
 export { computeDPO, type DpoOptions } from './dpo'
-export {
-    computeFisherTransform,
-    type FisherTransformOptions,
-} from './fisherTransform'
-export {
-    computeSchaffTrendCycle,
-    type SchaffTrendCycleOptions,
-} from './schaffTrendCycle'
+export { computeFisherTransform, type FisherTransformOptions } from './fisherTransform'
+export { computeSchaffTrendCycle, type SchaffTrendCycleOptions } from './schaffTrendCycle'

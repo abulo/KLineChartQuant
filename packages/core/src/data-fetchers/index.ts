@@ -6,7 +6,11 @@ export { DataBuffer } from './dataBuffer'
 export type { DataWindow } from './dataBuffer'
 export { TimeShareBuffer } from './timeShareBuffer'
 export type { DataBufferLike } from './dataBufferTypes'
-export { getRegisteredFetcher, getTimeShareFetcher, fetcherSupportsTimeShare } from './fetcherDefinitionRegistry'
+export {
+  getRegisteredFetcher,
+  getTimeShareFetcher,
+  fetcherSupportsTimeShare,
+} from './fetcherDefinitionRegistry'
 export type { TimeShareFetcherFn, TimeShareFetchConfig } from './types'
 export {
   getPeriodDays,

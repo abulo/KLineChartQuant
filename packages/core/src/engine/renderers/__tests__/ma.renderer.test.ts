@@ -81,7 +81,7 @@ function createMockPluginHost(state?: MARenderState): PluginHost {
  */
 function createMockRenderContext(
   ctx: CanvasRenderingContext2D,
-  overrides: Partial<RenderContext> = {}
+  overrides: Partial<RenderContext> = {},
 ): RenderContext {
   const mockPane = {
     height: 200,
@@ -112,14 +112,23 @@ function createMockRenderContext(
 /**
  * 创建测试用的 MARenderState
  */
-function createTestMARenderState(
-  overrides: Partial<MARenderState> = {}
-): MARenderState {
+function createTestMARenderState(overrides: Partial<MARenderState> = {}): MARenderState {
   return {
     timestamp: Date.now(),
     series: {
       5: [undefined, undefined, undefined, undefined, 12, 13, 14, 15, 16, 17],
-      10: [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 14.5],
+      10: [
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        14.5,
+      ],
     },
     enabledPeriods: [5, 10],
     visibleMin: 12,

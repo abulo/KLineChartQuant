@@ -28,12 +28,12 @@ import type { Signal } from '../../reactivity'
  * The module does not enforce alignment — it trusts the caller's stream.
  */
 export interface BaseBar {
-    timestamp: number
-    open: number
-    high: number
-    low: number
-    close: number
-    volume: number
+  timestamp: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
 }
 
 /**
@@ -44,10 +44,10 @@ export interface BaseBar {
  * the "partial last bucket" semantics in `resampleBars`.
  */
 export interface ResampledBar extends BaseBar {
-    /** First base-bar index aggregated into this bucket (inclusive). */
-    sourceStart: number
-    /** Last base-bar index aggregated into this bucket (inclusive). */
-    sourceEnd: number
+  /** First base-bar index aggregated into this bucket (inclusive). */
+  sourceStart: number
+  /** Last base-bar index aggregated into this bucket (inclusive). */
+  sourceEnd: number
 }
 
 /**
@@ -55,18 +55,18 @@ export interface ResampledBar extends BaseBar {
  * alignment; the caller owns the indicator math (`compute`).
  */
 export interface MtfSeriesDefinition {
-    /** Stable user-facing identifier. Re-using an existing id is rejected. */
-    id: string
-    /** Display label, e.g. `"EMA(20) 1h"`. The controller never reads this. */
-    label: string
-    /** Higher-tf bucket size in ms. Must be a positive multiple of base tf. */
-    targetIntervalMs: number
-    /**
-     * Pure function: resampled bars → per-bar value array of the same length.
-     * Called once per `setBaseBars`, `addSeries`, `updateSeries`, and once per
-     * `appendBaseBar`. MUST NOT mutate the input.
-     */
-    compute: (resampledBars: ReadonlyArray<ResampledBar>) => ReadonlyArray<number>
+  /** Stable user-facing identifier. Re-using an existing id is rejected. */
+  id: string
+  /** Display label, e.g. `"EMA(20) 1h"`. The controller never reads this. */
+  label: string
+  /** Higher-tf bucket size in ms. Must be a positive multiple of base tf. */
+  targetIntervalMs: number
+  /**
+   * Pure function: resampled bars → per-bar value array of the same length.
+   * Called once per `setBaseBars`, `addSeries`, `updateSeries`, and once per
+   * `appendBaseBar`. MUST NOT mutate the input.
+   */
+  compute: (resampledBars: ReadonlyArray<ResampledBar>) => ReadonlyArray<number>
 }
 
 /**
@@ -77,13 +77,13 @@ export interface MtfSeriesDefinition {
  * first higher-tf bucket opens.
  */
 export interface ActiveMtfSeries {
-    definition: MtfSeriesDefinition
-    /**
-     * Forward-filled values aligned to the base bar index. Same length as the
-     * controller's base-bar buffer. `null` only where no higher-tf bar covers
-     * the base bar's timestamp (i.e. before the first bucket opens).
-     */
-    alignedValues: ReadonlyArray<number | null>
+  definition: MtfSeriesDefinition
+  /**
+   * Forward-filled values aligned to the base bar index. Same length as the
+   * controller's base-bar buffer. `null` only where no higher-tf bar covers
+   * the base bar's timestamp (i.e. before the first bucket opens).
+   */
+  alignedValues: ReadonlyArray<number | null>
 }
 
 /**
@@ -93,56 +93,53 @@ export interface ActiveMtfSeries {
  * no-ops and the signal stops firing.
  */
 export interface MtfController {
-    /** Current snapshot of every series with aligned values. */
-    readonly series: Signal<ReadonlyArray<ActiveMtfSeries>>
+  /** Current snapshot of every series with aligned values. */
+  readonly series: Signal<ReadonlyArray<ActiveMtfSeries>>
 
-    /**
-     * Replace the base bar buffer in one shot and recompute every series —
-     * canonical method, aligned with the cross-controller `setData()`
-     * convention (AnchoredVwapController). Closes API audit BLOCKER-001.
-     * `baseIntervalMs` must evenly divide every series' `targetIntervalMs`.
-     */
-    setData(bars: ReadonlyArray<BaseBar>, baseIntervalMs: number): void
+  /**
+   * Replace the base bar buffer in one shot and recompute every series —
+   * canonical method, aligned with the cross-controller `setData()`
+   * convention (AnchoredVwapController). Closes API audit BLOCKER-001.
+   * `baseIntervalMs` must evenly divide every series' `targetIntervalMs`.
+   */
+  setData(bars: ReadonlyArray<BaseBar>, baseIntervalMs: number): void
 
-    /**
-     * @deprecated since 0.1.0-alpha.1 — use {@link MtfController.setData}.
-     * Preserved as a non-removing alias for at least 6 months.
-     */
-    setBaseBars(bars: ReadonlyArray<BaseBar>, baseIntervalMs: number): void
+  /**
+   * @deprecated since 0.1.0-alpha.1 — use {@link MtfController.setData}.
+   * Preserved as a non-removing alias for at least 6 months.
+   */
+  setBaseBars(bars: ReadonlyArray<BaseBar>, baseIntervalMs: number): void
 
-    /**
-     * Register a new series. Returns the series id.
-     * Throws if `def.id` is already in use or `targetIntervalMs` is not a
-     * positive multiple of the current `baseIntervalMs` (when bars are set).
-     */
-    addSeries(def: MtfSeriesDefinition): string
+  /**
+   * Register a new series. Returns the series id.
+   * Throws if `def.id` is already in use or `targetIntervalMs` is not a
+   * positive multiple of the current `baseIntervalMs` (when bars are set).
+   */
+  addSeries(def: MtfSeriesDefinition): string
 
-    /** Remove a series by id. Returns true if removed, false if not found. */
-    removeSeries(id: string): boolean
+  /** Remove a series by id. Returns true if removed, false if not found. */
+  removeSeries(id: string): boolean
 
-    /**
-     * Patch a series in place. Returns true if found.
-     * Re-runs `compute` whenever `targetIntervalMs` or `compute` changes.
-     */
-    updateSeries(
-        id: string,
-        patch: Partial<Omit<MtfSeriesDefinition, 'id'>>,
-    ): boolean
+  /**
+   * Patch a series in place. Returns true if found.
+   * Re-runs `compute` whenever `targetIntervalMs` or `compute` changes.
+   */
+  updateSeries(id: string, patch: Partial<Omit<MtfSeriesDefinition, 'id'>>): boolean
 
-    /**
-     * Append one base bar at the tail — canonical method, aligned with the
-     * cross-controller `append()` convention (AnchoredVwapController).
-     * Triggers a single per-series compute over the updated resampled
-     * bars — NOT a from-scratch recompute over the whole base buffer.
-     */
-    append(bar: BaseBar): void
+  /**
+   * Append one base bar at the tail — canonical method, aligned with the
+   * cross-controller `append()` convention (AnchoredVwapController).
+   * Triggers a single per-series compute over the updated resampled
+   * bars — NOT a from-scratch recompute over the whole base buffer.
+   */
+  append(bar: BaseBar): void
 
-    /**
-     * @deprecated since 0.1.0-alpha.1 — use {@link MtfController.append}.
-     * Preserved as a non-removing alias for at least 6 months.
-     */
-    appendBaseBar(bar: BaseBar): void
+  /**
+   * @deprecated since 0.1.0-alpha.1 — use {@link MtfController.append}.
+   * Preserved as a non-removing alias for at least 6 months.
+   */
+  appendBaseBar(bar: BaseBar): void
 
-    /** Tear down. After this, all mutators are no-ops; the signal stops. */
-    dispose(): void
+  /** Tear down. After this, all mutators are no-ops; the signal stops. */
+  dispose(): void
 }

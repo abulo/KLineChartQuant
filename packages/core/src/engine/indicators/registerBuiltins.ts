@@ -53,7 +53,8 @@ export async function loadBuiltinIndicators(): Promise<void> {
 
 export function getBuiltinIndicatorDefinitions() {
   if (!loaded) {
-    throw new KLineChartError('INVALID_STATE',
+    throw new KLineChartError(
+      'INVALID_STATE',
       'Builtin indicators not loaded yet. Call await loadBuiltinIndicators() first.',
     )
   }

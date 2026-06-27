@@ -86,52 +86,19 @@ npm install @363045841yyt/klinechart
 
 ```vue
 <script setup lang="ts">
-import KLineChart from '@363045841yyt/klinechart';
-import type { SemanticChartConfig } from '@363045841yyt/klinechart';
+import '@363045841yyt/klinechart/style.css'
+import { ref } from 'vue'
+import { KLineChart, type CustomDataSource } from '@363045841yyt/klinechart'
 
-const config: SemanticChartConfig = {
-  version: '1.0.0',
-  data: {
-    source: 'baostock',
-    code: 'sh.000001',
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
-    frequency: 'day'
-  },
-  indicators: {
-    main: [{ type: 'MA', params: [5, 10, 20] }],
-    sub: [{ type: 'MACD' }]
-  }
-};
-</script>
+const currentTheme = ref<'light' | 'dark'>('dark')
 
-<template>
-  <KLineChart
-    :semanticConfig="config"
-    :yPaddingPx="24"
-  />
-</template>
-```
-
-### 4. 直接注入自定义数据（无需后端）
-
-通过 `customData` prop 传入自己的 K 线数据和对比商品，完全绕过数据请求器：
-
-```vue
-<script setup lang="ts">
-import KLineChart from '@363045841yyt/klinechart'
-import type { CustomDataSource, KLineData } from '@363045841yyt/klinechart'
-
-const myData: KLineData[] = [
-  { timestamp: 1748736000000, date: '2025-06-01', open: 30, high: 32, low: 30, close: 31.5, volume: 1500000 },
-  { timestamp: 1748822400000, date: '2025-06-02', open: 31.5, high: 33.2, low: 31.2, close: 33, volume: 2100000 },
-  // ... 更多 K 线
-]
-
-const customDataSource: CustomDataSource = {
+const customData: CustomDataSource = {
   symbol: 'MY.STOCK',
   period: 'daily',
-  data: myData,
+  data: [
+    { timestamp: 1748736000000, open: 30, high: 32, low: 30, close: 31.5, volume: 1500000 },
+    { timestamp: 1748822400000, open: 31.5, high: 33.2, low: 31.2, close: 33, volume: 2100000 },
+  ],
   comparisons: {
     'COMP.A': [ /* 对比商品 KLineData[] */ ],
     'COMP.B': [ /* 对比商品 KLineData[] */ ],
@@ -140,11 +107,16 @@ const customDataSource: CustomDataSource = {
 </script>
 
 <template>
-  <KLineChart :customData="customDataSource" />
+  <KLineChart
+    v-model:theme="currentTheme"
+    :custom-data="customData"
+  />
 </template>
 ```
 
-### 5.（可选）启用 MCP / AI Agent 控制
+省略 `customData` 即可使用内置的数据请求器，自动连接股票数据后端。
+
+### 4.（可选）启用 MCP / AI Agent 控制
 
 ```bash
 npm install @363045841yyt/klinechart-ai-runtime
@@ -152,7 +124,8 @@ npm install @363045841yyt/klinechart-ai-runtime
 
 ```vue
 <script setup lang="ts">
-import KLineChart from '@363045841yyt/klinechart'
+import '@363045841yyt/klinechart/style.css'
+import { KLineChart } from '@363045841yyt/klinechart'
 import { executeTool } from '@363045841yyt/klinechart-ai-runtime'
 
 const chartRef = ref<InstanceType<typeof KLineChart> | null>(null)
@@ -192,17 +165,23 @@ pnpm inspect
 
 | 属性 | 类型 | 默认值 | 说明 |
 |------|------|---------|-------------|
-| semanticConfig | `SemanticChartConfig` | **必填** | 语义化配置，图表数据和指标的唯一控制源 |
-| yPaddingPx | `number` | 0 | Y轴上下留白像素 |
-| minKWidth | `number` | 2 | K线最小宽度（逻辑像素） |
+| semanticConfig | `SemanticChartConfig` | — | 语义化配置（可选）。传入后驱动图表数据、指标、标记和选项 |
+| dataFetcher | `DataFetcher` | 内置 | 数据获取函数，默认为代理 `/api/stock` 的内置请求器 |
+| theme | `'light' \| 'dark'` | — | 图表主题。可用 `v-model:theme` 双向绑定 |
+| isFullscreen | `boolean` | — | 全屏状态（受控）。不传则使用组件内部非受控模式 |
+| timezone | `string` | `'Asia/Shanghai'` | 时区 |
+| yPaddingPx | `number` | 20 | Y轴上下留白像素 |
+| minKWidth | `number` | 1 | K线最小宽度（逻辑像素） |
 | maxKWidth | `number` | 50 | K线最大宽度（逻辑像素） |
 | rightAxisWidth | `number` | 0 | 右侧价格轴宽度 |
+| leftAxisWidth | `number` | 0 | 左侧价格轴宽度（0=隐藏） |
 | bottomAxisHeight | `number` | 24 | 底部时间轴高度 |
 | priceLabelWidth | `number` | 60 | 价格标签额外宽度（用于显示涨跌幅） |
 | zoomLevels | `number` | 20 | 缩放级别总数 |
 | initialZoomLevel | `number` | 3 | 初始缩放级别（1 ~ zoomLevels） |
-| mcp | `McpConfig` | — | MCP 桥接配置：`{ wsUrl?, autoReconnect?, onToolCall? }`。详见 [@363045841yyt/klinechart-ai-runtime](packages/ai-runtime/README.md) |
 | customData | `CustomDataSource` | — | 内联数据包：`{ symbol?, period?, data, comparisons? }`。完全绕过数据请求器，直接使用传入的数据渲染 |
+| teleportContainer | `string \| HTMLElement` | — | 下拉/弹窗的 Teleport 目标容器（CSS 选择器或元素）。默认渲染到内部 `.chart-wrapper` |
+| mcp | `McpConfig` | — | MCP/AI runtime 桥接配置：`{ wsUrl?, autoReconnect?, onToolCall? }`。详见 [@363045841yyt/klinechart-ai-runtime](packages/ai-runtime/README.md) |
 
 ## 🗺️ Roadmap
 

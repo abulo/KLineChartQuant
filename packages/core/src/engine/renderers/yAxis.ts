@@ -33,11 +33,15 @@ export function createYAxisRendererPlugin(options: {
         if (rightType === 'none') return
       }
 
-      const tokenColors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
+      const tokenColors = resolveThemeColors(
+        context.theme,
+        context.isAsiaMarket,
+        context.colorPresetSettings,
+      )
       const scaleType = pane.yAxis.getScaleType()
 
       const targetCtx = yAxisCtx || ctx
-      const axisWidth = yAxisCtx?.canvas ? (yAxisCtx.canvas.width / dpr) : options.axisWidth
+      const axisWidth = yAxisCtx?.canvas ? yAxisCtx.canvas.width / dpr : options.axisWidth
       const displayRange = pane.yAxis.getDisplayRange(pane.priceRange)
 
       const isPercent = scaleType === 'percent' && pane.role === 'price'
@@ -85,19 +89,25 @@ export function createYAxisRendererPlugin(options: {
         for (const label of context.yAxisLabels) {
           if (label.price == null || !Number.isFinite(label.price)) continue
           const isLastPrice = label.type === 'lastPrice'
-          drawAxisPriceLabel(targetCtx, {
-            x: 0,
-            y: pane.top,
-            width: axisWidth,
-            height: pane.height,
-            priceY: label.y + pane.top,
-            price: label.price,
-            dpr,
-            bgColor: label.style?.bgColor ?? 'rgba(0, 0, 0, 0.8)',
-            borderColor: label.style?.borderColor,
-            textColor: label.style?.textColor ?? '#ffffff',
-            fontSize: isLastPrice ? 12 : 11,
-          }, context.theme, context.isAsiaMarket, context.colorPresetSettings)
+          drawAxisPriceLabel(
+            targetCtx,
+            {
+              x: 0,
+              y: pane.top,
+              width: axisWidth,
+              height: pane.height,
+              priceY: label.y + pane.top,
+              price: label.price,
+              dpr,
+              bgColor: label.style?.bgColor ?? 'rgba(0, 0, 0, 0.8)',
+              borderColor: label.style?.borderColor,
+              textColor: label.style?.textColor ?? '#ffffff',
+              fontSize: isLastPrice ? 12 : 11,
+            },
+            context.theme,
+            context.isAsiaMarket,
+            context.colorPresetSettings,
+          )
         }
       }
 
@@ -117,20 +127,26 @@ export function createYAxisRendererPlugin(options: {
             }
           : undefined
 
-        drawCrosshairPriceLabel(targetCtx, {
-          x: 0,
-          y: pane.top,
-          width: axisWidth,
-          height: pane.height,
-          crosshairY: crosshair.y,
-          priceRange: crosshairPriceRange,
-          yPaddingPx: options.yPaddingPx,
-          dpr,
-          fontSize: 12,
-          priceOffset: 0,
-          price: crosshairPrice,
-          formatPrice,
-        }, context.theme, context.isAsiaMarket, context.colorPresetSettings)
+        drawCrosshairPriceLabel(
+          targetCtx,
+          {
+            x: 0,
+            y: pane.top,
+            width: axisWidth,
+            height: pane.height,
+            crosshairY: crosshair.y,
+            priceRange: crosshairPriceRange,
+            yPaddingPx: options.yPaddingPx,
+            dpr,
+            fontSize: 12,
+            priceOffset: 0,
+            price: crosshairPrice,
+            formatPrice,
+          },
+          context.theme,
+          context.isAsiaMarket,
+          context.colorPresetSettings,
+        )
       }
     },
   }

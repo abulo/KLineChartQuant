@@ -72,23 +72,35 @@ export class TimeShareMode implements ChartModeHandler {
     pane.yAxis.setRange({ maxPrice, minPrice })
   }
 
-  onActivate(chart: {
-    enableMainIndicator: (id: string, params?: Record<string, number | boolean | string>) => boolean
-    disableMainIndicator: (id: string) => boolean
-    setRendererEnabled: (name: string, enabled: boolean) => void
-    dataManager: ChartDataManager
-    currentPeriod: string
-  }, _prev: ChartModeHandler | null): void {
+  onActivate(
+    chart: {
+      enableMainIndicator: (
+        id: string,
+        params?: Record<string, number | boolean | string>,
+      ) => boolean
+      disableMainIndicator: (id: string) => boolean
+      setRendererEnabled: (name: string, enabled: boolean) => void
+      dataManager: ChartDataManager
+      currentPeriod: string
+    },
+    _prev: ChartModeHandler | null,
+  ): void {
     chart.enableMainIndicator('timeShare')
     chart.setRendererEnabled('candle', false)
   }
 
-  onDeactivate(chart: {
-    enableMainIndicator: (id: string, params?: Record<string, number | boolean | string>) => boolean
-    disableMainIndicator: (id: string) => boolean
-    setRendererEnabled: (name: string, enabled: boolean) => void
-    dataManager: ChartDataManager
-  }, _next: ChartModeHandler | null): void {
+  onDeactivate(
+    chart: {
+      enableMainIndicator: (
+        id: string,
+        params?: Record<string, number | boolean | string>,
+      ) => boolean
+      disableMainIndicator: (id: string) => boolean
+      setRendererEnabled: (name: string, enabled: boolean) => void
+      dataManager: ChartDataManager
+    },
+    _next: ChartModeHandler | null,
+  ): void {
     chart.disableMainIndicator('timeShare')
     chart.setRendererEnabled('candle', true)
   }

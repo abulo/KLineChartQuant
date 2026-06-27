@@ -8,20 +8,16 @@
  * either blocking on the other's interface decisions.
  */
 
-export type {
-    SurfaceBackend,
-    SurfaceRegion,
-    CompositeOptions,
-} from './SurfaceBackend'
+export type { SurfaceBackend, SurfaceRegion, CompositeOptions } from './SurfaceBackend'
 
 export type {
-    Renderer,
-    RendererCapabilities,
-    BufferHandle,
-    PipelineHandle,
-    ComputePipelineHandle,
-    BufferUsage,
-    DrawInstancesParams,
-    DrawLinesParams,
-    DispatchComputeParams,
+  Renderer,
+  RendererCapabilities,
+  BufferHandle,
+  PipelineHandle,
+  ComputePipelineHandle,
+  BufferUsage,
+  DrawInstancesParams,
+  DrawLinesParams,
+  DispatchComputeParams,
 } from './Renderer'

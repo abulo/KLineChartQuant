@@ -72,7 +72,7 @@ function createMockPluginHost(state?: EXPMARenderState): PluginHost {
 
 function createMockRenderContext(
   ctx: CanvasRenderingContext2D,
-  overrides: Partial<RenderContext> = {}
+  overrides: Partial<RenderContext> = {},
 ): RenderContext {
   const mockPane = {
     height: 200,

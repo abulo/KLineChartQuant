@@ -14,7 +14,7 @@ import type { PaneCapabilities, PaneRole } from '../../plugin'
 export enum UpdateLevel {
   Main = 'main',
   Overlay = 'overlay',
-  All = 'all'
+  All = 'all',
 }
 
 export type VisibleRange = { start: number; end: number }
@@ -147,11 +147,19 @@ export class Pane {
    * @param range 当前视口可见的索引范围（由 getVisibleRange 计算）
    * @param indicatorRange 可选的指标极值范围，与K线极值合并
    */
-  updateRange(data: KLineData[], range: VisibleRange, indicatorRange?: { min: number; max: number } | null) {
+  updateRange(
+    data: KLineData[],
+    range: VisibleRange,
+    indicatorRange?: { min: number; max: number } | null,
+  ) {
     this.priceRange = getVisiblePriceRange(data, range.start, range.end)
 
     // 如果有指标极值，合并到价格范围
-    if (indicatorRange && Number.isFinite(indicatorRange.min) && Number.isFinite(indicatorRange.max)) {
+    if (
+      indicatorRange &&
+      Number.isFinite(indicatorRange.min) &&
+      Number.isFinite(indicatorRange.max)
+    ) {
       this.priceRange.minPrice = Math.min(this.priceRange.minPrice, indicatorRange.min)
       this.priceRange.maxPrice = Math.max(this.priceRange.maxPrice, indicatorRange.max)
     }

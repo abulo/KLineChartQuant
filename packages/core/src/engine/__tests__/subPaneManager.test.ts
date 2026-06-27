@@ -11,7 +11,12 @@ function createMockScheduler(): Partial<IndicatorScheduler> {
       category: 'sub' as const,
       stateKey: _id,
       defaultPaneId: 'sub',
-      rendererFactory: vi.fn(() => ({ name: 'custom_rsi_rsi_0', paneId: 'sub', priority: 0, draw: vi.fn() })),
+      rendererFactory: vi.fn(() => ({
+        name: 'custom_rsi_rsi_0',
+        paneId: 'sub',
+        priority: 0,
+        draw: vi.fn(),
+      })),
       updateConfig: vi.fn(),
       scale: { indicatorKey: 'test', label: 'Test', decimals: 2 },
     })),
@@ -64,10 +69,10 @@ describe('SubPaneManager', () => {
       const newParams = { period1: 10, period2: 20, period3: 30 }
       manager.updateParams(ctx, 'RSI_0', newParams)
 
-      expect(ctx.updateRendererConfig).toHaveBeenCalledWith(
-        entry!.paneTitleRendererName,
-        { params: newParams, indicatorId: 'RSI' },
-      )
+      expect(ctx.updateRendererConfig).toHaveBeenCalledWith(entry!.paneTitleRendererName, {
+        params: newParams,
+        indicatorId: 'RSI',
+      })
     })
 
     it('should update main indicator renderer config with new params', () => {
@@ -84,10 +89,7 @@ describe('SubPaneManager', () => {
       const newParams = { period1: 10, period2: 20, period3: 30 }
       manager.updateParams(ctx, 'RSI_0', newParams)
 
-      expect(ctx.updateRendererConfig).toHaveBeenCalledWith(
-        entry!.rendererName,
-        newParams,
-      )
+      expect(ctx.updateRendererConfig).toHaveBeenCalledWith(entry!.rendererName, newParams)
     })
 
     it('should update scheduler config via definition.updateConfig', () => {
@@ -99,7 +101,12 @@ describe('SubPaneManager', () => {
           category: 'sub' as const,
           stateKey: _id,
           defaultPaneId: 'sub',
-          rendererFactory: vi.fn(() => ({ name: 'custom_rsi_rsi_0', paneId: 'sub', priority: 0, draw: vi.fn() })),
+          rendererFactory: vi.fn(() => ({
+            name: 'custom_rsi_rsi_0',
+            paneId: 'sub',
+            priority: 0,
+            draw: vi.fn(),
+          })),
           updateConfig: updateConfigSpy,
           scale: { indicatorKey: 'test', label: 'Test', decimals: 2 },
         })),

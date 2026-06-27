@@ -80,13 +80,13 @@ export interface PluginHost {
 
   /** Hook 系统 */
   readonly hooks: {
-    tap<T = unknown, R = unknown>(
-      hookName: string,
-      fn: HookFn<T, R>,
-      priority?: number
-    ): void
+    tap<T = unknown, R = unknown>(hookName: string, fn: HookFn<T, R>, priority?: number): void
     untap(hookName: string, fn: HookFn): void
-    call<T = unknown, R = unknown>(hookName: string, context: T, options?: HookCallOptions): Promise<R[]>
+    call<T = unknown, R = unknown>(
+      hookName: string,
+      context: T,
+      options?: HookCallOptions,
+    ): Promise<R[]>
     callSync<T = unknown, R = unknown>(hookName: string, context: T, options?: HookCallOptions): R[]
   }
 
@@ -152,7 +152,10 @@ export interface PaneInfo {
     getPaddingTop(): number
     getPaddingBottom(): number
     getPriceOffset(): number
-    getDisplayRange(baseRange?: { maxPrice: number; minPrice: number }): { maxPrice: number; minPrice: number }
+    getDisplayRange(baseRange?: { maxPrice: number; minPrice: number }): {
+      maxPrice: number
+      minPrice: number
+    }
     getScaleType(): 'linear' | 'log' | 'percent'
     getBasePrice(): number | null
     toPercent(price: number): number

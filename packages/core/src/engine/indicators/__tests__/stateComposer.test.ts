@@ -1,6 +1,10 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest'
 import type { IndicatorMetadata } from '../indicatorMetadata'
-import { composeRenderStates, composeVisibleSubIndicatorStates, computeMainIndicatorPriceRange } from '../stateComposer'
+import {
+  composeRenderStates,
+  composeVisibleSubIndicatorStates,
+  computeMainIndicatorPriceRange,
+} from '../stateComposer'
 import type { IndicatorSeriesBundle } from '../workerProtocol'
 import { getRegisteredIndicatorDefinition } from '../indicatorDefinitionRegistry'
 import { loadBuiltinIndicators } from '../registerBuiltins'
@@ -49,7 +53,10 @@ function createBundle(): IndicatorSeriesBundle {
     fib: { series: [], params: {} as never },
     structure: { series: { swings: [], events: [], trend: 'range' }, params: {} as never },
     zones: { series: [], params: {} as never },
-    volumeProfile: { series: { bins: [], vah: 0, val: 0, poc: 0, totalVolume: 0 }, params: {} as never },
+    volumeProfile: {
+      series: { bins: [], vah: 0, val: 0, poc: 0, totalVolume: 0 },
+      params: {} as never,
+    },
     _changed: [],
   }
 }
@@ -117,7 +124,10 @@ describe('stateComposer', () => {
     )
 
     expect(range).toEqual({ min: 5, max: 30 })
-    expect(definitions.get('ma')?.mainPane?.computePriceRange).toHaveBeenCalledWith(createBundle(), { start: 1, end: 3 })
+    expect(definitions.get('ma')?.mainPane?.computePriceRange).toHaveBeenCalledWith(
+      createBundle(),
+      { start: 1, end: 3 },
+    )
   })
 
   it('ignores inactive or missing main price range metadata', () => {
@@ -141,19 +151,61 @@ describe('stateComposer', () => {
     const timestamp = 1234
     const visibleRange = { start: 1, end: 3 }
     const definitions = new Map<string, IndicatorMetadata>([
-      ['ma', createComposerDefinition('ma', { timestamp, series: { 5: [undefined, 10, 12] }, enabledPeriods: [5], visibleMin: 10, visibleMax: 12 })],
-      ['boll', createComposerDefinition('boll', { timestamp, series: [], params: {}, visibleMin: 20, visibleMax: 30 })],
-      ['expma', createComposerDefinition('expma', { timestamp, series: [], params: {}, visibleMin: 7, visibleMax: 9 })],
-      ['ene', createComposerDefinition('ene', { timestamp, series: [], params: {}, visibleMin: 8, visibleMax: 11 })],
+      [
+        'ma',
+        createComposerDefinition('ma', {
+          timestamp,
+          series: { 5: [undefined, 10, 12] },
+          enabledPeriods: [5],
+          visibleMin: 10,
+          visibleMax: 12,
+        }),
+      ],
+      [
+        'boll',
+        createComposerDefinition('boll', {
+          timestamp,
+          series: [],
+          params: {},
+          visibleMin: 20,
+          visibleMax: 30,
+        }),
+      ],
+      [
+        'expma',
+        createComposerDefinition('expma', {
+          timestamp,
+          series: [],
+          params: {},
+          visibleMin: 7,
+          visibleMax: 9,
+        }),
+      ],
+      [
+        'ene',
+        createComposerDefinition('ene', {
+          timestamp,
+          series: [],
+          params: {},
+          visibleMin: 8,
+          visibleMax: 11,
+        }),
+      ],
     ])
 
-    const states = composeRenderStates(bundle, visibleRange, timestamp, (indicatorId) => definitions.get(indicatorId))
+    const states = composeRenderStates(bundle, visibleRange, timestamp, (indicatorId) =>
+      definitions.get(indicatorId),
+    )
 
     expect(states.ma.visibleMin).toBe(10)
     expect(states.boll.visibleMax).toBe(30)
     expect(states.expma.visibleMin).toBe(7)
     expect(states.ene.visibleMax).toBe(11)
-    expect(definitions.get('ma')?.mainPane?.composeRenderState).toHaveBeenCalledWith(bundle, visibleRange, timestamp)
+    expect(definitions.get('ma')?.mainPane?.composeRenderState).toHaveBeenCalledWith(
+      bundle,
+      visibleRange,
+      timestamp,
+    )
   })
 
   it('falls back to registry composeRenderState when metadata is partial', () => {
@@ -162,18 +214,12 @@ describe('stateComposer', () => {
     const visibleRange = { start: 1, end: 3 }
     const definition = { ...createDefinition(null), mainPane: { rendererName: 'ma' } }
 
-    const states = composeRenderStates(bundle, visibleRange, timestamp, (id) => id === 'ma' ? definition : undefined)
+    const states = composeRenderStates(bundle, visibleRange, timestamp, (id) =>
+      id === 'ma' ? definition : undefined,
+    )
 
     expect(states.ma).toBeDefined()
   })
-
-
-
-
-
-
-
-
 
   it('applies symmetric abs padding for MOM via metadata composer', () => {
     const bundle = createBundle()
@@ -182,7 +228,13 @@ describe('stateComposer', () => {
     const timestamp = 1000
     const visibleRange = { start: 1, end: 3 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { mom: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { mom: true },
+      getComposerMetadata,
+    )
 
     expect(states.mom.visibleMin).toBe(-2)
     expect(states.mom.visibleMax).toBe(4)
@@ -193,11 +245,25 @@ describe('stateComposer', () => {
   it('applies range padding for KST via metadata composer', () => {
     const bundle = createBundle()
     bundle.kst.series = [{ kst: -3, signal: 5 }]
-    bundle.kst.params = { roc1: 10, roc2: 15, roc3: 20, roc4: 30, signalPeriod: 9, showKST: true, showSignal: true } as never
+    bundle.kst.params = {
+      roc1: 10,
+      roc2: 15,
+      roc3: 20,
+      roc4: 30,
+      signalPeriod: 9,
+      showKST: true,
+      showSignal: true,
+    } as never
     const timestamp = 1000
     const visibleRange = { start: 0, end: 1 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { kst: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { kst: true },
+      getComposerMetadata,
+    )
 
     expect(states.kst.visibleMin).toBe(-3)
     expect(states.kst.visibleMax).toBe(5)
@@ -212,7 +278,13 @@ describe('stateComposer', () => {
     const timestamp = 1000
     const visibleRange = { start: 1, end: 3 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { atr: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { atr: true },
+      getComposerMetadata,
+    )
 
     expect(states.atr.visibleMin).toBe(1)
     expect(states.atr.visibleMax).toBe(5)
@@ -228,7 +300,13 @@ describe('stateComposer', () => {
     const timestamp = 1000
     const visibleRange = { start: 1, end: 3 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { trix: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { trix: true },
+      getComposerMetadata,
+    )
 
     expect(states.trix.visibleMin).toBe(-2)
     expect(states.trix.visibleMax).toBe(3)
@@ -240,11 +318,24 @@ describe('stateComposer', () => {
   it('applies symmetric abs padding for MACD via metadata composer', () => {
     const bundle = createBundle()
     bundle.macd.series = [{ dif: -2, dea: 1, macd: 4 }]
-    bundle.macd.params = { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9, showDIF: true, showDEA: true, showBAR: true } as never
+    bundle.macd.params = {
+      fastPeriod: 12,
+      slowPeriod: 26,
+      signalPeriod: 9,
+      showDIF: true,
+      showDEA: true,
+      showBAR: true,
+    } as never
     const timestamp = 1000
     const visibleRange = { start: 0, end: 1 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { macd: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { macd: true },
+      getComposerMetadata,
+    )
 
     expect(states.macd.visibleMin).toBe(-2)
     expect(states.macd.visibleMax).toBe(4)
@@ -254,12 +345,28 @@ describe('stateComposer', () => {
 
   it('sets MACD latestValues via metadata composer', () => {
     const bundle = createBundle()
-    bundle.macd.series = [{ dif: -2, dea: 1, macd: 4 }, { dif: -1, dea: 2, macd: 5 }]
-    bundle.macd.params = { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9, showDIF: true, showDEA: true, showBAR: true } as never
+    bundle.macd.series = [
+      { dif: -2, dea: 1, macd: 4 },
+      { dif: -1, dea: 2, macd: 5 },
+    ]
+    bundle.macd.params = {
+      fastPeriod: 12,
+      slowPeriod: 26,
+      signalPeriod: 9,
+      showDIF: true,
+      showDEA: true,
+      showBAR: true,
+    } as never
     const timestamp = 1000
     const visibleRange = { start: 0, end: 2 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { macd: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { macd: true },
+      getComposerMetadata,
+    )
 
     expect(states.macd.latestValues).toEqual({ dif: -1, dea: 2, macd: 5 })
   })
@@ -267,11 +374,24 @@ describe('stateComposer', () => {
   it('preserves empty MACD state when MACD is inactive via metadata composer', () => {
     const bundle = createBundle()
     bundle.macd.series = [{ dif: -2, dea: 1, macd: 4 }]
-    bundle.macd.params = { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9, showDIF: true, showDEA: true, showBAR: true } as never
+    bundle.macd.params = {
+      fastPeriod: 12,
+      slowPeriod: 26,
+      signalPeriod: 9,
+      showDIF: true,
+      showDEA: true,
+      showBAR: true,
+    } as never
     const timestamp = 1000
     const visibleRange = { start: 0, end: 1 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { macd: false }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { macd: false },
+      getComposerMetadata,
+    )
 
     expect(states.macd.valueMin).toBe(-Infinity)
     expect(states.macd.valueMax).toBe(Infinity)
@@ -281,16 +401,30 @@ describe('stateComposer', () => {
     expect(states.macd.latestValues).toBeUndefined()
   })
 
-
-
   it('applies maFamilyBounds padding for value-point overlay via metadata composer (sar)', () => {
     const bundle = createBundle()
-    bundle.sar.series = [{ value: 5, trend: 'up' as const }, { value: 15, trend: 'up' as const }]
-    bundle.sar.params = { period: 20, maxPeriod: 22, minPeriod: 2, af: 0.02, afMax: 0.2, showSAR: true } as never
+    bundle.sar.series = [
+      { value: 5, trend: 'up' as const },
+      { value: 15, trend: 'up' as const },
+    ]
+    bundle.sar.params = {
+      period: 20,
+      maxPeriod: 22,
+      minPeriod: 2,
+      af: 0.02,
+      afMax: 0.2,
+      showSAR: true,
+    } as never
     const timestamp = 1000
     const visibleRange = { start: 0, end: 2 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { sar: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { sar: true },
+      getComposerMetadata,
+    )
 
     expect(states.sar.visibleMin).toBe(5)
     expect(states.sar.visibleMax).toBe(15)
@@ -301,11 +435,22 @@ describe('stateComposer', () => {
   it('applies maFamilyBounds padding for band overlay via metadata composer (keltner)', () => {
     const bundle = createBundle()
     bundle.keltner.series = [{ upper: 20, middle: 15, lower: 10 }]
-    bundle.keltner.params = { period: 20, multiplier: 2, showKeltner: true, showMiddle: true } as never
+    bundle.keltner.params = {
+      period: 20,
+      multiplier: 2,
+      showKeltner: true,
+      showMiddle: true,
+    } as never
     const timestamp = 1000
     const visibleRange = { start: 0, end: 1 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { keltner: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { keltner: true },
+      getComposerMetadata,
+    )
 
     expect(states.keltner.visibleMin).toBe(10)
     expect(states.keltner.visibleMax).toBe(20)
@@ -320,7 +465,13 @@ describe('stateComposer', () => {
     const timestamp = 1000
     const visibleRange = { start: 0, end: 1 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { pivot: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { pivot: true },
+      getComposerMetadata,
+    )
 
     expect(states.pivot.visibleMin).toBe(85)
     expect(states.pivot.visibleMax).toBe(115)
@@ -335,7 +486,13 @@ describe('stateComposer', () => {
     const timestamp = 1000
     const visibleRange = { start: 0, end: 1 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { structure: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { structure: true },
+      getComposerMetadata,
+    )
 
     expect(states.structure.valueMin).toBe(0)
     expect(states.structure.valueMax).toBe(1)
@@ -356,7 +513,13 @@ describe('stateComposer', () => {
     const timestamp = 1000
     const visibleRange = { start: 0, end: 1 }
 
-    const states = composeVisibleSubIndicatorStates(bundle, visibleRange, timestamp, { volumeProfile: true }, getComposerMetadata)
+    const states = composeVisibleSubIndicatorStates(
+      bundle,
+      visibleRange,
+      timestamp,
+      { volumeProfile: true },
+      getComposerMetadata,
+    )
 
     expect(states.volumeProfile.valueMin).toBe(95)
     expect(states.volumeProfile.valueMax).toBe(105)
@@ -372,7 +535,10 @@ describe('stateComposer', () => {
     const visibleRange = { start: 0, end: 2 }
 
     const states = composeVisibleSubIndicatorStates(
-      bundle, visibleRange, timestamp, { cci: true },
+      bundle,
+      visibleRange,
+      timestamp,
+      { cci: true },
       getComposerMetadata,
     )
 
@@ -390,7 +556,10 @@ describe('stateComposer', () => {
     const visibleRange = { start: 0, end: 2 }
 
     const states = composeVisibleSubIndicatorStates(
-      bundle, visibleRange, timestamp, { cci: true },
+      bundle,
+      visibleRange,
+      timestamp,
+      { cci: true },
       getComposerMetadata,
     )
 
@@ -408,7 +577,10 @@ describe('stateComposer', () => {
     const visibleRange = { start: 0, end: 2 }
 
     const states = composeVisibleSubIndicatorStates(
-      bundle, visibleRange, timestamp, { cci: false },
+      bundle,
+      visibleRange,
+      timestamp,
+      { cci: false },
       getComposerMetadata,
     )
 
@@ -424,7 +596,14 @@ describe('stateComposer', () => {
   it('throws when registered indicator lacks visibleState.compose', () => {
     const missingCompose = (id: string) =>
       id === 'cci'
-        ? { name: 'cci', displayName: 'CCI', category: 'oscillator' as const, stateKey: '', defaultPaneId: '', rendererFactory: vi.fn() as never }
+        ? {
+            name: 'cci',
+            displayName: 'CCI',
+            category: 'oscillator' as const,
+            stateKey: '',
+            defaultPaneId: '',
+            rendererFactory: vi.fn() as never,
+          }
         : undefined
 
     expect(() =>
@@ -443,7 +622,10 @@ describe('stateComposer', () => {
     const timestamp = 1000
     const visibleRange = { start: 0, end: 1 }
     const states = composeVisibleSubIndicatorStates(
-      bundle, visibleRange, timestamp, {},
+      bundle,
+      visibleRange,
+      timestamp,
+      {},
       getComposerMetadata,
     )
     expect(states.cci.valueMin).toBe(-150)

@@ -76,8 +76,7 @@ describe('ChartBridge integration', { timeout: 10_000 }, () => {
     )
     expect(stateMsg).toBeDefined()
     expect(
-      (stateMsg as { descriptions: Record<string, unknown> }).descriptions
-        .testController,
+      (stateMsg as { descriptions: Record<string, unknown> }).descriptions.testController,
     ).toBeDefined()
 
     bridge.disconnect()

@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  serialize,
-  deserialize,
-  ChartSerializationError,
-} from '../serialization'
+import { serialize, deserialize, ChartSerializationError } from '../serialization'
 
 describe('serialize', () => {
   it('produces a SerializedChartState with schemaVersion 1 and a parseable timestamp', () => {
@@ -62,9 +58,7 @@ describe('deserialize', () => {
   })
 
   it('throws on non-object root', () => {
-    expect(() => deserialize('"a string"')).toThrowError(
-      /NOT_OBJECT|root must be/,
-    )
+    expect(() => deserialize('"a string"')).toThrowError(/NOT_OBJECT|root must be/)
   })
 
   it('throws on wrong schemaVersion', () => {
@@ -89,9 +83,7 @@ describe('deserialize', () => {
       schemaVersion: 1,
       snapshotTakenAt: new Date().toISOString(),
     })
-    expect(() => deserialize(bad)).toThrowError(
-      /MISSING_CONTROLLERS|controllers/,
-    )
+    expect(() => deserialize(bad)).toThrowError(/MISSING_CONTROLLERS|controllers/)
   })
 
   it('NEVER eval()s — payload is data-only', () => {

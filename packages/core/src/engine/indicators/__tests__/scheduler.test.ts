@@ -20,7 +20,9 @@ let builtinDefinitionsByName: Map<string, IndicatorMetadata>
 
 beforeAll(async () => {
   await loadBuiltinIndicators()
-  builtinDefinitionsByName = new Map(getBuiltinIndicatorDefinitions().map((definition) => [definition.name, definition]))
+  builtinDefinitionsByName = new Map(
+    getBuiltinIndicatorDefinitions().map((definition) => [definition.name, definition]),
+  )
 })
 
 function getBuiltinTestIndicator(name: string): IndicatorMetadata {
@@ -39,7 +41,16 @@ function registerTestIndicators(scheduler: IndicatorScheduler): void {
     getBuiltinTestIndicator('ene'),
     getBuiltinTestIndicator('rsi'),
     getBuiltinTestIndicator('macd'),
-    { name: 'volume', displayName: 'Volume', category: 'sub' as const, stateKey: 'indicator:volume:sub_Volume', defaultPaneId: 'sub_Volume', rendererFactory: vi.fn() as any, paneIdField: 'volumePaneId' as any, applyResult: applyMainResult('indicator:volume:sub_Volume') },
+    {
+      name: 'volume',
+      displayName: 'Volume',
+      category: 'sub' as const,
+      stateKey: 'indicator:volume:sub_Volume',
+      defaultPaneId: 'sub_Volume',
+      rendererFactory: vi.fn() as any,
+      paneIdField: 'volumePaneId' as any,
+      applyResult: applyMainResult('indicator:volume:sub_Volume'),
+    },
     getBuiltinTestIndicator('stoch'),
     getBuiltinTestIndicator('wmsr'),
     getBuiltinTestIndicator('mom'),
@@ -167,7 +178,7 @@ describe('IndicatorScheduler', () => {
           visibleMin: expect.any(Number),
           visibleMax: expect.any(Number),
         }),
-        expect.any(String)
+        expect.any(String),
       )
     })
 
@@ -290,15 +301,41 @@ describe('IndicatorScheduler', () => {
     it('should recalculate extremes but not series on viewport change only', () => {
       // Mark sub-indicators active so their states get real extremes (not the EMPTY sentinels)
       scheduler.setActiveSubPaneProvider(() => [
-        'sub_RSI', 'sub_CCI', 'sub_STOCH', 'sub_MOM', 'sub_WMSR', 'sub_KST', 'sub_FASTK', 'sub_MACD',
-        'sub_ATR', 'sub_WMA', 'sub_DEMA', 'sub_TEMA', 'sub_HMA', 'sub_KAMA', 'sub_SAR',
-        'sub_SuperTrend', 'sub_Keltner', 'sub_Donchian', 'sub_Ichimoku',
-        'sub_ROC', 'sub_TRIX',
-        'sub_HV', 'sub_Parkinson', 'sub_ChaikinVol',
-        'sub_VMA', 'sub_OBV', 'sub_PVT',
+        'sub_RSI',
+        'sub_CCI',
+        'sub_STOCH',
+        'sub_MOM',
+        'sub_WMSR',
+        'sub_KST',
+        'sub_FASTK',
+        'sub_MACD',
+        'sub_ATR',
+        'sub_WMA',
+        'sub_DEMA',
+        'sub_TEMA',
+        'sub_HMA',
+        'sub_KAMA',
+        'sub_SAR',
+        'sub_SuperTrend',
+        'sub_Keltner',
+        'sub_Donchian',
+        'sub_Ichimoku',
+        'sub_ROC',
+        'sub_TRIX',
+        'sub_HV',
+        'sub_Parkinson',
+        'sub_ChaikinVol',
+        'sub_VMA',
+        'sub_OBV',
+        'sub_PVT',
         'sub_VWAP',
-        'sub_CMF', 'sub_MFI',
-        'sub_Pivot', 'sub_Fib', 'sub_Structure', 'sub_Zones', 'sub_VolumeProfile',
+        'sub_CMF',
+        'sub_MFI',
+        'sub_Pivot',
+        'sub_Fib',
+        'sub_Structure',
+        'sub_Zones',
+        'sub_VolumeProfile',
       ])
 
       const data = createTestData(100)
@@ -363,7 +400,9 @@ describe('IndicatorScheduler', () => {
 
       // Small delay to ensure different timestamp
       const start = Date.now()
-      while (Date.now() < start + 2) { /* busy wait */ }
+      while (Date.now() < start + 2) {
+        /* busy wait */
+      }
 
       scheduler.recompute()
 
@@ -810,7 +849,11 @@ describe('RSI State in scheduler', () => {
   })
 
   it('should pass RSI params including show flags', () => {
-    scheduler.updateIndicatorConfig('rsi', { showRSI1: true, showRSI2: false, showRSI3: true }, 'sub_RSI')
+    scheduler.updateIndicatorConfig(
+      'rsi',
+      { showRSI1: true, showRSI2: false, showRSI3: true },
+      'sub_RSI',
+    )
     const data = createTestData(50)
     scheduler.update(data, { start: 0, end: 20 })
 
@@ -849,7 +892,7 @@ describe('RSI State in scheduler', () => {
 
     // Get the MA state after first update
     const maStateBefore = (mockHost.setSharedState as ReturnType<typeof vi.fn>).mock.calls.find(
-      (call: unknown[]) => call[0] === MA_STATE_KEY
+      (call: unknown[]) => call[0] === MA_STATE_KEY,
     )?.[1] as MARenderState
 
     // Update RSI config only
@@ -857,7 +900,7 @@ describe('RSI State in scheduler', () => {
 
     // Get the MA state after RSI config update
     const maStateAfter = (mockHost.setSharedState as ReturnType<typeof vi.fn>).mock.calls.find(
-      (call: unknown[]) => call[0] === MA_STATE_KEY
+      (call: unknown[]) => call[0] === MA_STATE_KEY,
     )?.[1] as MARenderState
 
     // MA series should remain the same reference (not recalculated)

@@ -34,46 +34,46 @@
  * controllers.
  */
 export type KLineChartErrorCode =
-    // generic
-    | 'INVALID_PARAM'
-    | 'INVALID_STATE'
-    | 'DISPOSED'
-    | 'NOT_REGISTERED'
-    // scale (TimeScale / PriceScale construction + setters)
-    | 'SCALE_RANGE_INVALID'
-    | 'SCALE_HEIGHT_INVALID'
-    | 'SCALE_LOG_REQUIRES_POSITIVE'
-    | 'SCALE_BAR_WIDTH_INVALID'
-    // footprint
-    | 'FOOTPRINT_TICKSIZE_INVALID'
-    | 'FOOTPRINT_BAR_INTERVAL_INVALID'
-    | 'FOOTPRINT_RATIO_INVALID'
-    // anchoredVwap
-    | 'AVWAP_ANCHOR_OUT_OF_RANGE'
-    // indicators (shared — every indicator validates inputs the same way)
-    | 'INDICATOR_INVALID_PARAM'
-    // orderBookHeatmap (controller + logColorScale + state + snapshotRing)
-    | 'HEATMAP_CONFIG_INVALID'
-    // mtfOverlay (alignToBaseIndex + resampleBars + createMtfController)
-    | 'MTF_CONFIG_INVALID'
-    // alternative chart types (renko / rangeBars / pointAndFigure)
-    | 'CHART_TYPE_CONFIG_INVALID'
-    // replay controller
-    | 'REPLAY_CONFIG_INVALID'
-    // scene / chart-controller / framework adapter wiring
-    | 'CONTROLLER_CONFIG_INVALID'
-    // data-fetcher (gotdx / baostock / tradingview)
-    | 'FETCH_FAILED'
-    // serialization
-    | 'SCHEMA_VERSION_MISMATCH'
-    | 'INVALID_JSON'
-    | 'NOT_OBJECT'
-    | 'INVALID_TIMESTAMP'
-    | 'MISSING_CONTROLLERS'
+  // generic
+  | 'INVALID_PARAM'
+  | 'INVALID_STATE'
+  | 'DISPOSED'
+  | 'NOT_REGISTERED'
+  // scale (TimeScale / PriceScale construction + setters)
+  | 'SCALE_RANGE_INVALID'
+  | 'SCALE_HEIGHT_INVALID'
+  | 'SCALE_LOG_REQUIRES_POSITIVE'
+  | 'SCALE_BAR_WIDTH_INVALID'
+  // footprint
+  | 'FOOTPRINT_TICKSIZE_INVALID'
+  | 'FOOTPRINT_BAR_INTERVAL_INVALID'
+  | 'FOOTPRINT_RATIO_INVALID'
+  // anchoredVwap
+  | 'AVWAP_ANCHOR_OUT_OF_RANGE'
+  // indicators (shared — every indicator validates inputs the same way)
+  | 'INDICATOR_INVALID_PARAM'
+  // orderBookHeatmap (controller + logColorScale + state + snapshotRing)
+  | 'HEATMAP_CONFIG_INVALID'
+  // mtfOverlay (alignToBaseIndex + resampleBars + createMtfController)
+  | 'MTF_CONFIG_INVALID'
+  // alternative chart types (renko / rangeBars / pointAndFigure)
+  | 'CHART_TYPE_CONFIG_INVALID'
+  // replay controller
+  | 'REPLAY_CONFIG_INVALID'
+  // scene / chart-controller / framework adapter wiring
+  | 'CONTROLLER_CONFIG_INVALID'
+  // data-fetcher (gotdx / baostock / tradingview)
+  | 'FETCH_FAILED'
+  // serialization
+  | 'SCHEMA_VERSION_MISMATCH'
+  | 'INVALID_JSON'
+  | 'NOT_OBJECT'
+  | 'INVALID_TIMESTAMP'
+  | 'MISSING_CONTROLLERS'
 
 export interface KLineChartErrorOptions {
-    /** Lower-level error this wraps (preserved as the standard `.cause`). */
-    cause?: unknown
+  /** Lower-level error this wraps (preserved as the standard `.cause`). */
+  cause?: unknown
 }
 
 /**
@@ -84,28 +84,29 @@ export interface KLineChartErrorOptions {
  * the human-readable explanation.
  */
 export class KLineChartError extends Error {
-    readonly code: KLineChartErrorCode
+  readonly code: KLineChartErrorCode
 
-    constructor(code: KLineChartErrorCode, message: string, opts?: KLineChartErrorOptions) {
-        // Forward `cause` via the ES2022 Error options bag when available.
-        if (opts?.cause !== undefined) {
-            super(message, { cause: opts.cause })
-        } else {
-            super(message)
-        }
-        this.code = code
-        // `name` defaults to the constructor name in V8; pinning it makes
-        // serialized errors (e.g. via JSON.stringify) carry the type tag.
-        this.name = 'KLineChartError'
-        // Capture stack at the throw site, not inside the constructor.
-        // V8-specific but harmless elsewhere.
-        if (typeof (Error as unknown as { captureStackTrace?: unknown }).captureStackTrace === 'function') {
-            ; (Error as unknown as { captureStackTrace: (e: Error, c: unknown) => void }).captureStackTrace(
-                this,
-                KLineChartError,
-            )
-        }
+  constructor(code: KLineChartErrorCode, message: string, opts?: KLineChartErrorOptions) {
+    // Forward `cause` via the ES2022 Error options bag when available.
+    if (opts?.cause !== undefined) {
+      super(message, { cause: opts.cause })
+    } else {
+      super(message)
     }
+    this.code = code
+    // `name` defaults to the constructor name in V8; pinning it makes
+    // serialized errors (e.g. via JSON.stringify) carry the type tag.
+    this.name = 'KLineChartError'
+    // Capture stack at the throw site, not inside the constructor.
+    // V8-specific but harmless elsewhere.
+    if (
+      typeof (Error as unknown as { captureStackTrace?: unknown }).captureStackTrace === 'function'
+    ) {
+      ;(
+        Error as unknown as { captureStackTrace: (e: Error, c: unknown) => void }
+      ).captureStackTrace(this, KLineChartError)
+    }
+  }
 }
 
 /**
@@ -119,10 +120,10 @@ export class KLineChartError extends Error {
  */
 export function isKLineChartError(value: unknown): value is KLineChartError
 export function isKLineChartError<C extends KLineChartErrorCode>(
-    value: unknown,
-    code: C,
+  value: unknown,
+  code: C,
 ): value is KLineChartError & { code: C }
 export function isKLineChartError(value: unknown, code?: KLineChartErrorCode): boolean {
-    if (!(value instanceof KLineChartError)) return false
-    return code === undefined || value.code === code
+  if (!(value instanceof KLineChartError)) return false
+  return code === undefined || value.code === code
 }

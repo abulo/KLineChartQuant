@@ -1,4 +1,9 @@
-import type { RendererPlugin, RenderContext, RendererPluginWithHost, PluginHost } from '../../plugin'
+import type {
+  RendererPlugin,
+  RenderContext,
+  RendererPluginWithHost,
+  PluginHost,
+} from '../../plugin'
 import { RENDERER_PRIORITY } from '../../plugin'
 import type { TimeShareData } from '../../types/price'
 import { resolveThemeColors } from '../../tokens'
@@ -16,8 +21,7 @@ export function createTimeShareRendererPlugin(): RendererPluginWithHost {
     paneId: 'main',
     priority: RENDERER_PRIORITY.MAIN,
 
-    onInstall(_host: PluginHost) {
-    },
+    onInstall(_host: PluginHost) {},
 
     draw(context: RenderContext) {
       const { ctx, pane, data, range, dpr, kLineCenters, scrollLeft, settings, kBarRects } = context
@@ -25,7 +29,11 @@ export function createTimeShareRendererPlugin(): RendererPluginWithHost {
       const tsData = data as TimeShareData[]
       if (!tsData.length) return
 
-      const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
+      const colors = resolveThemeColors(
+        context.theme,
+        context.isAsiaMarket,
+        context.colorPresetSettings,
+      )
       const preClose = (settings?.preClose as number) ?? tsData[0]?.price ?? 0
       if (preClose === 0) return
 
@@ -64,14 +72,35 @@ export function createTimeShareRendererPlugin(): RendererPluginWithHost {
 
       drawPreCloseLine(ctx, xPositions, preCloseY, dpr, colors.timeSharePreClose)
 
-      drawAreaFill(ctx, xPositions, yPrices, preCloseY, dpr,
-        colors.timeShareAreaUp, colors.timeShareAreaDown)
+      drawAreaFill(
+        ctx,
+        xPositions,
+        yPrices,
+        preCloseY,
+        dpr,
+        colors.timeShareAreaUp,
+        colors.timeShareAreaDown,
+      )
 
       drawSegmentLine(ctx, xPositions, yPrices, dpr, colors.timeSharePriceLine, 2)
 
       drawSegmentLine(ctx, xPositions, yAvgs, dpr, colors.timeShareAvgLine, 1.5)
 
-      drawVolumeBars(ctx, kBarRects, volumes, maxVolume, volumeAreaHeight, paneHeight, preClose, dpr, colors.volumeUp, colors.volumeDown, colors.volumeNeutral, tsData, start)
+      drawVolumeBars(
+        ctx,
+        kBarRects,
+        volumes,
+        maxVolume,
+        volumeAreaHeight,
+        paneHeight,
+        preClose,
+        dpr,
+        colors.volumeUp,
+        colors.volumeDown,
+        colors.volumeNeutral,
+        tsData,
+        start,
+      )
 
       ctx.restore()
     },
@@ -116,16 +145,16 @@ function drawAreaFill(
 
   function buildPolygon(isAbove: boolean): Array<{ x: number; y: number }> {
     const pts: Array<{ x: number; y: number }> = [{ x: xPositions[0]!, y: baselineY }]
-    const firstOnOurSide = isAbove
-      ? yPrices[0]! <= baselineY
-      : yPrices[0]! >= baselineY
+    const firstOnOurSide = isAbove ? yPrices[0]! <= baselineY : yPrices[0]! >= baselineY
     if (firstOnOurSide) {
       pts.push({ x: xPositions[0]!, y: yPrices[0]! })
     }
 
     for (let i = 0; i < n - 1; i++) {
-      const x1 = xPositions[i]!, y1 = yPrices[i]!
-      const x2 = xPositions[i + 1]!, y2 = yPrices[i + 1]!
+      const x1 = xPositions[i]!,
+        y1 = yPrices[i]!
+      const x2 = xPositions[i + 1]!,
+        y2 = yPrices[i + 1]!
 
       const y1OnOurSide = isAbove ? y1 <= baselineY : y1 >= baselineY
       const y2OnOurSide = isAbove ? y2 <= baselineY : y2 >= baselineY

@@ -38,12 +38,12 @@
 
 /** Standard OHLCV row. Timestamps are epoch milliseconds. */
 export interface OHLCV {
-    timestamp: number
-    open: number
-    high: number
-    low: number
-    close: number
-    volume: number
+  timestamp: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
 }
 
 /**
@@ -58,16 +58,16 @@ export interface OHLCV {
  * bar) — every fanned-out output row shares the same start/end index.
  */
 export interface TransformedBar extends OHLCV {
-    /** Lowest source index folded into this output bar (inclusive). */
-    sourceBarIndexStart: number
-    /** Highest source index folded into this output bar (inclusive). */
-    sourceBarIndexEnd: number
-    /**
-     * Transform-specific metadata. Marked `Readonly` so consumers can rely on
-     * structural sharing — a transform must never mutate metadata after
-     * emitting it.
-     */
-    meta?: Readonly<Record<string, unknown>>
+  /** Lowest source index folded into this output bar (inclusive). */
+  sourceBarIndexStart: number
+  /** Highest source index folded into this output bar (inclusive). */
+  sourceBarIndexEnd: number
+  /**
+   * Transform-specific metadata. Marked `Readonly` so consumers can rely on
+   * structural sharing — a transform must never mutate metadata after
+   * emitting it.
+   */
+  meta?: Readonly<Record<string, unknown>>
 }
 
 /**
@@ -83,17 +83,17 @@ export interface TransformedBar extends OHLCV {
  * `typeId` is a stable, human-readable identifier used by the scene/registry.
  */
 export interface ChartTypeTransform<TConfig = unknown> {
-    readonly typeId: string
-    transform(input: ReadonlyArray<OHLCV>, config: TConfig): ReadonlyArray<TransformedBar>
-    /**
-     * Append one input bar and emit zero, one, or many output bars.
-     *
-     * Implementations that do not support incremental mode omit this method.
-     * For Heikin Ashi the output is always exactly one bar per call. For
-     * Renko / Range Bars / P&F the count can be 0..N depending on whether the
-     * new bar triggers brick/box formation.
-     */
-    appendBar?(input: OHLCV): ReadonlyArray<TransformedBar>
-    /** Drop internal state. Idempotent. Safe to call on stateless transforms. */
-    reset?(): void
+  readonly typeId: string
+  transform(input: ReadonlyArray<OHLCV>, config: TConfig): ReadonlyArray<TransformedBar>
+  /**
+   * Append one input bar and emit zero, one, or many output bars.
+   *
+   * Implementations that do not support incremental mode omit this method.
+   * For Heikin Ashi the output is always exactly one bar per call. For
+   * Renko / Range Bars / P&F the count can be 0..N depending on whether the
+   * new bar triggers brick/box formation.
+   */
+  appendBar?(input: OHLCV): ReadonlyArray<TransformedBar>
+  /** Drop internal state. Idempotent. Safe to call on stateless transforms. */
+  reset?(): void
 }

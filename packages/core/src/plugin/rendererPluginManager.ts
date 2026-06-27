@@ -71,7 +71,6 @@ export class RendererPluginManager {
     this.cacheInvalid = true
   }
 
-
   /** 覆盖已知 paneId 集合 */
   setKnownPaneIds(paneIds: string[]): void {
     this.knownPaneIds = new Set(paneIds)
@@ -244,13 +243,8 @@ export class RendererPluginManager {
     })
   }
 
-
   /** 渲染指定 pane（带错误隔离，支持按 UpdateLevel 过滤） */
-  render(
-    paneId: string,
-    context: RenderContext,
-    level?: UpdateLevel
-  ): RendererErrorEvent[] {
+  render(paneId: string, context: RenderContext, level?: UpdateLevel): RendererErrorEvent[] {
     const renderers = this.getRenderers(paneId)
     const errors: RendererErrorEvent[] = []
 
@@ -354,7 +348,9 @@ export class RendererPluginManager {
 
   /** 通知尺寸变化 */
   notifyResize(paneId: string, pane: PaneInfo): void {
-    const renderers = this.getMergedRenderers(paneId).filter((renderer) => this.isRendererEnabled(renderer))
+    const renderers = this.getMergedRenderers(paneId).filter((renderer) =>
+      this.isRendererEnabled(renderer),
+    )
     for (const renderer of renderers) {
       if (renderer.onResize) {
         try {

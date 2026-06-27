@@ -11,98 +11,98 @@
  */
 
 export type Signal<T> = {
-    /** read current value; tracked when called inside `effect` */
-    (): T
-    /** read without tracking */
-    peek: () => T
-    /** write new value; notifies subscribers if `Object.is` differs */
-    set: (next: T) => void
-    /** subscribe; returns unsubscribe */
-    subscribe: (listener: () => void) => () => void
+  /** read current value; tracked when called inside `effect` */
+  (): T
+  /** read without tracking */
+  peek: () => T
+  /** write new value; notifies subscribers if `Object.is` differs */
+  set: (next: T) => void
+  /** subscribe; returns unsubscribe */
+  subscribe: (listener: () => void) => () => void
 }
 
 export type Computed<T> = {
-    (): T
-    peek: () => T
-    subscribe: (listener: () => void) => () => void
+  (): T
+  peek: () => T
+  subscribe: (listener: () => void) => () => void
 }
 
 type Tracker = {
-    deps: Set<Set<() => void>>
-    run: () => void
+  deps: Set<Set<() => void>>
+  run: () => void
 }
 
 let activeTracker: Tracker | null = null
 
 export function createSignal<T>(initial: T): Signal<T> {
-    let value = initial
-    const subscribers = new Set<() => void>()
+  let value = initial
+  const subscribers = new Set<() => void>()
 
-    const read = (): T => {
-        if (activeTracker !== null) {
-            subscribers.add(activeTracker.run)
-            activeTracker.deps.add(subscribers)
-        }
-        return value
+  const read = (): T => {
+    if (activeTracker !== null) {
+      subscribers.add(activeTracker.run)
+      activeTracker.deps.add(subscribers)
     }
+    return value
+  }
 
-    const peek = (): T => value
+  const peek = (): T => value
 
-    const set = (next: T): void => {
-        if (Object.is(value, next)) return
-        value = next
-        // copy to allow listener self-unsubscribe during notify
-        for (const listener of [...subscribers]) listener()
+  const set = (next: T): void => {
+    if (Object.is(value, next)) return
+    value = next
+    // copy to allow listener self-unsubscribe during notify
+    for (const listener of [...subscribers]) listener()
+  }
+
+  const subscribe = (listener: () => void): (() => void) => {
+    subscribers.add(listener)
+    return () => {
+      subscribers.delete(listener)
     }
+  }
 
-    const subscribe = (listener: () => void): (() => void) => {
-        subscribers.add(listener)
-        return () => {
-            subscribers.delete(listener)
-        }
-    }
-
-    return Object.assign(read, { peek, set, subscribe }) as Signal<T>
+  return Object.assign(read, { peek, set, subscribe }) as Signal<T>
 }
 
 export function effect(fn: () => void): () => void {
-    const tracker: Tracker = {
-        deps: new Set(),
-        run: () => {
-            // tear down previous subscriptions before re-tracking
-            for (const dep of tracker.deps) dep.delete(tracker.run)
-            tracker.deps.clear()
-            const prev = activeTracker
-            activeTracker = tracker
-            try {
-                fn()
-            } finally {
-                activeTracker = prev
-            }
-        },
-    }
-    tracker.run()
-    return () => {
-        for (const dep of tracker.deps) dep.delete(tracker.run)
-        tracker.deps.clear()
-    }
+  const tracker: Tracker = {
+    deps: new Set(),
+    run: () => {
+      // tear down previous subscriptions before re-tracking
+      for (const dep of tracker.deps) dep.delete(tracker.run)
+      tracker.deps.clear()
+      const prev = activeTracker
+      activeTracker = tracker
+      try {
+        fn()
+      } finally {
+        activeTracker = prev
+      }
+    },
+  }
+  tracker.run()
+  return () => {
+    for (const dep of tracker.deps) dep.delete(tracker.run)
+    tracker.deps.clear()
+  }
 }
 
 export function computed<T>(fn: () => T): Computed<T> {
-    const inner = createSignal<T>(undefined as unknown as T)
-    let initialized = false
-    effect(() => {
-        const next = fn()
-        if (!initialized) {
-            initialized = true
-            // bypass equality check on first run
-            ;(inner as unknown as { set: (v: T) => void }).set(next)
-            return
-        }
-        inner.set(next)
-    })
-    const read = (): T => inner()
-    return Object.assign(read, { peek: inner.peek, subscribe: inner.subscribe }) as Computed<T>
+  const inner = createSignal<T>(undefined as unknown as T)
+  let initialized = false
+  effect(() => {
+    const next = fn()
+    if (!initialized) {
+      initialized = true
+      // bypass equality check on first run
+      ;(inner as unknown as { set: (v: T) => void }).set(next)
+      return
+    }
+    inner.set(next)
+  })
+  const read = (): T => inner()
+  return Object.assign(read, { peek: inner.peek, subscribe: inner.subscribe }) as Computed<T>
 }
 
 /**
@@ -115,5 +115,5 @@ export function computed<T>(fn: () => T): Computed<T> {
  * adapters can wrap their own batching (React's automatic batching, Vue's nextTick).
  */
 export function batch<T>(fn: () => T): T {
-    return fn()
+  return fn()
 }

@@ -78,7 +78,13 @@ describe('ChartIndicatorManager', () => {
       manager.updateMainIndicatorParams('MA', { ma5: false })
 
       expect(setConfigSpy).toHaveBeenCalledTimes(1)
-      expect(setConfigSpy).toHaveBeenCalledWith({ ma5: false, ma10: true, ma20: true, ma30: true, ma60: true })
+      expect(setConfigSpy).toHaveBeenCalledWith({
+        ma5: false,
+        ma10: true,
+        ma20: true,
+        ma30: true,
+        ma60: true,
+      })
     })
 
     it('should merge params instead of replacing', () => {

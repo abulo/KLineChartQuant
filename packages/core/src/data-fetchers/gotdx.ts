@@ -35,10 +35,14 @@ const BASE_URL = 'http://127.0.0.1:8080'
 function getShanghaiDateYYYYMMDD(): number {
   const formatter = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
-    year: 'numeric', month: '2-digit', day: '2-digit',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   })
   const parts = formatter.formatToParts(new Date())
-  let y = '', m = '', d = ''
+  let y = '',
+    m = '',
+    d = ''
   for (const p of parts) {
     if (p.type === 'year') y = p.value
     else if (p.type === 'month') m = p.value
@@ -61,8 +65,13 @@ async function fetchGotdxHistoryTick(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new KLineChartError('FETCH_FAILED', `[gotdx] history-tick failed: ${res.status} ${res.statusText}`)
-  const list: Array<{ timestamp: string; Price: number; Avg: number; Vol: number }> = await res.json()
+  if (!res.ok)
+    throw new KLineChartError(
+      'FETCH_FAILED',
+      `[gotdx] history-tick failed: ${res.status} ${res.statusText}`,
+    )
+  const list: Array<{ timestamp: string; Price: number; Avg: number; Vol: number }> =
+    await res.json()
   return list.map((item) => ({
     timestamp: new Date(item.timestamp).getTime(),
     price: item.Price,
@@ -138,10 +147,7 @@ function mapExItem(item: ExKLineItem, code: string): KLineData {
   }
 }
 
-async function fetchGotdx(
-  _source: string,
-  config: FetchConfig,
-): Promise<ReadonlyArray<KLineData>> {
+async function fetchGotdx(_source: string, config: FetchConfig): Promise<ReadonlyArray<KLineData>> {
   if (config.exchange && config.exchange in EXCHANGE_EX_CATEGORY) {
     const category = EXCHANGE_EX_CATEGORY[config.exchange]
     const period = PERIOD_TO_CATEGORY[config.period] ?? 4
@@ -158,7 +164,11 @@ async function fetchGotdx(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    if (!res.ok) throw new KLineChartError('FETCH_FAILED', `[gotdx] ex/kline-by-date failed: ${res.status} ${res.statusText}`)
+    if (!res.ok)
+      throw new KLineChartError(
+        'FETCH_FAILED',
+        `[gotdx] ex/kline-by-date failed: ${res.status} ${res.statusText}`,
+      )
     const list: ExKLineItem[] = await res.json()
     return list.map((item) => mapExItem(item, config.symbol))
   }
@@ -180,7 +190,11 @@ async function fetchGotdx(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new KLineChartError('FETCH_FAILED', `[gotdx] stock/kline-by-date failed: ${res.status} ${res.statusText}`)
+  if (!res.ok)
+    throw new KLineChartError(
+      'FETCH_FAILED',
+      `[gotdx] stock/kline-by-date failed: ${res.status} ${res.statusText}`,
+    )
   const list: SecurityBar[] = await res.json()
   return list.map((item) => mapBar(item, config.symbol))
 }
@@ -191,8 +205,16 @@ async function fetchGotdx(
   description: 'TDX data source via local proxy',
   version: '1.0.0',
   capabilities: [
-    '1min', '5min', '15min', '30min', '60min',
-    'daily', 'weekly', 'monthly', 'quarterly', 'yearly',
+    '1min',
+    '5min',
+    '15min',
+    '30min',
+    '60min',
+    'daily',
+    'weekly',
+    'monthly',
+    'quarterly',
+    'yearly',
   ],
 })
 class GotdxFetcher {

@@ -32,7 +32,7 @@
       <LeftToolbar
         ref="toolbarRef"
         :is-fullscreen="effectiveIsFullscreen"
-          :alert-controller="controller"
+        :alert-controller="controller"
         @select-tool="handleSelectTool"
         @toggle-fullscreen="handleToggleFullscreen"
         @zoom-in="applyZoomToLevel(zoomLevel + 1)"
@@ -182,1213 +182,1217 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick, shallowRef } from 'vue'
-import {
-  SemanticChartController,
-  type SemanticChartConfig,
-  type DataFetcher,
-} from '@363045841yyt/klinechart-core/semantic'
-import KLineTooltip from './KLineTooltip.vue'
-import MarkerTooltip from './MarkerTooltip.vue'
-import IndicatorSelector from './IndicatorSelector.vue'
-import DrawingStyleToolbar from './DrawingStyleToolbar.vue'
-import RangeSelectionExport from './RangeSelectionExport.vue'
-import CanvasToolbarStack from './common/CanvasToolbarStack.vue'
-import { provideFullscreenTeleportTarget } from '../composables/useFullscreenTeleportTarget'
-import {
-  createChartController,
-  routerDataFetcher,
-  type ChartController,
-  type InteractionSnapshot,
-  type SymbolSpec,
-  type CustomDataSource,
-} from '@363045841yyt/klinechart-core/controllers'
-import { useChartState } from '../composables/chart/useChartState'
-import { useChartTheme } from '../composables/chart/useChartTheme'
-import { useIndicatorManager } from '../composables/chart/useIndicatorManager'
-import { useDrawingManager } from '../composables/chart/useDrawingManager'
-import { SETTINGS_STORAGE_KEY } from '@363045841yyt/klinechart-core/config'
-import { useRangeSelection } from '../composables/chart/useRangeSelection'
-import LeftToolbar from './LeftToolbar.vue'
-import TopToolbar, { type SymbolItem } from './TopToolbar.vue'
-import BatchStockDialog from './BatchStockDialog.vue'
-import ExportProgressDialog from './ExportProgressDialog.vue'
+  import { ref, computed, onMounted, onUnmounted, watch, nextTick, shallowRef } from 'vue'
+  import {
+    SemanticChartController,
+    type SemanticChartConfig,
+    type DataFetcher,
+  } from '@363045841yyt/klinechart-core/semantic'
+  import KLineTooltip from './KLineTooltip.vue'
+  import MarkerTooltip from './MarkerTooltip.vue'
+  import IndicatorSelector from './IndicatorSelector.vue'
+  import DrawingStyleToolbar from './DrawingStyleToolbar.vue'
+  import RangeSelectionExport from './RangeSelectionExport.vue'
+  import CanvasToolbarStack from './common/CanvasToolbarStack.vue'
+  import { provideFullscreenTeleportTarget } from '../composables/useFullscreenTeleportTarget'
+  import {
+    createChartController,
+    routerDataFetcher,
+    type ChartController,
+    type InteractionSnapshot,
+    type SymbolSpec,
+    type CustomDataSource,
+  } from '@363045841yyt/klinechart-core/controllers'
+  import { useChartState } from '../composables/chart/useChartState'
+  import { useChartTheme } from '../composables/chart/useChartTheme'
+  import { useIndicatorManager } from '../composables/chart/useIndicatorManager'
+  import { useDrawingManager } from '../composables/chart/useDrawingManager'
+  import { SETTINGS_STORAGE_KEY } from '@363045841yyt/klinechart-core/config'
+  import { useRangeSelection } from '../composables/chart/useRangeSelection'
+  import LeftToolbar from './LeftToolbar.vue'
+  import TopToolbar, { type SymbolItem } from './TopToolbar.vue'
+  import BatchStockDialog from './BatchStockDialog.vue'
+  import ExportProgressDialog from './ExportProgressDialog.vue'
 
-// ── Props & Emits ──
-const props = withDefaults(
-  defineProps<{
-    /** 语义化配置（可选，唯一控制源） */
-    semanticConfig?: SemanticChartConfig
+  // ── Props & Emits ──
+  const props = withDefaults(
+    defineProps<{
+      /** 语义化配置（可选，唯一控制源） */
+      semanticConfig?: SemanticChartConfig
 
-    /** 数据获取函数（可选）。默认使用内置 routerDataFetcher，亦可由使用者注入覆盖。 */
-    dataFetcher?: DataFetcher
+      /** 数据获取函数（可选）。默认使用内置 routerDataFetcher，亦可由使用者注入覆盖。 */
+      dataFetcher?: DataFetcher
 
-    yPaddingPx?: number
-    minKWidth?: number
-    maxKWidth?: number
-    /** 右侧价格轴宽度 */
-    rightAxisWidth?: number
-    /** 左侧价格轴宽度（默认 0，不显示） */
-    leftAxisWidth?: number
-    /** 底部时间轴高度 */
-    bottomAxisHeight?: number
-    /** 价格标签额外宽度（用于显示涨跌幅，默认 60px） */
-    priceLabelWidth?: number
+      yPaddingPx?: number
+      minKWidth?: number
+      maxKWidth?: number
+      /** 右侧价格轴宽度 */
+      rightAxisWidth?: number
+      /** 左侧价格轴宽度（默认 0，不显示） */
+      leftAxisWidth?: number
+      /** 底部时间轴高度 */
+      bottomAxisHeight?: number
+      /** 价格标签额外宽度（用于显示涨跌幅，默认 60px） */
+      priceLabelWidth?: number
 
-    /** 缩放级别数量（默认 10） */
-    zoomLevels?: number
-    /** 初始缩放级别（1 ~ zoomLevels，默认居中） */
-    initialZoomLevel?: number
-    /** 是否全屏（受控）。不绑定时为非受控模式，组件内部接管全屏 DOM 操作 */
-    isFullscreen?: boolean
-    /** 主题（受控）。不传时由设置项决定 */
-    theme?: 'light' | 'dark'
-    /** 时区，默认 Asia/Shanghai */
-    timezone?: string
+      /** 缩放级别数量（默认 10） */
+      zoomLevels?: number
+      /** 初始缩放级别（1 ~ zoomLevels，默认居中） */
+      initialZoomLevel?: number
+      /** 是否全屏（受控）。不绑定时为非受控模式，组件内部接管全屏 DOM 操作 */
+      isFullscreen?: boolean
+      /** 主题（受控）。不传时由设置项决定 */
+      theme?: 'light' | 'dark'
+      /** 时区，默认 Asia/Shanghai */
+      timezone?: string
 
-    /** 用户自定义数据源（传入后 bypass fetcher，使用此数据） */
-    customData?: CustomDataSource
+      /** 用户自定义数据源（传入后 bypass fetcher，使用此数据） */
+      customData?: CustomDataSource
 
-    /** MCP / AI runtime bridge 配置。传入后自动连接 MCP WebSocket server */
-    mcp?: {
-      wsUrl?: string
-      onToolCall?: (call: {
-        name: string
-        input: Record<string, unknown>
-      }) =>
-        | { success: boolean; error?: string; data?: unknown }
-        | Promise<{ success: boolean; error?: string; data?: unknown }>
-      autoReconnect?: boolean
+      /** MCP / AI runtime bridge 配置。传入后自动连接 MCP WebSocket server */
+      mcp?: {
+        wsUrl?: string
+        onToolCall?: (call: {
+          name: string
+          input: Record<string, unknown>
+        }) =>
+          | { success: boolean; error?: string; data?: unknown }
+          | Promise<{ success: boolean; error?: string; data?: unknown }>
+        autoReconnect?: boolean
+      }
+    }>(),
+    {
+      yPaddingPx: 20,
+      minKWidth: 1,
+      maxKWidth: 50,
+      rightAxisWidth: 0,
+      bottomAxisHeight: 24,
+      priceLabelWidth: 60,
+      zoomLevels: 20,
+      initialZoomLevel: 3,
+      // 显式 undefined：覆盖 Vue 对 Boolean 缺省值的强制转换（默认会变成 false），
+      // 保证未绑定 isFullscreen 时为非受控模式（props.isFullscreen === undefined）
+      isFullscreen: undefined,
+      timezone: 'Asia/Shanghai',
+    },
+  )
+
+  const emit = defineEmits<{
+    (e: 'zoomLevelChange', level: number, kWidth: number): void
+    (e: 'toggleFullscreen'): void
+    (e: 'update:isFullscreen', value: boolean): void
+    (e: 'themeChange', theme: 'light' | 'dark'): void
+    (e: 'kLineLevelChange', level: string): void
+    (e: 'kLineAdjustChange', adjust: 'qfq' | 'hfq' | 'splits' | 'none'): void
+  }>()
+
+  // ── Symbol / Comparison State ──
+  const kLineLevel = ref<string>(props.semanticConfig?.data?.period ?? 'daily')
+  const previousKLineLevel = ref<string>('daily')
+  const kLineAdjust = ref(props.semanticConfig?.data?.adjust ?? 'none')
+  const isIntraday = computed(() => kLineLevel.value.includes('min'))
+  const currentSymbol = ref('选择商品')
+  const currentSymbolItem = ref<SymbolItem | null>(null)
+  const overlaySymbols = ref<string[]>([])
+  const overlaySymbolItems = ref<SymbolItem[]>([])
+
+  function onKLineLevelChange(level: string) {
+    if (level === 'timeshare') {
+      previousKLineLevel.value = kLineLevel.value as string
     }
-  }>(),
-  {
-    yPaddingPx: 20,
-    minKWidth: 1,
-    maxKWidth: 50,
-    rightAxisWidth: 0,
-    bottomAxisHeight: 24,
-    priceLabelWidth: 60,
-    zoomLevels: 20,
-    initialZoomLevel: 3,
-    // 显式 undefined：覆盖 Vue 对 Boolean 缺省值的强制转换（默认会变成 false），
-    // 保证未绑定 isFullscreen 时为非受控模式（props.isFullscreen === undefined）
-    isFullscreen: undefined,
-    timezone: 'Asia/Shanghai',
-  },
-)
-
-const emit = defineEmits<{
-  (e: 'zoomLevelChange', level: number, kWidth: number): void
-  (e: 'toggleFullscreen'): void
-  (e: 'update:isFullscreen', value: boolean): void
-  (e: 'themeChange', theme: 'light' | 'dark'): void
-  (e: 'kLineLevelChange', level: string): void
-  (e: 'kLineAdjustChange', adjust: 'qfq' | 'hfq' | 'splits' | 'none'): void
-}>()
-
-// ── Symbol / Comparison State ──
-const kLineLevel = ref<string>(props.semanticConfig?.data?.period ?? 'daily')
-const previousKLineLevel = ref<string>('daily')
-const kLineAdjust = ref(props.semanticConfig?.data?.adjust ?? 'none')
-const isIntraday = computed(() => kLineLevel.value.includes('min'))
-const currentSymbol = ref('选择商品')
-const currentSymbolItem = ref<SymbolItem | null>(null)
-const overlaySymbols = ref<string[]>([])
-const overlaySymbolItems = ref<SymbolItem[]>([])
-
-function onKLineLevelChange(level: string) {
-  if (level === 'timeshare') {
-    previousKLineLevel.value = kLineLevel.value as string
-  }
-  kLineLevel.value = level as typeof kLineLevel.value
-  emit('kLineLevelChange', level)
-  syncSymbolsToController()
-}
-
-function onBackFromTimeShare() {
-  const prevLevel = previousKLineLevel.value
-  if (prevLevel && prevLevel !== 'timeshare') {
-    onKLineLevelChange(prevLevel)
-  }
-}
-
-function onKLineAdjustChange(adjust: 'qfq' | 'hfq' | 'splits' | 'none') {
-  kLineAdjust.value = adjust
-  emit('kLineAdjustChange', adjust)
-  syncSymbolsToController()
-}
-
-function onSymbolChange(item: SymbolItem) {
-  symbolStatus.value = 'loading'
-  const current = controller.value?.symbols.peek() ?? []
-  const comparisonSpecs = current.slice(1)
-  controller.value?.setSymbols([toSymbolSpec(item), ...comparisonSpecs])
-}
-
-function onAddOverlaySymbol(item: SymbolItem) {
-  const ctrl = controller.value
-  if (!ctrl) return
-  const current = ctrl.symbols.peek()
-  const currentCodes = current.map((s) => s.symbol)
-  if (currentCodes.includes(item.code)) return
-  forcePercentAxis()
-  ctrl.addComparisonSymbol(toSymbolSpec(item))
-}
-
-function onRemoveOverlaySymbol(code: string) {
-  controller.value?.removeComparisonSymbol(code)
-}
-
-function toSymbolSpec(item: SymbolItem): SymbolSpec {
-  return {
-    symbol: item.code,
-    exchange: item.exchange,
-    period: kLineLevel.value,
-    source: item.source,
-    startDate: props.semanticConfig?.data?.startDate ?? '',
-    endDate: props.semanticConfig?.data?.endDate ?? '',
-    adjust: kLineAdjust.value,
-  }
-}
-
-function syncSymbolsToController() {
-  if (!currentSymbolItem.value) return
-  controller.value?.setSymbols([
-    toSymbolSpec(currentSymbolItem.value),
-    ...overlaySymbolItems.value.map(toSymbolSpec),
-  ])
-}
-
-function forcePercentAxis() {
-  if (chartSettings.value.axisType === 'percent') return
-  const nextSettings = { ...chartSettings.value, axisType: 'percent' as const }
-  chartSettings.value = nextSettings
-  controller.value?.updateSettingsFacade(nextSettings)
-  try {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings))
-  } catch {
-    /* quota exceeded */
-  }
-}
-
-// ── DOM Template Refs ──
-const containerRef = ref<HTMLDivElement | null>(null)
-const chartMainRef = ref<HTMLDivElement | null>(null)
-const chartWrapperRef = ref<HTMLDivElement | null>(null)
-const tooltipLayerRef = ref<HTMLDivElement | null>(null)
-const toolbarRef = ref<InstanceType<typeof LeftToolbar> | null>(null)
-const indicatorSelectorRef = ref<InstanceType<typeof IndicatorSelector> | null>(null)
-const leftAxisLayerRef = ref<HTMLDivElement | null>(null)
-provideFullscreenTeleportTarget(chartWrapperRef)
-
-// ── DataFetcher 默认值（未绑定时回退到内置 routerDataFetcher）──
-// 用 computed 解析默认值，避免依赖 Vue 对「函数类型 prop 默认值」的特殊语义
-// （函数类型 prop 的 withDefaults 默认值会被原样使用而非作为工厂调用，跨编译条件不稳定）
-const effectiveDataFetcher = computed(() => props.dataFetcher ?? routerDataFetcher)
-
-// ── Fullscreen (controlled / uncontrolled) ──
-const internalIsFullscreen = ref(false)
-const effectiveIsFullscreen = computed(() => props.isFullscreen ?? internalIsFullscreen.value)
-let onFullscreenChange: (() => void) | null = null
-
-function handleToggleFullscreen() {
-  // 受控模式：保持旧行为，仅通知，不操作 DOM
-  if (props.isFullscreen !== undefined) {
-    emit('toggleFullscreen')
-    return
+    kLineLevel.value = level as typeof kLineLevel.value
+    emit('kLineLevelChange', level)
+    syncSymbolsToController()
   }
 
-  // 非受控模式：组件内部接管全屏 DOM 操作
-  if (typeof document !== 'undefined') {
-    const el = chartWrapperRef.value
-    if (!document.fullscreenElement) {
-      if (el && typeof el.requestFullscreen === 'function') {
-        el.requestFullscreen().catch(() => {
-          /* 用户拒绝或浏览器不支持，忽略 */
+  function onBackFromTimeShare() {
+    const prevLevel = previousKLineLevel.value
+    if (prevLevel && prevLevel !== 'timeshare') {
+      onKLineLevelChange(prevLevel)
+    }
+  }
+
+  function onKLineAdjustChange(adjust: 'qfq' | 'hfq' | 'splits' | 'none') {
+    kLineAdjust.value = adjust
+    emit('kLineAdjustChange', adjust)
+    syncSymbolsToController()
+  }
+
+  function onSymbolChange(item: SymbolItem) {
+    symbolStatus.value = 'loading'
+    const current = controller.value?.symbols.peek() ?? []
+    const comparisonSpecs = current.slice(1)
+    controller.value?.setSymbols([toSymbolSpec(item), ...comparisonSpecs])
+  }
+
+  function onAddOverlaySymbol(item: SymbolItem) {
+    const ctrl = controller.value
+    if (!ctrl) return
+    const current = ctrl.symbols.peek()
+    const currentCodes = current.map((s) => s.symbol)
+    if (currentCodes.includes(item.code)) return
+    forcePercentAxis()
+    ctrl.addComparisonSymbol(toSymbolSpec(item))
+  }
+
+  function onRemoveOverlaySymbol(code: string) {
+    controller.value?.removeComparisonSymbol(code)
+  }
+
+  function toSymbolSpec(item: SymbolItem): SymbolSpec {
+    return {
+      symbol: item.code,
+      exchange: item.exchange,
+      period: kLineLevel.value,
+      source: item.source,
+      startDate: props.semanticConfig?.data?.startDate ?? '',
+      endDate: props.semanticConfig?.data?.endDate ?? '',
+      adjust: kLineAdjust.value,
+    }
+  }
+
+  function syncSymbolsToController() {
+    if (!currentSymbolItem.value) return
+    controller.value?.setSymbols([
+      toSymbolSpec(currentSymbolItem.value),
+      ...overlaySymbolItems.value.map(toSymbolSpec),
+    ])
+  }
+
+  function forcePercentAxis() {
+    if (chartSettings.value.axisType === 'percent') return
+    const nextSettings = { ...chartSettings.value, axisType: 'percent' as const }
+    chartSettings.value = nextSettings
+    controller.value?.updateSettingsFacade(nextSettings)
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings))
+    } catch {
+      /* quota exceeded */
+    }
+  }
+
+  // ── DOM Template Refs ──
+  const containerRef = ref<HTMLDivElement | null>(null)
+  const chartMainRef = ref<HTMLDivElement | null>(null)
+  const chartWrapperRef = ref<HTMLDivElement | null>(null)
+  const tooltipLayerRef = ref<HTMLDivElement | null>(null)
+  const toolbarRef = ref<InstanceType<typeof LeftToolbar> | null>(null)
+  const indicatorSelectorRef = ref<InstanceType<typeof IndicatorSelector> | null>(null)
+  const leftAxisLayerRef = ref<HTMLDivElement | null>(null)
+  provideFullscreenTeleportTarget(chartWrapperRef)
+
+  // ── DataFetcher 默认值（未绑定时回退到内置 routerDataFetcher）──
+  // 用 computed 解析默认值，避免依赖 Vue 对「函数类型 prop 默认值」的特殊语义
+  // （函数类型 prop 的 withDefaults 默认值会被原样使用而非作为工厂调用，跨编译条件不稳定）
+  const effectiveDataFetcher = computed(() => props.dataFetcher ?? routerDataFetcher)
+
+  // ── Fullscreen (controlled / uncontrolled) ──
+  const internalIsFullscreen = ref(false)
+  const effectiveIsFullscreen = computed(() => props.isFullscreen ?? internalIsFullscreen.value)
+  let onFullscreenChange: (() => void) | null = null
+
+  function handleToggleFullscreen() {
+    // 受控模式：保持旧行为，仅通知，不操作 DOM
+    if (props.isFullscreen !== undefined) {
+      emit('toggleFullscreen')
+      return
+    }
+
+    // 非受控模式：组件内部接管全屏 DOM 操作
+    if (typeof document !== 'undefined') {
+      const el = chartWrapperRef.value
+      if (!document.fullscreenElement) {
+        if (el && typeof el.requestFullscreen === 'function') {
+          el.requestFullscreen().catch(() => {
+            /* 用户拒绝或浏览器不支持，忽略 */
+          })
+        }
+      } else if (typeof document.exitFullscreen === 'function') {
+        document.exitFullscreen().catch(() => {
+          /* 忽略 */
         })
       }
-    } else if (typeof document.exitFullscreen === 'function') {
-      document.exitFullscreen().catch(() => {
-        /* 忽略 */
-      })
     }
-  }
-  emit('toggleFullscreen')
-}
-
-// ── Controller & Composable Wiring ──
-const controller = shallowRef<ChartController | null>(null)
-
-const {
-  chartTheme,
-  chartSettings,
-  tooltipColors,
-  themeCssVars,
-  handleSettingsChange,
-  applyThemeFromSettings,
-} = useChartTheme(controller)
-
-const semanticController = shallowRef<SemanticChartController | null>(null)
-
-const showBatchStockDialog = ref(false)
-const batchStockCodes = ref<string[]>([])
-
-const chartState = useChartState(props.initialZoomLevel ?? 1, {
-  minKWidth: props.minKWidth,
-  maxKWidth: props.maxKWidth,
-  zoomLevelCount: props.zoomLevels,
-})
-const {
-  symbolStatus,
-  zoomLevel,
-  kWidth,
-  kGap,
-  viewWidth,
-  viewportDpr,
-  viewportVersion,
-  dataLength,
-  dataVersion,
-  paneRatios,
-  comparisonColorsMap,
-  comparisonLoading,
-  activeToolId,
-} = chartState
-
-const {
-  mainActiveIndicators,
-  subActiveIndicators,
-  activeIndicators,
-  indicatorParams,
-  subPanes,
-  buildPaneLayoutIntent,
-  getDefaultParams,
-  isSubPaneIndicator,
-  addSubPane,
-  removeSubPane,
-  clearAllSubPanes,
-  initIndicatorsFromConfig,
-  switchSubIndicator,
-  handleIndicatorToggle,
-  handleUpdateParams,
-  handleReorderSubIndicators,
-  setupIndicatorSubscriptions,
-} = useIndicatorManager(controller, paneRatios)
-
-const {
-  drawingController,
-  selectedDrawingId,
-  selectedDrawing,
-  drawings,
-  handleSelectTool: handleDrawingToolSelect,
-  onUpdateDrawingStyle,
-  onDeleteDrawing,
-  setupDrawing,
-} = useDrawingManager(controller)
-
-const {
-  rangeSelection,
-  customStartDate,
-  customEndDate,
-  isRangeSelectActive,
-  rangeSelectionReady,
-  rangeSelectionBounds,
-  rangeSelectionCount,
-  rangeSelectionStartLabel,
-  rangeSelectionEndLabel,
-  rangeSelectionOverlayStyle,
-  clearRangeSelection,
-  handleRangePointerDown,
-  handleRangePointerMove,
-  handleRangePointerUp,
-  exportRangeToCsv,
-  exportingProgress,
-  onEdgePointerDown,
-  onEdgePointerMove,
-  onEdgePointerUp,
-} = useRangeSelection({
-  controller,
-  activeToolId,
-  containerRef,
-  dataVersion,
-  viewportVersion,
-  dataFetcher: effectiveDataFetcher,
-  batchStockCodes,
-})
-
-// ── No-op Render Trigger (exposed) ──
-function scheduleRender() {
-  /* Controller auto-renders on state changes */
-}
-
-// ── Tooltip Measurement ──
-function measureTooltipSize(el: HTMLDivElement, minWidth: number, minHeight: number) {
-  const r = el.getBoundingClientRect()
-  return {
-    width: Math.max(minWidth, Math.round(r.width)),
-    height: Math.max(minHeight, Math.round(r.height)),
-  }
-}
-
-function setTooltipEl(el: HTMLDivElement | null) {
-  if (!el) return
-  nextTick(() => {
-    if (!el.isConnected) return
-    const size = measureTooltipSize(el, 180, 80)
-    controller.value?.setTooltipSize(size)
-  })
-}
-
-function setMarkerTooltipEl(el: HTMLDivElement | null) {
-  if (!el) return
-  nextTick(() => {
-    if (!el.isConnected) return
-    markerTooltipSize.value = measureTooltipSize(el, 120, 60)
-  })
-}
-
-// ── Marker Tooltip & Container Rect Cache ──
-const mousePos = ref({ x: 0, y: 0 })
-const useAnchorPositioning = ref(false)
-
-let _cachedContainerRect: DOMRect | null = null
-function invalidateContainerRectCache(): void {
-  _cachedContainerRect = null
-}
-function getContainerRect(container: HTMLDivElement): DOMRect {
-  if (!_cachedContainerRect) {
-    _cachedContainerRect = container.getBoundingClientRect()
-  }
-  return _cachedContainerRect
-}
-
-// ── Interaction State Bridge ──
-const interactionState = shallowRef<InteractionSnapshot>({
-  crosshairPos: null,
-  crosshairIndex: null,
-  crosshairPrice: null,
-  hoveredIndex: null,
-  activePaneId: null,
-  tooltipPos: { x: 0, y: 0 },
-  tooltipAnchorPlacement: 'right-bottom',
-  hoveredMarkerData: null,
-  hoveredCustomMarker: null,
-  isDragging: false,
-  isResizingPaneBoundary: false,
-  isHoveringPaneBoundary: false,
-  hoveredPaneBoundaryId: null,
-  isHoveringRightAxis: false,
-})
-
-const paneSeparatorLines = ref<Array<{ id: string; top: number }>>([])
-const markerTooltipSize = ref({ width: 220, height: 120 })
-const tooltipLayerOffset = computed(() => {
-  const container = containerRef.value
-  const chartMain = chartMainRef.value
-  if (!container || !chartMain) return { x: 0, y: 0 }
-  return {
-    x: container.offsetLeft,
-    y: container.offsetTop,
-  }
-})
-
-const hoveredMarker = computed(() => interactionState.value.hoveredMarkerData)
-const hoveredCustomMarker = computed(() => interactionState.value.hoveredCustomMarker)
-const isDragging = computed(() => interactionState.value.isDragging)
-const isResizingPane = computed(() => interactionState.value.isResizingPaneBoundary)
-const isHoveringPaneSeparator = computed(() => interactionState.value.isHoveringPaneBoundary)
-const hoveredPaneBoundaryId = computed(() => interactionState.value.hoveredPaneBoundaryId)
-const isHoveringRightAxis = computed(() => interactionState.value.isHoveringRightAxis)
-const isMobile = window.matchMedia('(pointer: coarse)').matches
-const hoveredIdx = computed(() => interactionState.value.hoveredIndex)
-const crosshairIdx = computed(() => interactionState.value.crosshairIndex)
-
-// ── Derived Computed (Cursor, Hovered, Tooltip) ──
-const containerCursor = computed(() => {
-  if (isDragging.value) return 'grabbing'
-  if (isResizingPane.value || isHoveringPaneSeparator.value) return 'ns-resize'
-  if (hoveredIdx.value !== null) return 'pointer'
-  return 'crosshair'
-})
-
-const hovered = computed(() => {
-  const idx = interactionState.value.hoveredIndex
-  if (typeof idx !== 'number') return null
-  void dataVersion.value
-  const data = controller.value?.getData()
-  if (data && idx >= 0 && idx < data.length) {
-    return data[idx]
-  }
-  return null
-})
-const hoveredIndex = computed(() => interactionState.value.hoveredIndex)
-const tooltipPos = computed(() => interactionState.value.tooltipPos)
-const teleportedTooltipPos = computed(() => ({
-  x: tooltipPos.value.x + tooltipLayerOffset.value.x,
-  y: tooltipPos.value.y + tooltipLayerOffset.value.y,
-}))
-const klineTooltipAnchorStyle = computed(() => ({
-  left: `${teleportedTooltipPos.value.x}px`,
-  top: `${teleportedTooltipPos.value.y}px`,
-}))
-const teleportedMarkerTooltipPos = computed(() => ({
-  x: mousePos.value.x + tooltipLayerOffset.value.x,
-  y: mousePos.value.y + tooltipLayerOffset.value.y,
-}))
-const markerTooltipAnchorStyle = computed(() => ({
-  left: `${teleportedMarkerTooltipPos.value.x}px`,
-  top: `${teleportedMarkerTooltipPos.value.y}px`,
-}))
-const tooltipAnchorPlacement = computed(() => interactionState.value.tooltipAnchorPlacement)
-const markerTooltipAnchorPlacement = computed<'right-bottom' | 'left-bottom'>(() => {
-  const c = controller.value
-  const viewport = c?.viewport.peek()
-  const container = containerRef.value
-  const plotWidth = viewport?.plotWidth ?? (container ? container.clientWidth : 0)
-  const padding = 12
-  const gap = 12
-  const rightCandidateX = mousePos.value.x + gap
-  const wouldOverflowRight = rightCandidateX + markerTooltipSize.value.width + padding > plotWidth
-  return wouldOverflowRight ? 'left-bottom' : 'right-bottom'
-})
-
-const chartData = computed(() => {
-  void dataVersion.value
-  return controller.value?.getData() ?? []
-})
-
-// ── Pointer Event Handlers ──
-function onToggleIndicator() {
-  indicatorSelectorRef.value?.toggleMenu()
-}
-
-function onBatchApply(codes: string[]) {
-  batchStockCodes.value = codes
-}
-
-function handleSelectTool(toolId: string) {
-  activeToolId.value = toolId
-  if (toolId === 'range-select') {
-    drawingController.value?.setTool('cursor')
-    selectedDrawingId.value = null
-    return
+    emit('toggleFullscreen')
   }
 
-  clearRangeSelection()
-  handleDrawingToolSelect(toolId)
-}
+  // ── Controller & Composable Wiring ──
+  const controller = shallowRef<ChartController | null>(null)
 
-function onPointerDown(e: PointerEvent) {
-  controller.value?.handlePointerEvent(e, {
-    onPointerDown: (event, container) => {
-      if (handleRangePointerDown(event, container)) {
-        return true
-      }
-      if (drawingController.value?.onPointerDown(event, container)) {
-        return true
-      }
-      return false
-    },
-  })
-}
+  const {
+    chartTheme,
+    chartSettings,
+    tooltipColors,
+    themeCssVars,
+    handleSettingsChange,
+    applyThemeFromSettings,
+  } = useChartTheme(controller)
 
-function onPointerMove(e: PointerEvent) {
-  const container = containerRef.value
-  if (container) {
-    const rect = getContainerRect(container)
-    mousePos.value = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    }
-  }
-  controller.value?.handlePointerEvent(e, {
-    onPointerMove: (event, container) => {
-      if (handleRangePointerMove(event, container)) {
-        return true
-      }
-      if (drawingController.value?.onPointerMove(event, container)) {
-        drawings.value = drawingController.value.getDrawings()
-        return true
-      }
-      return false
-    },
-  })
-}
+  const semanticController = shallowRef<SemanticChartController | null>(null)
 
-function onPointerUp(e: PointerEvent) {
-  controller.value?.handlePointerEvent(e, {
-    onPointerUp: (event, container) => {
-      if (handleRangePointerUp(event, container)) {
-        return true
-      }
-      if (drawingController.value?.onPointerUp(event, container)) {
-        return true
-      }
-      return false
-    },
-  })
-}
+  const showBatchStockDialog = ref(false)
+  const batchStockCodes = ref<string[]>([])
 
-function onPointerLeave(e: PointerEvent) {
-  controller.value?.handlePointerEvent(e)
-}
-
-function onDoubleClick(e: MouseEvent) {
-  if (kLineLevel.value !== 'daily' || !controller.value) return
-
-  const container = containerRef.value
-  if (!container) return
-  const rect = container.getBoundingClientRect()
-  const mouseX = e.clientX - rect.left
-
-  const index = controller.value.getLogicalIndexAtX(mouseX)
-  if (index == null) return
-
-  const timestamp = controller.value.getTimestampAtLogicalIndex(index)
-  if (timestamp == null) return
-
-  const d = new Date(timestamp)
-  const shD = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }))
-  const yyyymmdd = shD.getFullYear() * 10000 + (shD.getMonth() + 1) * 100 + shD.getDate()
-
-  previousKLineLevel.value = 'daily'
-  kLineLevel.value = 'timeshare'
-  controller.value.switchToTimeShareForDate(yyyymmdd)
-  emit('kLineLevelChange', 'timeshare')
-}
-
-function onRightAxisPointerDown(e: PointerEvent) {
-  controller.value?.handlePointerEvent(e)
-}
-
-function onRightAxisPointerMove(e: PointerEvent) {
-  controller.value?.handlePointerEvent(e)
-}
-
-function onRightAxisPointerUp(e: PointerEvent) {
-  controller.value?.handlePointerEvent(e)
-}
-
-function onRightAxisPointerLeave(e: PointerEvent) {
-  controller.value?.handlePointerEvent(e)
-}
-
-function onScroll() {
-  controller.value?.handleScrollEvent()
-}
-
-// ── Width / Zoom / Expose ──
-const axisHostWidth = computed(() => props.rightAxisWidth + props.priceLabelWidth)
-
-const computedLeftAxisWidth = computed(() => props.leftAxisWidth ?? 0)
-
-const leftAxisHostStyle = computed(() => {
-  const width = computedLeftAxisWidth.value
-  if (width <= 0) return { display: 'none' }
-  if (kLineLevel.value === 'timeshare') return { width: `${width}px` }
-  const leftType = chartSettings.value?.leftAxisType
-  if (!leftType || leftType === 'none') return { width: `${width}px`, display: 'none' }
-  return { width: `${width}px` }
-})
-
-const chartContainerStyle = computed(() => {
-  const base: Record<string, string> = { cursor: containerCursor.value }
-  if (leftAxisHostStyle.value.display === 'none') {
-    base.borderRadius = '3px 0 0 3px'
-    base.borderLeft = '1px solid var(--chart-border)'
-  }
-  return base
-})
-
-function applyZoomToLevel(targetLevel: number, anchorX?: number) {
-  controller.value?.zoomToLevel(targetLevel, anchorX)
-}
-
-defineExpose({
-  scheduleRender,
-  addSubPane,
-  removeSubPane,
-  switchSubIndicator,
-  clearAllSubPanes,
-  zoomToLevel: applyZoomToLevel,
-  zoomIn: (anchorX?: number) => applyZoomToLevel(zoomLevel.value + 1, anchorX),
-  zoomOut: (anchorX?: number) => applyZoomToLevel(zoomLevel.value - 1, anchorX),
-  getZoomLevel: () => zoomLevel.value,
-  getZoomLevelCount: () => controller.value?.getZoomLevelCount() ?? 10,
-  getController: () => controller.value,
-})
-
-// ── Lifecycle Setup ──
-
-let cleanupChartCallbacks: (() => void) | null = null
-
-function setupWheelHandler(): (e: WheelEvent) => void {
-  const onWheelHandler = (e: WheelEvent) => {
-    e.preventDefault()
-    controller.value?.handleWheelEvent(e)
-  }
-  return onWheelHandler
-}
-
-function initChart(
-  container: HTMLDivElement,
-  canvasLayer: HTMLDivElement,
-  rightAxisLayer: HTMLDivElement,
-  xAxisCanvas: HTMLCanvasElement,
-  leftAxisLayer?: HTMLDivElement,
-): Promise<ChartController> {
-  const ctrl = createChartController({
-    container,
-    data: [],
-    canvasLayer,
-    rightAxisLayer,
-    leftAxisLayer,
-    xAxisCanvas,
-    initialZoomLevel: props.initialZoomLevel,
-    zoomLevels: props.zoomLevels,
-    yPaddingPx: props.yPaddingPx,
-    rightAxisWidth: props.rightAxisWidth,
-    leftAxisWidth: props.leftAxisWidth,
-    bottomAxisHeight: props.bottomAxisHeight,
-    priceLabelWidth: props.priceLabelWidth,
+  const chartState = useChartState(props.initialZoomLevel ?? 1, {
     minKWidth: props.minKWidth,
     maxKWidth: props.maxKWidth,
-    mcp: props.mcp,
+    zoomLevelCount: props.zoomLevels,
   })
-  return ctrl
-}
+  const {
+    symbolStatus,
+    zoomLevel,
+    kWidth,
+    kGap,
+    viewWidth,
+    viewportDpr,
+    viewportVersion,
+    dataLength,
+    dataVersion,
+    paneRatios,
+    comparisonColorsMap,
+    comparisonLoading,
+    activeToolId,
+  } = chartState
 
-function setupChartCallbacks(ctrl: ChartController): () => void {
-  const unsubscribePaneLayout = ctrl.paneLayout.subscribe(() => {
-    invalidateContainerRectCache()
-    const borderTop = containerRef.value
-      ? parseInt(getComputedStyle(containerRef.value).borderTopWidth) || 0
-      : 0
-    const panes = ctrl.paneLayout.peek()
-    // 使用 pane 的实际渲染位置计算分隔线位置，确保与鼠标检测一致
-    paneSeparatorLines.value = panes.slice(0, -1).map((pane) => {
-      const paneInfo = ctrl.getPaneInfo(pane.id)
-      // 分隔线位置 = pane 顶部位置 + pane 实际高度
-      const separatorTop = (paneInfo?.top ?? 0) + (paneInfo?.height ?? 0)
-      return { id: pane.id, top: separatorTop + borderTop }
+  const {
+    mainActiveIndicators,
+    subActiveIndicators,
+    activeIndicators,
+    indicatorParams,
+    subPanes,
+    buildPaneLayoutIntent,
+    getDefaultParams,
+    isSubPaneIndicator,
+    addSubPane,
+    removeSubPane,
+    clearAllSubPanes,
+    initIndicatorsFromConfig,
+    switchSubIndicator,
+    handleIndicatorToggle,
+    handleUpdateParams,
+    handleReorderSubIndicators,
+    setupIndicatorSubscriptions,
+  } = useIndicatorManager(controller, paneRatios)
+
+  const {
+    drawingController,
+    selectedDrawingId,
+    selectedDrawing,
+    drawings,
+    handleSelectTool: handleDrawingToolSelect,
+    onUpdateDrawingStyle,
+    onDeleteDrawing,
+    setupDrawing,
+  } = useDrawingManager(controller)
+
+  const {
+    rangeSelection,
+    customStartDate,
+    customEndDate,
+    isRangeSelectActive,
+    rangeSelectionReady,
+    rangeSelectionBounds,
+    rangeSelectionCount,
+    rangeSelectionStartLabel,
+    rangeSelectionEndLabel,
+    rangeSelectionOverlayStyle,
+    clearRangeSelection,
+    handleRangePointerDown,
+    handleRangePointerMove,
+    handleRangePointerUp,
+    exportRangeToCsv,
+    exportingProgress,
+    onEdgePointerDown,
+    onEdgePointerMove,
+    onEdgePointerUp,
+  } = useRangeSelection({
+    controller,
+    activeToolId,
+    containerRef,
+    dataVersion,
+    viewportVersion,
+    dataFetcher: effectiveDataFetcher,
+    batchStockCodes,
+  })
+
+  // ── No-op Render Trigger (exposed) ──
+  function scheduleRender() {
+    /* Controller auto-renders on state changes */
+  }
+
+  // ── Tooltip Measurement ──
+  function measureTooltipSize(el: HTMLDivElement, minWidth: number, minHeight: number) {
+    const r = el.getBoundingClientRect()
+    return {
+      width: Math.max(minWidth, Math.round(r.width)),
+      height: Math.max(minHeight, Math.round(r.height)),
+    }
+  }
+
+  function setTooltipEl(el: HTMLDivElement | null) {
+    if (!el) return
+    nextTick(() => {
+      if (!el.isConnected) return
+      const size = measureTooltipSize(el, 180, 80)
+      controller.value?.setTooltipSize(size)
     })
-  })
-
-  const unsubscribePaneRatios = ctrl.paneRatios.subscribe(() => {
-    const ratios = ctrl.paneRatios.peek()
-    paneRatios.value = { ...ratios }
-  })
-
-  const unsubscribeViewport = ctrl.viewport.subscribe(() => {
-    const vp = ctrl.viewport.peek()
-
-    viewportVersion.value++
-
-    if (viewportDpr.value !== vp.dpr) {
-      viewportDpr.value = vp.dpr
-    }
-    if (viewWidth.value !== vp.plotWidth) {
-      viewWidth.value = vp.plotWidth
-    }
-    if (zoomLevel.value !== vp.zoomLevel || kWidth.value !== vp.kWidth || kGap.value !== vp.kGap) {
-      zoomLevel.value = vp.zoomLevel
-      kWidth.value = vp.kWidth
-      kGap.value = vp.kGap
-    }
-  })
-
-  const unsubscribeData = ctrl.data.subscribe(() => {
-    const data = ctrl.data.peek()
-    dataLength.value = data.length
-    dataVersion.value++
-    if (data.length > 0 && (symbolStatus.value === 'loading' || symbolStatus.value === 'error')) {
-      symbolStatus.value = 'ready'
-    }
-  })
-
-  const unsubscribeDataLoading = ctrl.dataLoading.subscribe(() => {
-    const loading = ctrl.dataLoading.peek()
-    if (loading) {
-      symbolStatus.value = 'loading'
-    } else if (symbolStatus.value === 'loading') {
-      symbolStatus.value = 'error'
-    }
-  })
-
-  const unsubscribeTheme = ctrl.theme.subscribe(() => {
-    const newTheme = ctrl.theme.peek()
-    chartTheme.value = newTheme
-    emit('themeChange', newTheme)
-  })
-
-  const unsubscribeIndicators = setupIndicatorSubscriptions(ctrl)
-
-  const unsubscribeComparisonColors = ctrl.comparisonColors.subscribe(() => {
-    comparisonColorsMap.value = new Map(ctrl.comparisonColors.peek())
-  })
-
-  const unsubscribeComparisonLoading = ctrl.comparisonLoading.subscribe(() => {
-    comparisonLoading.value = ctrl.comparisonLoading.peek()
-  })
-
-  const unsubscribeSymbols = ctrl.symbols.subscribe(() => {
-    const specs = ctrl.symbols.peek()
-    if (specs.length === 0) return
-    const primary = specs[0]
-    currentSymbol.value = primary.symbol
-    currentSymbolItem.value = {
-      code: primary.symbol,
-      description: primary.symbol,
-      exchange: primary.exchange ?? '',
-      source: primary.source ?? '',
-    }
-    if (primary.period) kLineLevel.value = primary.period
-    if (primary.adjust) kLineAdjust.value = primary.adjust as 'qfq' | 'hfq' | 'splits' | 'none'
-
-    const comparisonSpecs = specs.slice(1)
-    overlaySymbols.value = comparisonSpecs.map((s) => s.symbol)
-    overlaySymbolItems.value = comparisonSpecs.map((s) => ({
-      code: s.symbol,
-      description: s.symbol,
-      exchange: s.exchange ?? '',
-      source: s.source ?? '',
-    }))
-  })
-
-  return () => {
-    unsubscribeViewport()
-    unsubscribeData()
-    unsubscribeDataLoading()
-    unsubscribePaneRatios()
-    unsubscribePaneLayout()
-    unsubscribeTheme()
-    unsubscribeIndicators()
-    unsubscribeComparisonColors()
-    unsubscribeComparisonLoading()
-    unsubscribeSymbols()
-  }
-}
-
-function applyInitialSettings(ctrl: ChartController): void {
-  const initialSettings = toolbarRef.value?.getSettings() ?? { showVolumePriceMarkers: true }
-  chartSettings.value = initialSettings
-  // 受控主题优先，否则交由设置项决定
-  if (props.theme) {
-    ctrl.setTheme(props.theme)
-  } else {
-    applyThemeFromSettings(initialSettings.theme as string)
-  }
-  ctrl.updateSettingsFacade(initialSettings)
-}
-
-function setupInteractionCallbacks(ctrl: ChartController): void {
-  ctrl.setTooltipAnchorPositioning(useAnchorPositioning.value)
-  ctrl.interactionState.subscribe(() => {
-    interactionState.value = ctrl.interactionState.peek()
-  })
-
-  interactionState.value = ctrl.interactionState.peek()
-  viewportDpr.value = ctrl.viewport.peek().dpr
-}
-
-function setupSemanticController(ctrl: ChartController): void {
-  // 如果传入了 customData，跳过 fetcher 配置，使用自定义数据
-  if (props.customData) {
-    ctrl.applyCustomData(props.customData)
-    return
   }
 
-  ctrl.setDataFetcher(effectiveDataFetcher.value)
-  semanticController.value = new SemanticChartController(ctrl)
+  function setMarkerTooltipEl(el: HTMLDivElement | null) {
+    if (!el) return
+    nextTick(() => {
+      if (!el.isConnected) return
+      markerTooltipSize.value = measureTooltipSize(el, 120, 60)
+    })
+  }
 
-  semanticController.value.on('config:error', (error) => {
-    console.error('Semantic config error:', error)
-  })
+  // ── Marker Tooltip & Container Rect Cache ──
+  const mousePos = ref({ x: 0, y: 0 })
+  const useAnchorPositioning = ref(false)
 
-  // config:ready → Chart 侧已完成创建，Vue 回读状态
-  semanticController.value.on('config:ready', () => {
-    initIndicatorsFromConfig(props.semanticConfig)
-    nextTick(() => controller.value?.scrollToRight())
-  })
-  // 暂时断开语义化配置加载，由搜索结果驱动
-  // semanticController.value.applyConfig(props.semanticConfig).then((result) => {
-  //   if (result && !result.success) {
-  //     console.error('Semantic config apply failed:', result.errors)
-  //   }
-  // })
-}
-
-// ── onMounted ──
-onMounted(async () => {
-  useAnchorPositioning.value = false
-
-  // 全屏状态监听（非受控模式下驱动内部状态与 update:isFullscreen）
-  if (typeof document !== 'undefined') {
-    onFullscreenChange = () => {
-      internalIsFullscreen.value = !!document.fullscreenElement
-      emit('update:isFullscreen', internalIsFullscreen.value)
+  let _cachedContainerRect: DOMRect | null = null
+  function invalidateContainerRectCache(): void {
+    _cachedContainerRect = null
+  }
+  function getContainerRect(container: HTMLDivElement): DOMRect {
+    if (!_cachedContainerRect) {
+      _cachedContainerRect = container.getBoundingClientRect()
     }
-    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return _cachedContainerRect
   }
 
-  const container = containerRef.value
-  const chartMain = chartMainRef.value
-  if (!container || !chartMain) return
+  // ── Interaction State Bridge ──
+  const interactionState = shallowRef<InteractionSnapshot>({
+    crosshairPos: null,
+    crosshairIndex: null,
+    crosshairPrice: null,
+    hoveredIndex: null,
+    activePaneId: null,
+    tooltipPos: { x: 0, y: 0 },
+    tooltipAnchorPlacement: 'right-bottom',
+    hoveredMarkerData: null,
+    hoveredCustomMarker: null,
+    isDragging: false,
+    isResizingPaneBoundary: false,
+    isHoveringPaneBoundary: false,
+    hoveredPaneBoundaryId: null,
+    isHoveringRightAxis: false,
+  })
 
-  // 1) 滚轮缩放处理
-  const onWheelHandler = setupWheelHandler()
-  container.addEventListener('wheel', onWheelHandler, { passive: false })
+  const paneSeparatorLines = ref<Array<{ id: string; top: number }>>([])
+  const markerTooltipSize = ref({ width: 220, height: 120 })
+  const tooltipLayerOffset = computed(() => {
+    const container = containerRef.value
+    const chartMain = chartMainRef.value
+    if (!container || !chartMain) return { x: 0, y: 0 }
+    return {
+      x: container.offsetLeft,
+      y: container.offsetTop,
+    }
+  })
 
-  // 2) 创建 Chart 控制器（使用模板 DOM 元素）
-  const canvasLayer = container.querySelector<HTMLDivElement>('.canvas-layer')
-  const xAxisCanvas = container.querySelector<HTMLCanvasElement>('.x-axis-canvas')
-  const rightAxisLayer = chartMain.querySelector<HTMLDivElement>('.right-axis-host')
-  const leftAxisLayer = chartMain.querySelector<HTMLDivElement>('.left-axis-host') ?? undefined
-  const ctrl = await initChart(
-    container,
-    canvasLayer!,
-    rightAxisLayer!,
-    xAxisCanvas!,
-    leftAxisLayer,
-  )
-  if (!containerRef.value || !chartMainRef.value) return // 组件已卸载
-  controller.value = ctrl
+  const hoveredMarker = computed(() => interactionState.value.hoveredMarkerData)
+  const hoveredCustomMarker = computed(() => interactionState.value.hoveredCustomMarker)
+  const isDragging = computed(() => interactionState.value.isDragging)
+  const isResizingPane = computed(() => interactionState.value.isResizingPaneBoundary)
+  const isHoveringPaneSeparator = computed(() => interactionState.value.isHoveringPaneBoundary)
+  const hoveredPaneBoundaryId = computed(() => interactionState.value.hoveredPaneBoundaryId)
+  const isHoveringRightAxis = computed(() => interactionState.value.isHoveringRightAxis)
+  const isMobile = window.matchMedia('(pointer: coarse)').matches
+  const hoveredIdx = computed(() => interactionState.value.hoveredIndex)
+  const crosshairIdx = computed(() => interactionState.value.crosshairIndex)
 
-  // 3) 信号回调
-  cleanupChartCallbacks = setupChartCallbacks(ctrl)
+  // ── Derived Computed (Cursor, Hovered, Tooltip) ──
+  const containerCursor = computed(() => {
+    if (isDragging.value) return 'grabbing'
+    if (isResizingPane.value || isHoveringPaneSeparator.value) return 'ns-resize'
+    if (hoveredIdx.value !== null) return 'pointer'
+    return 'crosshair'
+  })
 
-  // 3.5) 在任何 draw 之前注册主图指标（BOLL/MA 等）
-  //      initIndicatorsFromConfig 是同步的，读 props.semanticConfig 即可注册，
-  //      确保 scheduler 首次 applyResults 时 BOLL 已在 registry 里
-  initIndicatorsFromConfig(props.semanticConfig)
+  const hovered = computed(() => {
+    const idx = interactionState.value.hoveredIndex
+    if (typeof idx !== 'number') return null
+    void dataVersion.value
+    const data = controller.value?.getData()
+    if (data && idx >= 0 && idx < data.length) {
+      return data[idx]
+    }
+    return null
+  })
+  const hoveredIndex = computed(() => interactionState.value.hoveredIndex)
+  const tooltipPos = computed(() => interactionState.value.tooltipPos)
+  const teleportedTooltipPos = computed(() => ({
+    x: tooltipPos.value.x + tooltipLayerOffset.value.x,
+    y: tooltipPos.value.y + tooltipLayerOffset.value.y,
+  }))
+  const klineTooltipAnchorStyle = computed(() => ({
+    left: `${teleportedTooltipPos.value.x}px`,
+    top: `${teleportedTooltipPos.value.y}px`,
+  }))
+  const teleportedMarkerTooltipPos = computed(() => ({
+    x: mousePos.value.x + tooltipLayerOffset.value.x,
+    y: mousePos.value.y + tooltipLayerOffset.value.y,
+  }))
+  const markerTooltipAnchorStyle = computed(() => ({
+    left: `${teleportedMarkerTooltipPos.value.x}px`,
+    top: `${teleportedMarkerTooltipPos.value.y}px`,
+  }))
+  const tooltipAnchorPlacement = computed(() => interactionState.value.tooltipAnchorPlacement)
+  const markerTooltipAnchorPlacement = computed<'right-bottom' | 'left-bottom'>(() => {
+    const c = controller.value
+    const viewport = c?.viewport.peek()
+    const container = containerRef.value
+    const plotWidth = viewport?.plotWidth ?? (container ? container.clientWidth : 0)
+    const padding = 12
+    const gap = 12
+    const rightCandidateX = mousePos.value.x + gap
+    const wouldOverflowRight = rightCandidateX + markerTooltipSize.value.width + padding > plotWidth
+    return wouldOverflowRight ? 'left-bottom' : 'right-bottom'
+  })
 
-  // 4) 工具栏初始设置
-  applyInitialSettings(ctrl)
+  const chartData = computed(() => {
+    void dataVersion.value
+    return controller.value?.getData() ?? []
+  })
 
-  // 5) 绘图交互控制器
-  setupDrawing(ctrl)
-
-  // 6) 交互信号桥接
-  setupInteractionCallbacks(ctrl)
-
-  // 7) 语义化配置
-  setupSemanticController(ctrl)
-})
-
-// ── onUnmounted & Watchers ──
-onUnmounted(() => {
-  if (typeof document !== 'undefined' && onFullscreenChange) {
-    document.removeEventListener('fullscreenchange', onFullscreenChange)
+  // ── Pointer Event Handlers ──
+  function onToggleIndicator() {
+    indicatorSelectorRef.value?.toggleMenu()
   }
-  onFullscreenChange = null
-  cleanupChartCallbacks?.()
-  cleanupChartCallbacks = null
-  const ctrl = controller.value
-  if (ctrl) {
-    controller.value = null
-    ctrl.dispose()
+
+  function onBatchApply(codes: string[]) {
+    batchStockCodes.value = codes
   }
-  drawingController.value = null
-})
 
-// kWidth/kGap 由 zoomLevel 派生，不再通过 props 直接修改
-// 如需程序化控制缩放，请使用 expose 的 zoomToLevel/zoomIn/zoomOut 方法
+  function handleSelectTool(toolId: string) {
+    activeToolId.value = toolId
+    if (toolId === 'range-select') {
+      drawingController.value?.setTool('cursor')
+      selectedDrawingId.value = null
+      return
+    }
 
-watch(
-  () => props.yPaddingPx,
-  (newVal) => {
-    controller.value?.updateOptionsFacade({ yPaddingPx: newVal })
-  },
-)
+    clearRangeSelection()
+    handleDrawingToolSelect(toolId)
+  }
 
-// 监听 semanticConfig 变化（唯一数据源）
-watch(
-  () => props.semanticConfig,
-  async (newConfig, oldConfig) => {
-    if (newConfig && newConfig !== oldConfig) {
-      const result = await semanticController.value?.applyConfig(newConfig)
-      if (result && !result.success) {
-        console.error('Semantic config apply failed:', result.errors)
+  function onPointerDown(e: PointerEvent) {
+    controller.value?.handlePointerEvent(e, {
+      onPointerDown: (event, container) => {
+        if (handleRangePointerDown(event, container)) {
+          return true
+        }
+        if (drawingController.value?.onPointerDown(event, container)) {
+          return true
+        }
+        return false
+      },
+    })
+  }
+
+  function onPointerMove(e: PointerEvent) {
+    const container = containerRef.value
+    if (container) {
+      const rect = getContainerRect(container)
+      mousePos.value = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
       }
     }
-  },
-  { deep: true },
-)
+    controller.value?.handlePointerEvent(e, {
+      onPointerMove: (event, container) => {
+        if (handleRangePointerMove(event, container)) {
+          return true
+        }
+        if (drawingController.value?.onPointerMove(event, container)) {
+          drawings.value = drawingController.value.getDrawings()
+          return true
+        }
+        return false
+      },
+    })
+  }
 
-watch(
-  () => props.customData,
-  (newVal) => {
-    if (newVal) controller.value?.applyCustomData(newVal)
-  },
-  { deep: true },
-)
+  function onPointerUp(e: PointerEvent) {
+    controller.value?.handlePointerEvent(e, {
+      onPointerUp: (event, container) => {
+        if (handleRangePointerUp(event, container)) {
+          return true
+        }
+        if (drawingController.value?.onPointerUp(event, container)) {
+          return true
+        }
+        return false
+      },
+    })
+  }
 
-// 受控主题：外部 theme 变化时同步到控制器
-watch(
-  () => props.theme,
-  (t) => {
-    if (t) controller.value?.setTheme(t)
-  },
-)
+  function onPointerLeave(e: PointerEvent) {
+    controller.value?.handlePointerEvent(e)
+  }
+
+  function onDoubleClick(e: MouseEvent) {
+    if (kLineLevel.value !== 'daily' || !controller.value) return
+
+    const container = containerRef.value
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    const mouseX = e.clientX - rect.left
+
+    const index = controller.value.getLogicalIndexAtX(mouseX)
+    if (index == null) return
+
+    const timestamp = controller.value.getTimestampAtLogicalIndex(index)
+    if (timestamp == null) return
+
+    const d = new Date(timestamp)
+    const shD = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }))
+    const yyyymmdd = shD.getFullYear() * 10000 + (shD.getMonth() + 1) * 100 + shD.getDate()
+
+    previousKLineLevel.value = 'daily'
+    kLineLevel.value = 'timeshare'
+    controller.value.switchToTimeShareForDate(yyyymmdd)
+    emit('kLineLevelChange', 'timeshare')
+  }
+
+  function onRightAxisPointerDown(e: PointerEvent) {
+    controller.value?.handlePointerEvent(e)
+  }
+
+  function onRightAxisPointerMove(e: PointerEvent) {
+    controller.value?.handlePointerEvent(e)
+  }
+
+  function onRightAxisPointerUp(e: PointerEvent) {
+    controller.value?.handlePointerEvent(e)
+  }
+
+  function onRightAxisPointerLeave(e: PointerEvent) {
+    controller.value?.handlePointerEvent(e)
+  }
+
+  function onScroll() {
+    controller.value?.handleScrollEvent()
+  }
+
+  // ── Width / Zoom / Expose ──
+  const axisHostWidth = computed(() => props.rightAxisWidth + props.priceLabelWidth)
+
+  const computedLeftAxisWidth = computed(() => props.leftAxisWidth ?? 0)
+
+  const leftAxisHostStyle = computed(() => {
+    const width = computedLeftAxisWidth.value
+    if (width <= 0) return { display: 'none' }
+    if (kLineLevel.value === 'timeshare') return { width: `${width}px` }
+    const leftType = chartSettings.value?.leftAxisType
+    if (!leftType || leftType === 'none') return { width: `${width}px`, display: 'none' }
+    return { width: `${width}px` }
+  })
+
+  const chartContainerStyle = computed(() => {
+    const base: Record<string, string> = { cursor: containerCursor.value }
+    if (leftAxisHostStyle.value.display === 'none') {
+      base.borderRadius = '3px 0 0 3px'
+      base.borderLeft = '1px solid var(--chart-border)'
+    }
+    return base
+  })
+
+  function applyZoomToLevel(targetLevel: number, anchorX?: number) {
+    controller.value?.zoomToLevel(targetLevel, anchorX)
+  }
+
+  defineExpose({
+    scheduleRender,
+    addSubPane,
+    removeSubPane,
+    switchSubIndicator,
+    clearAllSubPanes,
+    zoomToLevel: applyZoomToLevel,
+    zoomIn: (anchorX?: number) => applyZoomToLevel(zoomLevel.value + 1, anchorX),
+    zoomOut: (anchorX?: number) => applyZoomToLevel(zoomLevel.value - 1, anchorX),
+    getZoomLevel: () => zoomLevel.value,
+    getZoomLevelCount: () => controller.value?.getZoomLevelCount() ?? 10,
+    getController: () => controller.value,
+  })
+
+  // ── Lifecycle Setup ──
+
+  let cleanupChartCallbacks: (() => void) | null = null
+
+  function setupWheelHandler(): (e: WheelEvent) => void {
+    const onWheelHandler = (e: WheelEvent) => {
+      e.preventDefault()
+      controller.value?.handleWheelEvent(e)
+    }
+    return onWheelHandler
+  }
+
+  function initChart(
+    container: HTMLDivElement,
+    canvasLayer: HTMLDivElement,
+    rightAxisLayer: HTMLDivElement,
+    xAxisCanvas: HTMLCanvasElement,
+    leftAxisLayer?: HTMLDivElement,
+  ): Promise<ChartController> {
+    const ctrl = createChartController({
+      container,
+      data: [],
+      canvasLayer,
+      rightAxisLayer,
+      leftAxisLayer,
+      xAxisCanvas,
+      initialZoomLevel: props.initialZoomLevel,
+      zoomLevels: props.zoomLevels,
+      yPaddingPx: props.yPaddingPx,
+      rightAxisWidth: props.rightAxisWidth,
+      leftAxisWidth: props.leftAxisWidth,
+      bottomAxisHeight: props.bottomAxisHeight,
+      priceLabelWidth: props.priceLabelWidth,
+      minKWidth: props.minKWidth,
+      maxKWidth: props.maxKWidth,
+      mcp: props.mcp,
+    })
+    return ctrl
+  }
+
+  function setupChartCallbacks(ctrl: ChartController): () => void {
+    const unsubscribePaneLayout = ctrl.paneLayout.subscribe(() => {
+      invalidateContainerRectCache()
+      const borderTop = containerRef.value
+        ? parseInt(getComputedStyle(containerRef.value).borderTopWidth) || 0
+        : 0
+      const panes = ctrl.paneLayout.peek()
+      // 使用 pane 的实际渲染位置计算分隔线位置，确保与鼠标检测一致
+      paneSeparatorLines.value = panes.slice(0, -1).map((pane) => {
+        const paneInfo = ctrl.getPaneInfo(pane.id)
+        // 分隔线位置 = pane 顶部位置 + pane 实际高度
+        const separatorTop = (paneInfo?.top ?? 0) + (paneInfo?.height ?? 0)
+        return { id: pane.id, top: separatorTop + borderTop }
+      })
+    })
+
+    const unsubscribePaneRatios = ctrl.paneRatios.subscribe(() => {
+      const ratios = ctrl.paneRatios.peek()
+      paneRatios.value = { ...ratios }
+    })
+
+    const unsubscribeViewport = ctrl.viewport.subscribe(() => {
+      const vp = ctrl.viewport.peek()
+
+      viewportVersion.value++
+
+      if (viewportDpr.value !== vp.dpr) {
+        viewportDpr.value = vp.dpr
+      }
+      if (viewWidth.value !== vp.plotWidth) {
+        viewWidth.value = vp.plotWidth
+      }
+      if (
+        zoomLevel.value !== vp.zoomLevel ||
+        kWidth.value !== vp.kWidth ||
+        kGap.value !== vp.kGap
+      ) {
+        zoomLevel.value = vp.zoomLevel
+        kWidth.value = vp.kWidth
+        kGap.value = vp.kGap
+      }
+    })
+
+    const unsubscribeData = ctrl.data.subscribe(() => {
+      const data = ctrl.data.peek()
+      dataLength.value = data.length
+      dataVersion.value++
+      if (data.length > 0 && (symbolStatus.value === 'loading' || symbolStatus.value === 'error')) {
+        symbolStatus.value = 'ready'
+      }
+    })
+
+    const unsubscribeDataLoading = ctrl.dataLoading.subscribe(() => {
+      const loading = ctrl.dataLoading.peek()
+      if (loading) {
+        symbolStatus.value = 'loading'
+      } else if (symbolStatus.value === 'loading') {
+        symbolStatus.value = 'error'
+      }
+    })
+
+    const unsubscribeTheme = ctrl.theme.subscribe(() => {
+      const newTheme = ctrl.theme.peek()
+      chartTheme.value = newTheme
+      emit('themeChange', newTheme)
+    })
+
+    const unsubscribeIndicators = setupIndicatorSubscriptions(ctrl)
+
+    const unsubscribeComparisonColors = ctrl.comparisonColors.subscribe(() => {
+      comparisonColorsMap.value = new Map(ctrl.comparisonColors.peek())
+    })
+
+    const unsubscribeComparisonLoading = ctrl.comparisonLoading.subscribe(() => {
+      comparisonLoading.value = ctrl.comparisonLoading.peek()
+    })
+
+    const unsubscribeSymbols = ctrl.symbols.subscribe(() => {
+      const specs = ctrl.symbols.peek()
+      if (specs.length === 0) return
+      const primary = specs[0]
+      currentSymbol.value = primary.symbol
+      currentSymbolItem.value = {
+        code: primary.symbol,
+        description: primary.symbol,
+        exchange: primary.exchange ?? '',
+        source: primary.source ?? '',
+      }
+      if (primary.period) kLineLevel.value = primary.period
+      if (primary.adjust) kLineAdjust.value = primary.adjust as 'qfq' | 'hfq' | 'splits' | 'none'
+
+      const comparisonSpecs = specs.slice(1)
+      overlaySymbols.value = comparisonSpecs.map((s) => s.symbol)
+      overlaySymbolItems.value = comparisonSpecs.map((s) => ({
+        code: s.symbol,
+        description: s.symbol,
+        exchange: s.exchange ?? '',
+        source: s.source ?? '',
+      }))
+    })
+
+    return () => {
+      unsubscribeViewport()
+      unsubscribeData()
+      unsubscribeDataLoading()
+      unsubscribePaneRatios()
+      unsubscribePaneLayout()
+      unsubscribeTheme()
+      unsubscribeIndicators()
+      unsubscribeComparisonColors()
+      unsubscribeComparisonLoading()
+      unsubscribeSymbols()
+    }
+  }
+
+  function applyInitialSettings(ctrl: ChartController): void {
+    const initialSettings = toolbarRef.value?.getSettings() ?? { showVolumePriceMarkers: true }
+    chartSettings.value = initialSettings
+    // 受控主题优先，否则交由设置项决定
+    if (props.theme) {
+      ctrl.setTheme(props.theme)
+    } else {
+      applyThemeFromSettings(initialSettings.theme as string)
+    }
+    ctrl.updateSettingsFacade(initialSettings)
+  }
+
+  function setupInteractionCallbacks(ctrl: ChartController): void {
+    ctrl.setTooltipAnchorPositioning(useAnchorPositioning.value)
+    ctrl.interactionState.subscribe(() => {
+      interactionState.value = ctrl.interactionState.peek()
+    })
+
+    interactionState.value = ctrl.interactionState.peek()
+    viewportDpr.value = ctrl.viewport.peek().dpr
+  }
+
+  function setupSemanticController(ctrl: ChartController): void {
+    // 如果传入了 customData，跳过 fetcher 配置，使用自定义数据
+    if (props.customData) {
+      ctrl.applyCustomData(props.customData)
+      return
+    }
+
+    ctrl.setDataFetcher(effectiveDataFetcher.value)
+    semanticController.value = new SemanticChartController(ctrl)
+
+    semanticController.value.on('config:error', (error) => {
+      console.error('Semantic config error:', error)
+    })
+
+    // config:ready → Chart 侧已完成创建，Vue 回读状态
+    semanticController.value.on('config:ready', () => {
+      initIndicatorsFromConfig(props.semanticConfig)
+      nextTick(() => controller.value?.scrollToRight())
+    })
+    // 暂时断开语义化配置加载，由搜索结果驱动
+    // semanticController.value.applyConfig(props.semanticConfig).then((result) => {
+    //   if (result && !result.success) {
+    //     console.error('Semantic config apply failed:', result.errors)
+    //   }
+    // })
+  }
+
+  // ── onMounted ──
+  onMounted(async () => {
+    useAnchorPositioning.value = false
+
+    // 全屏状态监听（非受控模式下驱动内部状态与 update:isFullscreen）
+    if (typeof document !== 'undefined') {
+      onFullscreenChange = () => {
+        internalIsFullscreen.value = !!document.fullscreenElement
+        emit('update:isFullscreen', internalIsFullscreen.value)
+      }
+      document.addEventListener('fullscreenchange', onFullscreenChange)
+    }
+
+    const container = containerRef.value
+    const chartMain = chartMainRef.value
+    if (!container || !chartMain) return
+
+    // 1) 滚轮缩放处理
+    const onWheelHandler = setupWheelHandler()
+    container.addEventListener('wheel', onWheelHandler, { passive: false })
+
+    // 2) 创建 Chart 控制器（使用模板 DOM 元素）
+    const canvasLayer = container.querySelector<HTMLDivElement>('.canvas-layer')
+    const xAxisCanvas = container.querySelector<HTMLCanvasElement>('.x-axis-canvas')
+    const rightAxisLayer = chartMain.querySelector<HTMLDivElement>('.right-axis-host')
+    const leftAxisLayer = chartMain.querySelector<HTMLDivElement>('.left-axis-host') ?? undefined
+    const ctrl = await initChart(
+      container,
+      canvasLayer!,
+      rightAxisLayer!,
+      xAxisCanvas!,
+      leftAxisLayer,
+    )
+    if (!containerRef.value || !chartMainRef.value) return // 组件已卸载
+    controller.value = ctrl
+
+    // 3) 信号回调
+    cleanupChartCallbacks = setupChartCallbacks(ctrl)
+
+    // 3.5) 在任何 draw 之前注册主图指标（BOLL/MA 等）
+    //      initIndicatorsFromConfig 是同步的，读 props.semanticConfig 即可注册，
+    //      确保 scheduler 首次 applyResults 时 BOLL 已在 registry 里
+    initIndicatorsFromConfig(props.semanticConfig)
+
+    // 4) 工具栏初始设置
+    applyInitialSettings(ctrl)
+
+    // 5) 绘图交互控制器
+    setupDrawing(ctrl)
+
+    // 6) 交互信号桥接
+    setupInteractionCallbacks(ctrl)
+
+    // 7) 语义化配置
+    setupSemanticController(ctrl)
+  })
+
+  // ── onUnmounted & Watchers ──
+  onUnmounted(() => {
+    if (typeof document !== 'undefined' && onFullscreenChange) {
+      document.removeEventListener('fullscreenchange', onFullscreenChange)
+    }
+    onFullscreenChange = null
+    cleanupChartCallbacks?.()
+    cleanupChartCallbacks = null
+    const ctrl = controller.value
+    if (ctrl) {
+      controller.value = null
+      ctrl.dispose()
+    }
+    drawingController.value = null
+  })
+
+  // kWidth/kGap 由 zoomLevel 派生，不再通过 props 直接修改
+  // 如需程序化控制缩放，请使用 expose 的 zoomToLevel/zoomIn/zoomOut 方法
+
+  watch(
+    () => props.yPaddingPx,
+    (newVal) => {
+      controller.value?.updateOptionsFacade({ yPaddingPx: newVal })
+    },
+  )
+
+  // 监听 semanticConfig 变化（唯一数据源）
+  watch(
+    () => props.semanticConfig,
+    async (newConfig, oldConfig) => {
+      if (newConfig && newConfig !== oldConfig) {
+        const result = await semanticController.value?.applyConfig(newConfig)
+        if (result && !result.success) {
+          console.error('Semantic config apply failed:', result.errors)
+        }
+      }
+    },
+    { deep: true },
+  )
+
+  watch(
+    () => props.customData,
+    (newVal) => {
+      if (newVal) controller.value?.applyCustomData(newVal)
+    },
+    { deep: true },
+  )
+
+  // 受控主题：外部 theme 变化时同步到控制器
+  watch(
+    () => props.theme,
+    (t) => {
+      if (t) controller.value?.setTheme(t)
+    },
+  )
 </script>
 
 <style scoped>
-.chart-wrapper {
-  --kmap-height: var(--kmap-chart-height, 100%);
-  --kmap-width: var(--kmap-chart-width, 100%);
-
-  --chart-bg: var(--klc-color-chart-background);
-  --chart-bg-secondary: var(--klc-color-chart-background);
-  --chart-border: var(--klc-color-border-chart);
-  --chart-border-active: #1890ff;
-  --chart-text: var(--klc-color-foreground);
-  --chart-text-secondary: var(--klc-color-axis-text);
-
-  display: flex;
-  align-items: center;
-  width: var(--kmap-width);
-  height: calc(var(--kmap-height) - 32px);
-  min-height: 300px;
-  flex-direction: column;
-  margin: 16px 0;
-  padding: 0;
-  box-sizing: border-box;
-  gap: 4px;
-}
-
-.chart-stage {
-  width: 95%;
-  flex: 1;
-  min-height: 255px;
-  display: flex;
-  align-items: stretch;
-  gap: 4px;
-}
-
-.chart-main {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  position: relative;
-}
-
-.pane-separator-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 20;
-}
-
-.pane-separator-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 0;
-  border-top: 1px solid var(--chart-border);
-  opacity: 1;
-  box-sizing: border-box;
-  transition:
-    border-top-color 120ms ease,
-    border-top-width 120ms ease,
-    margin-top 120ms ease,
-    opacity 120ms ease;
-}
-
-.pane-separator-line.is-active {
-  border-top-color: var(--chart-border-active);
-  border-top-width: 2px;
-  margin-top: -1px;
-}
-
-.chart-stage.is-resizing-pane,
-.chart-stage.is-hovering-pane-separator {
-  cursor: ns-resize;
-}
-
-.chart-stage.is-hovering-kline {
-  cursor: pointer;
-}
-
-.chart-stage.is-hovering-right-axis {
-  cursor: ns-resize;
-}
-
-.chart-stage.is-dragging {
-  cursor: grabbing;
-}
-
-.chart-container {
-  position: relative;
-  flex: 1 1 auto;
-  overflow-x: auto;
-  overflow-y: hidden;
-  height: 100%;
-  min-height: inherit;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  border: 1px solid var(--chart-border);
-  border-right: 0;
-  border-left: 0;
-  border-radius: 0;
-  box-sizing: border-box;
-  background: var(--chart-bg);
-
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: none;
-}
-
-.chart-container::-webkit-scrollbar {
-  display: none;
-}
-
-.right-axis-host {
-  position: relative;
-  flex: 0 0 auto;
-  height: 100%;
-  min-height: inherit;
-  box-sizing: border-box;
-  background: var(--chart-bg);
-  overflow: visible;
-  border: 1px solid var(--chart-border);
-  border-top-right-radius: 3px;
-  border-bottom-right-radius: 3px;
-
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: none;
-}
-
-.left-axis-host {
-  position: relative;
-  flex: 0 0 auto;
-  height: 100%;
-  min-height: inherit;
-  box-sizing: border-box;
-  background: var(--chart-bg);
-  overflow: visible;
-  border: 1px solid var(--chart-border);
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: none;
-}
-
-.scroll-content {
-  height: 100%;
-  min-height: inherit;
-  position: relative;
-}
-
-.range-selection-overlay {
-  position: absolute;
-  top: 0;
-  z-index: 25;
-  box-sizing: border-box;
-  border: 1px solid rgba(24, 144, 255, 0.75);
-  background: rgba(24, 144, 255, 0.14);
-  pointer-events: none;
-}
-
-.range-selection-overlay.is-dragging {
-  background: rgba(24, 144, 255, 0.2);
-}
-
-.range-selection-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  cursor: ew-resize;
-  pointer-events: auto;
-  z-index: 101;
-}
-
-.range-selection-handle--left {
-  left: -4px;
-}
-
-.range-selection-handle--right {
-  right: -4px;
-}
-
-.canvas-layer {
-  position: sticky;
-  left: 0;
-  top: 0;
-  z-index: 26;
-  pointer-events: none;
-}
-
-.tooltip-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 30;
-}
-
-.tooltip-anchor {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  pointer-events: none;
-}
-
-.tooltip-anchor.kline-tooltip-anchor.use-anchor {
-  anchor-name: --kline-tooltip-anchor;
-}
-
-.tooltip-anchor.marker-tooltip-anchor.use-anchor {
-  anchor-name: --marker-tooltip-anchor;
-}
-
-@media (max-width: 768px), (max-height: 640px) {
   .chart-wrapper {
+    --kmap-height: var(--kmap-chart-height, 100%);
+    --kmap-width: var(--kmap-chart-width, 100%);
+
+    --chart-bg: var(--klc-color-chart-background);
+    --chart-bg-secondary: var(--klc-color-chart-background);
+    --chart-border: var(--klc-color-border-chart);
+    --chart-border-active: #1890ff;
+    --chart-text: var(--klc-color-foreground);
+    --chart-text-secondary: var(--klc-color-axis-text);
+
+    display: flex;
+    align-items: center;
+    width: var(--kmap-width);
+    height: calc(var(--kmap-height) - 32px);
+    min-height: 300px;
+    flex-direction: column;
+    margin: 16px 0;
+    padding: 0;
+    box-sizing: border-box;
     gap: 4px;
   }
 
   .chart-stage {
+    width: 95%;
+    flex: 1;
+    min-height: 255px;
+    display: flex;
+    align-items: stretch;
     gap: 4px;
   }
-}
+
+  .chart-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    position: relative;
+  }
+
+  .pane-separator-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  .pane-separator-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px solid var(--chart-border);
+    opacity: 1;
+    box-sizing: border-box;
+    transition:
+      border-top-color 120ms ease,
+      border-top-width 120ms ease,
+      margin-top 120ms ease,
+      opacity 120ms ease;
+  }
+
+  .pane-separator-line.is-active {
+    border-top-color: var(--chart-border-active);
+    border-top-width: 2px;
+    margin-top: -1px;
+  }
+
+  .chart-stage.is-resizing-pane,
+  .chart-stage.is-hovering-pane-separator {
+    cursor: ns-resize;
+  }
+
+  .chart-stage.is-hovering-kline {
+    cursor: pointer;
+  }
+
+  .chart-stage.is-hovering-right-axis {
+    cursor: ns-resize;
+  }
+
+  .chart-stage.is-dragging {
+    cursor: grabbing;
+  }
+
+  .chart-container {
+    position: relative;
+    flex: 1 1 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 100%;
+    min-height: inherit;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    border: 1px solid var(--chart-border);
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-sizing: border-box;
+    background: var(--chart-bg);
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .chart-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .right-axis-host {
+    position: relative;
+    flex: 0 0 auto;
+    height: 100%;
+    min-height: inherit;
+    box-sizing: border-box;
+    background: var(--chart-bg);
+    overflow: visible;
+    border: 1px solid var(--chart-border);
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .left-axis-host {
+    position: relative;
+    flex: 0 0 auto;
+    height: 100%;
+    min-height: inherit;
+    box-sizing: border-box;
+    background: var(--chart-bg);
+    overflow: visible;
+    border: 1px solid var(--chart-border);
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .scroll-content {
+    height: 100%;
+    min-height: inherit;
+    position: relative;
+  }
+
+  .range-selection-overlay {
+    position: absolute;
+    top: 0;
+    z-index: 25;
+    box-sizing: border-box;
+    border: 1px solid rgba(24, 144, 255, 0.75);
+    background: rgba(24, 144, 255, 0.14);
+    pointer-events: none;
+  }
+
+  .range-selection-overlay.is-dragging {
+    background: rgba(24, 144, 255, 0.2);
+  }
+
+  .range-selection-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: ew-resize;
+    pointer-events: auto;
+    z-index: 101;
+  }
+
+  .range-selection-handle--left {
+    left: -4px;
+  }
+
+  .range-selection-handle--right {
+    right: -4px;
+  }
+
+  .canvas-layer {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 26;
+    pointer-events: none;
+  }
+
+  .tooltip-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 30;
+  }
+
+  .tooltip-anchor {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+  }
+
+  .tooltip-anchor.kline-tooltip-anchor.use-anchor {
+    anchor-name: --kline-tooltip-anchor;
+  }
+
+  .tooltip-anchor.marker-tooltip-anchor.use-anchor {
+    anchor-name: --marker-tooltip-anchor;
+  }
+
+  @media (max-width: 768px), (max-height: 640px) {
+    .chart-wrapper {
+      gap: 4px;
+    }
+
+    .chart-stage {
+      gap: 4px;
+    }
+  }
 </style>
 
 <style>
-.plot-canvas {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: block;
-}
+  .plot-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block;
+  }
 
-.right-axis {
-  position: absolute;
-  display: block;
-  left: 0;
-}
+  .right-axis {
+    position: absolute;
+    display: block;
+    left: 0;
+  }
 
-.x-axis-canvas {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  display: block;
-  z-index: 10;
-}
+  .x-axis-canvas {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    display: block;
+    z-index: 10;
+  }
 
-.right-axis {
-  z-index: 15;
-}
+  .right-axis {
+    z-index: 15;
+  }
 </style>
 
 <style>
-* {
-  -webkit-tap-highlight-color: transparent;
-}
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 </style>

@@ -1,13 +1,16 @@
-import type { ChartController, DrawingToolType, KLineData, ToolCall, ToolResult } from '@363045841yyt/klinechart-core'
+import type {
+  ChartController,
+  DrawingToolType,
+  KLineData,
+  ToolCall,
+  ToolResult,
+} from '@363045841yyt/klinechart-core'
 import { findTool } from './toolSchemas'
 
 export type { ToolCall, ToolResult }
 
 // follow-ignore-next-line complexity
-export function executeTool(
-  chart: ChartController,
-  call: ToolCall,
-): ToolResult {
+export function executeTool(chart: ChartController, call: ToolCall): ToolResult {
   const schema = findTool(call.name)
   if (!schema) {
     return { success: false, error: `Unknown tool: ${call.name}` }
@@ -68,9 +71,7 @@ export function executeTool(
     case 'indicators.remove': {
       const { instanceId } = call.input as { instanceId: string }
       const ok = chart.removeIndicator(instanceId)
-      return ok
-        ? { success: true }
-        : { success: false, error: `Indicator ${instanceId} not found` }
+      return ok ? { success: true } : { success: false, error: `Indicator ${instanceId} not found` }
     }
 
     case 'indicators.updateParams': {
@@ -79,9 +80,7 @@ export function executeTool(
         params: Record<string, unknown>
       }
       const ok = chart.updateIndicatorParams(instanceId, params)
-      return ok
-        ? { success: true }
-        : { success: false, error: `Indicator ${instanceId} not found` }
+      return ok ? { success: true } : { success: false, error: `Indicator ${instanceId} not found` }
     }
 
     case 'data.setSymbols': {
@@ -94,21 +93,30 @@ export function executeTool(
         startDate?: string
         endDate?: string
       }
-      chart.setSymbols([{
-        symbol: input.symbol,
-        exchange: input.exchange,
-        period: input.period,
-        adjust: input.adjust,
-        source: input.source,
-        startDate: input.startDate,
-        endDate: input.endDate,
-      }])
+      chart.setSymbols([
+        {
+          symbol: input.symbol,
+          exchange: input.exchange,
+          period: input.period,
+          adjust: input.adjust,
+          source: input.source,
+          startDate: input.startDate,
+          endDate: input.endDate,
+        },
+      ])
       return { success: true }
     }
 
     case 'data.appendData': {
       const { bars } = call.input as {
-        bars: Array<{ timestamp?: number; open: number; high: number; low: number; close: number; volume?: number }>
+        bars: Array<{
+          timestamp?: number
+          open: number
+          high: number
+          low: number
+          close: number
+          volume?: number
+        }>
       }
       chart.appendData(bars as KLineData[])
       return { success: true }
@@ -116,7 +124,14 @@ export function executeTool(
 
     case 'data.updateData': {
       const { bars } = call.input as {
-        bars: Array<{ timestamp?: number; open: number; high: number; low: number; close: number; volume?: number }>
+        bars: Array<{
+          timestamp?: number
+          open: number
+          high: number
+          low: number
+          close: number
+          volume?: number
+        }>
       }
       chart.updateData(bars as KLineData[])
       return { success: true }
@@ -205,7 +220,10 @@ export function executeTool(
     }
 
     case 'settings.update': {
-      const { settings, options } = call.input as { settings?: Record<string, unknown>; options?: Record<string, unknown> }
+      const { settings, options } = call.input as {
+        settings?: Record<string, unknown>
+        options?: Record<string, unknown>
+      }
       if (settings) chart.updateSettingsFacade(settings)
       if (options) chart.updateOptionsFacade(options)
       return { success: true }

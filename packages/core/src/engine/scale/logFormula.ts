@@ -8,21 +8,21 @@ import type { PriceRange } from './price'
  * - coordOffset: 坐标偏移，避免 log10(0) 并提升精度
  */
 export interface LogFormula {
-    logicalOffset: number
-    coordOffset: number
+  logicalOffset: number
+  coordOffset: number
 }
 
 /** 默认 LogFormula */
 const DEFAULT_FORMULA: LogFormula = {
-    logicalOffset: 4,
-    coordOffset: 0.0001,
+  logicalOffset: 4,
+  coordOffset: 0.0001,
 }
 
 /**
  * 判断数值是否近似为零
  */
 function isZero(value: number): boolean {
-    return Math.abs(value) < 1e-15
+  return Math.abs(value) < 1e-15
 }
 
 /**
@@ -34,12 +34,12 @@ function isZero(value: number): boolean {
  * @returns log 逻辑空间值
  */
 export function toLog(price: number, f: LogFormula): number {
-    const m = Math.abs(price)
-    if (isZero(m)) {
-        return 0
-    }
-    const res = Math.log10(m + f.coordOffset) + f.logicalOffset
-    return price < 0 ? -res : res
+  const m = Math.abs(price)
+  if (isZero(m)) {
+    return 0
+  }
+  const res = Math.log10(m + f.coordOffset) + f.logicalOffset
+  return price < 0 ? -res : res
 }
 
 /**
@@ -51,12 +51,12 @@ export function toLog(price: number, f: LogFormula): number {
  * @returns 真实价格
  */
 export function fromLog(logical: number, f: LogFormula): number {
-    const m = Math.abs(logical)
-    if (isZero(m)) {
-        return 0
-    }
-    const res = Math.pow(10, m - f.logicalOffset) - f.coordOffset
-    return logical < 0 ? -res : res
+  const m = Math.abs(logical)
+  if (isZero(m)) {
+    return 0
+  }
+  const res = Math.pow(10, m - f.logicalOffset) - f.coordOffset
+  return logical < 0 ? -res : res
 }
 
 /**
@@ -69,23 +69,23 @@ export function fromLog(logical: number, f: LogFormula): number {
  * @returns 最优的 LogFormula
  */
 export function logFormulaForPriceRange(range: PriceRange | null): LogFormula {
-    if (range === null) {
-        return { ...DEFAULT_FORMULA }
-    }
+  if (range === null) {
+    return { ...DEFAULT_FORMULA }
+  }
 
-    const diff = Math.abs(range.maxPrice - range.minPrice)
-    // 常规范围或无效范围，使用默认公式
-    if (diff >= 1 || diff < 1e-15) {
-        return { ...DEFAULT_FORMULA }
-    }
+  const diff = Math.abs(range.maxPrice - range.minPrice)
+  // 常规范围或无效范围，使用默认公式
+  if (diff >= 1 || diff < 1e-15) {
+    return { ...DEFAULT_FORMULA }
+  }
 
-    // 极小范围：根据精度需求增大偏移
-    // 例如 diff = 0.0001 (1e-4)，需要增加 4 位偏移
-    const digits = Math.ceil(Math.abs(Math.log10(diff)))
-    const logicalOffset = DEFAULT_FORMULA.logicalOffset + digits
-    const coordOffset = 1 / Math.pow(10, logicalOffset)
+  // 极小范围：根据精度需求增大偏移
+  // 例如 diff = 0.0001 (1e-4)，需要增加 4 位偏移
+  const digits = Math.ceil(Math.abs(Math.log10(diff)))
+  const logicalOffset = DEFAULT_FORMULA.logicalOffset + digits
+  const coordOffset = 1 / Math.pow(10, logicalOffset)
 
-    return { logicalOffset, coordOffset }
+  return { logicalOffset, coordOffset }
 }
 
 /**
@@ -97,10 +97,10 @@ export function logFormulaForPriceRange(range: PriceRange | null): LogFormula {
  * @returns log 空间的价格范围
  */
 export function convertPriceRangeToLog(range: PriceRange, f: LogFormula): PriceRange {
-    return {
-        minPrice: toLog(range.minPrice, f),
-        maxPrice: toLog(range.maxPrice, f),
-    }
+  return {
+    minPrice: toLog(range.minPrice, f),
+    maxPrice: toLog(range.maxPrice, f),
+  }
 }
 
 /**
@@ -112,10 +112,10 @@ export function convertPriceRangeToLog(range: PriceRange, f: LogFormula): PriceR
  * @returns 真实价格范围
  */
 export function convertPriceRangeFromLog(range: PriceRange, f: LogFormula): PriceRange {
-    return {
-        minPrice: fromLog(range.minPrice, f),
-        maxPrice: fromLog(range.maxPrice, f),
-    }
+  return {
+    minPrice: fromLog(range.minPrice, f),
+    maxPrice: fromLog(range.maxPrice, f),
+  }
 }
 
 /**
@@ -126,5 +126,5 @@ export function convertPriceRangeFromLog(range: PriceRange, f: LogFormula): Pric
  * @returns 是否相同
  */
 export function logFormulasAreSame(a: LogFormula, b: LogFormula): boolean {
-    return a.logicalOffset === b.logicalOffset && a.coordOffset === b.coordOffset
+  return a.logicalOffset === b.logicalOffset && a.coordOffset === b.coordOffset
 }

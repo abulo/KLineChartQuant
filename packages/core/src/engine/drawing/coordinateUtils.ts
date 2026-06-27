@@ -29,7 +29,7 @@ export interface DrawingAnchorInput {
  */
 export function anchorToScreen(
   anchor: DrawingAnchor,
-  adapter: DrawingChartAdapter
+  adapter: DrawingChartAdapter,
 ): { x: number; y: number } | null {
   const viewport = adapter.getViewport()
   if (!viewport) return null
@@ -54,7 +54,7 @@ export function anchorToScreen(
 export function screenToAnchor(
   screenX: number,
   screenY: number,
-  adapter: DrawingChartAdapter
+  adapter: DrawingChartAdapter,
 ): DrawingAnchorInput | null {
   const data = adapter.getData()
   const viewport = adapter.getViewport()
@@ -88,7 +88,7 @@ export function screenToAnchor(
 export function resolveAnchorFromPointer(
   e: PointerEvent,
   container: HTMLElement,
-  adapter: DrawingChartAdapter
+  adapter: DrawingChartAdapter,
 ): DrawingAnchorInput | null {
   const data = adapter.getData()
   const viewport = adapter.getViewport()
@@ -126,7 +126,7 @@ export function pointToSegmentDist(
   px: number,
   py: number,
   a: { x: number; y: number },
-  b: { x: number; y: number }
+  b: { x: number; y: number },
 ): number {
   const dx = b.x - a.x
   const dy = b.y - a.y

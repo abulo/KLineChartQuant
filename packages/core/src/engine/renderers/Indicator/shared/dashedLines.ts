@@ -5,7 +5,10 @@ export function createDashedLineRenderer() {
   let offscreenCtx: CanvasRenderingContext2D | null = null
   let cachedDashedLinesKey = ''
 
-  function getOffscreenCanvas(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+  function getOffscreenCanvas(
+    width: number,
+    height: number,
+  ): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
     if (!offscreenCanvas || offscreenCanvas.width !== width || offscreenCanvas.height !== height) {
       offscreenCanvas = document.createElement('canvas')
       offscreenCanvas.width = width
@@ -21,7 +24,7 @@ export function createDashedLineRenderer() {
     paneHeight: number,
     displayMin: number,
     displayMax: number,
-    dpr: number
+    dpr: number,
   ): string {
     return `${paneWidth}|${paneHeight}|${displayMin.toFixed(4)}|${displayMax.toFixed(4)}|${dpr}`
   }
@@ -32,11 +35,17 @@ export function createDashedLineRenderer() {
     paneHeight: number,
     displayMin: number,
     displayMax: number,
-    dpr: number
+    dpr: number,
   ): void {
     const displayValueRange = displayMax - displayMin || 1
-    const y80 = alignToPhysicalPixelCenter(paneHeight - (80 - displayMin) / displayValueRange * paneHeight, dpr)
-    const y20 = alignToPhysicalPixelCenter(paneHeight - (20 - displayMin) / displayValueRange * paneHeight, dpr)
+    const y80 = alignToPhysicalPixelCenter(
+      paneHeight - ((80 - displayMin) / displayValueRange) * paneHeight,
+      dpr,
+    )
+    const y20 = alignToPhysicalPixelCenter(
+      paneHeight - ((20 - displayMin) / displayValueRange) * paneHeight,
+      dpr,
+    )
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
     ctx.save()
@@ -61,14 +70,14 @@ export function createDashedLineRenderer() {
     paneHeight: number,
     displayMin: number,
     displayMax: number,
-    dpr: number
+    dpr: number,
   ): void {
     const key = buildKey(paneWidth, paneHeight, displayMin, displayMax, dpr)
     if (cachedDashedLinesKey !== key) {
       cachedDashedLinesKey = key
       const { ctx: offCtx } = getOffscreenCanvas(
         Math.ceil(paneWidth * dpr),
-        Math.ceil(paneHeight * dpr)
+        Math.ceil(paneHeight * dpr),
       )
       renderToOffscreen(offCtx, paneWidth, paneHeight, displayMin, displayMax, dpr)
     }

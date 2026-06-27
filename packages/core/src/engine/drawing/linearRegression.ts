@@ -1,4 +1,6 @@
-export function computeLinearRegression(values: number[]): { slope: number; intercept: number; stdDev: number } | null {
+export function computeLinearRegression(
+  values: number[],
+): { slope: number; intercept: number; stdDev: number } | null {
   const n = values.length
   if (n < 2) return null
 

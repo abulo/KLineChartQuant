@@ -7,23 +7,10 @@
  * — see `docs/ROADMAP.md` §0.
  */
 
-export type {
-    Layer,
-    LayerRole,
-    PaneRole,
-    PaintContext,
-    Scene,
-} from './types'
+export type { Layer, LayerRole, PaneRole, PaintContext, Scene } from './types'
 
 export { createScene } from './createScene'
 
-export {
-    createLayerRegistry,
-    BUILTIN_LAYER_TYPES,
-} from './layerRegistry'
+export { createLayerRegistry, BUILTIN_LAYER_TYPES } from './layerRegistry'
 
-export type {
-    LayerFactory,
-    LayerRegistry,
-    BuiltinLayerType,
-} from './layerRegistry'
+export type { LayerFactory, LayerRegistry, BuiltinLayerType } from './layerRegistry'

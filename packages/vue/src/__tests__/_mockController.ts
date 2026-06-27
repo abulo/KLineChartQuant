@@ -11,19 +11,19 @@
 
 import type { Signal } from '@363045841yyt/klinechart-core/reactivity'
 import type {
-    ChartController,
-    ChartMountOptions,
-    ChartViewport,
-    DataFetcher,
-    DrawingObject,
-    DrawingToolType,
-    IndicatorDefinition,
-    IndicatorInstance,
-    InteractionSnapshot,
-    KLineData,
-    PaneSpec,
-    SubPaneInfo,
-    SymbolSpec,
+  ChartController,
+  ChartMountOptions,
+  ChartViewport,
+  DataFetcher,
+  DrawingObject,
+  DrawingToolType,
+  IndicatorDefinition,
+  IndicatorInstance,
+  InteractionSnapshot,
+  KLineData,
+  PaneSpec,
+  SubPaneInfo,
+  SymbolSpec,
 } from '@363045841yyt/klinechart-core'
 
 // ---------------------------------------------------------------------------
@@ -32,174 +32,173 @@ import type {
 // ---------------------------------------------------------------------------
 
 function createSignal<T>(initial: T): Signal<T> {
-    let value = initial
-    const subs = new Set<() => void>()
-    const read = (): T => value
-    const peek = (): T => value
-    const set = (next: T): void => {
-        if (Object.is(value, next)) return
-        value = next
-        for (const listener of [...subs]) listener()
+  let value = initial
+  const subs = new Set<() => void>()
+  const read = (): T => value
+  const peek = (): T => value
+  const set = (next: T): void => {
+    if (Object.is(value, next)) return
+    value = next
+    for (const listener of [...subs]) listener()
+  }
+  const subscribe = (listener: () => void): (() => void) => {
+    subs.add(listener)
+    return () => {
+      subs.delete(listener)
     }
-    const subscribe = (listener: () => void): (() => void) => {
-        subs.add(listener)
-        return () => {
-            subs.delete(listener)
-        }
-    }
-    return Object.assign(read, { peek, set, subscribe }) as Signal<T>
+  }
+  return Object.assign(read, { peek, set, subscribe }) as Signal<T>
 }
 
 export interface MockChartController extends ChartController {
-    /** spy: how many times `dispose` was called */
-    disposeCalls: () => number
-    /** spy: data fetchers passed to `setDataFetcher` */
-    setDataFetcherCalls: () => ReadonlyArray<DataFetcher | null>
-    /** spy: themes passed to `setTheme` */
-    setThemeCalls: () => ReadonlyArray<'light' | 'dark'>
-    /** test-only signal mutators */
-    _setViewport: (vp: ChartViewport) => void
-    _setData: (data: ReadonlyArray<KLineData>) => void
-    /** test-only: emit a theme change as the controller would */
-    _emitTheme: (next: 'light' | 'dark') => void
+  /** spy: how many times `dispose` was called */
+  disposeCalls: () => number
+  /** spy: data fetchers passed to `setDataFetcher` */
+  setDataFetcherCalls: () => ReadonlyArray<DataFetcher | null>
+  /** spy: themes passed to `setTheme` */
+  setThemeCalls: () => ReadonlyArray<'light' | 'dark'>
+  /** test-only signal mutators */
+  _setViewport: (vp: ChartViewport) => void
+  _setData: (data: ReadonlyArray<KLineData>) => void
+  /** test-only: emit a theme change as the controller would */
+  _emitTheme: (next: 'light' | 'dark') => void
 }
 
 export function createMockChartController(
-    opts: Partial<ChartMountOptions> = {},
+  opts: Partial<ChartMountOptions> = {},
 ): MockChartController {
-    let disposeCalls = 0
-    const setDataFetcherCalls: Array<DataFetcher | null> = []
-    const setThemeCalls: Array<'light' | 'dark'> = []
+  let disposeCalls = 0
+  const setDataFetcherCalls: Array<DataFetcher | null> = []
+  const setThemeCalls: Array<'light' | 'dark'> = []
 
-    const viewport = createSignal<ChartViewport>({
-        zoomLevel: opts.initialZoomLevel ?? 3,
-        kWidth: 6,
-        kGap: 2,
-        plotWidth: 0,
-        plotHeight: 0,
-        dpr: 1,
-        visibleFrom: 0,
-        visibleTo: 0,
-    })
-    const data = createSignal<ReadonlyArray<KLineData>>(opts.data ?? [])
-    const theme = createSignal<'light' | 'dark'>(opts.theme ?? 'light')
-    const paneLayout = createSignal<ReadonlyArray<PaneSpec>>([])
+  const viewport = createSignal<ChartViewport>({
+    zoomLevel: opts.initialZoomLevel ?? 3,
+    kWidth: 6,
+    kGap: 2,
+    plotWidth: 0,
+    plotHeight: 0,
+    dpr: 1,
+    visibleFrom: 0,
+    visibleTo: 0,
+  })
+  const data = createSignal<ReadonlyArray<KLineData>>(opts.data ?? [])
+  const theme = createSignal<'light' | 'dark'>(opts.theme ?? 'light')
+  const paneLayout = createSignal<ReadonlyArray<PaneSpec>>([])
 
-    return {
-        viewport,
-        data,
-        dataLoading: createSignal(false),
-        symbols: createSignal([] as ReadonlyArray<SymbolSpec>),
-        theme,
-        indicators: createSignal<ReadonlyArray<IndicatorInstance>>([]),
-        subPanes: createSignal<ReadonlyArray<SubPaneInfo>>([]),
-        drawingTool: createSignal<DrawingToolType | null>(null),
-        drawings: createSignal<ReadonlyArray<DrawingObject>>([]),
-        paneRatios: createSignal<Readonly<Record<string, number>>>({}),
-        paneLayout,
-        interactionState: createSignal<InteractionSnapshot>({
-            crosshairPos: null,
-            crosshairIndex: null,
-            crosshairPrice: null,
-            hoveredIndex: null,
-            activePaneId: null,
-            tooltipPos: { x: 0, y: 0 },
-            tooltipAnchorPlacement: 'right-bottom',
-            hoveredMarkerData: null,
-            hoveredCustomMarker: null,
-            isDragging: false,
-            isResizingPaneBoundary: false,
-            isHoveringPaneBoundary: false,
-            hoveredPaneBoundaryId: null,
-            isHoveringRightAxis: false,
-        }),
-        comparisonColors: createSignal<ReadonlyMap<string, string>>(new Map()),
-        comparisonLoading: createSignal(false),
-        catalog: [],
+  return {
+    viewport,
+    data,
+    dataLoading: createSignal(false),
+    symbols: createSignal([] as ReadonlyArray<SymbolSpec>),
+    theme,
+    indicators: createSignal<ReadonlyArray<IndicatorInstance>>([]),
+    subPanes: createSignal<ReadonlyArray<SubPaneInfo>>([]),
+    drawingTool: createSignal<DrawingToolType | null>(null),
+    drawings: createSignal<ReadonlyArray<DrawingObject>>([]),
+    paneRatios: createSignal<Readonly<Record<string, number>>>({}),
+    paneLayout,
+    interactionState: createSignal<InteractionSnapshot>({
+      crosshairPos: null,
+      crosshairIndex: null,
+      crosshairPrice: null,
+      hoveredIndex: null,
+      activePaneId: null,
+      tooltipPos: { x: 0, y: 0 },
+      tooltipAnchorPlacement: 'right-bottom',
+      hoveredMarkerData: null,
+      hoveredCustomMarker: null,
+      isDragging: false,
+      isResizingPaneBoundary: false,
+      isHoveringPaneBoundary: false,
+      hoveredPaneBoundaryId: null,
+      isHoveringRightAxis: false,
+    }),
+    comparisonColors: createSignal<ReadonlyMap<string, string>>(new Map()),
+    comparisonLoading: createSignal(false),
+    catalog: [],
 
-        setData: (next) => data.set(next),
-        appendData: (next) => data.set([...data.peek(), ...next]),
-        updateData: (next) => data.set(next),
-        getData: () => data.peek(),
-        getZoomLevelCount: () => 10,
-        setSymbols: () => {},
-        addComparisonSymbol: () => {},
-        removeComparisonSymbol: () => {},
-        setComparisonData: () => {},
-        setCurrentSymbol: () => {},
-        setCurrentPeriod: () => {},
-        switchToTimeShareForDate: () => {},
-        applyCustomData: () => {},
-        setDataFetcher: (fetcher) => {
-            setDataFetcherCalls.push(fetcher)
-        },
-        ensureDataRange: () => {},
-        setTheme: (next) => {
-            setThemeCalls.push(next)
-            theme.set(next)
-        },
-        zoomToLevel: (level) =>
-            viewport.set({ ...viewport.peek(), zoomLevel: level }),
-        zoomIn: () =>
-            viewport.set({
-                ...viewport.peek(),
-                zoomLevel: viewport.peek().zoomLevel + 1,
-            }),
-        zoomOut: () =>
-            viewport.set({
-                ...viewport.peek(),
-                zoomLevel: viewport.peek().zoomLevel - 1,
-            }),
-        handlePointerEvent: () => false,
-        handleWheelEvent: () => {},
-        handleScrollEvent: () => {},
-        handlePinchZoom: () => {},
-        addIndicator: () => null,
-        removeIndicator: () => false,
-        updateIndicatorParams: () => false,
-        updateRendererConfig: () => {},
-        setDrawingTool: () => {},
-        clearDrawings: () => {},
-        removeDrawing: () => {},
-        setDrawings: () => {},
-        getFullDrawings: () => [],
-        setSelectedDrawingId: () => {},
-        getViewport: () => null,
-        getKWidthKGap: () => ({ kWidth: 6, kGap: 2 }),
-        getCurrentDpr: () => 1,
-        getLogicalIndexAtX: () => null,
-        getTimestampAtLogicalIndex: () => null,
-        priceToY: () => 0,
-        yToPrice: () => 0,
-        getPaneInfo: () => undefined,
-        resizeSubPane: () => false,
-        createSubPane: () => false,
-        clearSubPanes: () => {},
-        replaceSubPaneIndicator: () => false,
-        updatePaneLayout: (_panes: PaneSpec[]) => {},
-        updateCustomMarkers: () => {},
-        clearCustomMarkers: () => {},
-        setTooltipSize: () => {},
-        setTooltipAnchorPositioning: () => {},
-        getIndicatorTitle: () => undefined,
-        getContentWidth: () => 0,
-        getLeftLoadBufferWidth: () => 0,
-        scrollToRight: () => {},
-        updateSettingsFacade: () => {},
-        updateOptionsFacade: () => {},
-        dispose: () => {
-            disposeCalls += 1
-        },
-        disposeCalls: () => disposeCalls,
-        setDataFetcherCalls: () => setDataFetcherCalls,
-        setThemeCalls: () => setThemeCalls,
-        _setViewport: (vp) => viewport.set(vp),
-        _setData: (next) => data.set(next),
-        _emitTheme: (next) => theme.set(next),
-    }
+    setData: (next) => data.set(next),
+    appendData: (next) => data.set([...data.peek(), ...next]),
+    updateData: (next) => data.set(next),
+    getData: () => data.peek(),
+    getZoomLevelCount: () => 10,
+    setSymbols: () => {},
+    addComparisonSymbol: () => {},
+    removeComparisonSymbol: () => {},
+    setComparisonData: () => {},
+    setCurrentSymbol: () => {},
+    setCurrentPeriod: () => {},
+    switchToTimeShareForDate: () => {},
+    applyCustomData: () => {},
+    setDataFetcher: (fetcher) => {
+      setDataFetcherCalls.push(fetcher)
+    },
+    ensureDataRange: () => {},
+    setTheme: (next) => {
+      setThemeCalls.push(next)
+      theme.set(next)
+    },
+    zoomToLevel: (level) => viewport.set({ ...viewport.peek(), zoomLevel: level }),
+    zoomIn: () =>
+      viewport.set({
+        ...viewport.peek(),
+        zoomLevel: viewport.peek().zoomLevel + 1,
+      }),
+    zoomOut: () =>
+      viewport.set({
+        ...viewport.peek(),
+        zoomLevel: viewport.peek().zoomLevel - 1,
+      }),
+    handlePointerEvent: () => false,
+    handleWheelEvent: () => {},
+    handleScrollEvent: () => {},
+    handlePinchZoom: () => {},
+    addIndicator: () => null,
+    removeIndicator: () => false,
+    updateIndicatorParams: () => false,
+    updateRendererConfig: () => {},
+    setDrawingTool: () => {},
+    clearDrawings: () => {},
+    removeDrawing: () => {},
+    setDrawings: () => {},
+    getFullDrawings: () => [],
+    setSelectedDrawingId: () => {},
+    getViewport: () => null,
+    getKWidthKGap: () => ({ kWidth: 6, kGap: 2 }),
+    getCurrentDpr: () => 1,
+    getLogicalIndexAtX: () => null,
+    getTimestampAtLogicalIndex: () => null,
+    priceToY: () => 0,
+    yToPrice: () => 0,
+    getPaneInfo: () => undefined,
+    resizeSubPane: () => false,
+    createSubPane: () => false,
+    clearSubPanes: () => {},
+    replaceSubPaneIndicator: () => false,
+    updatePaneLayout: (_panes: PaneSpec[]) => {},
+    updateCustomMarkers: () => {},
+    clearCustomMarkers: () => {},
+    setTooltipSize: () => {},
+    setTooltipAnchorPositioning: () => {},
+    getIndicatorTitle: () => undefined,
+    getContentWidth: () => 0,
+    getLeftLoadBufferWidth: () => 0,
+    scrollToRight: () => {},
+    updateSettingsFacade: () => {},
+    updateOptionsFacade: () => {},
+    dispose: () => {
+      disposeCalls += 1
+    },
+    disposeCalls: () => disposeCalls,
+    setDataFetcherCalls: () => setDataFetcherCalls,
+    setThemeCalls: () => setThemeCalls,
+    _setViewport: (vp) => viewport.set(vp),
+    _setData: (next) => data.set(next),
+    _emitTheme: (next) => theme.set(next),
+  }
 }
 
 /** Signal helper used by reactivity bridge tests. */
 export function createTestSignal<T>(initial: T): Signal<T> {
-    return createSignal(initial)
+  return createSignal(initial)
 }

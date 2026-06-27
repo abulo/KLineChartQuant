@@ -25,72 +25,71 @@ import { KLineChartError } from '../errors'
  */
 
 export interface T3Options {
-    period: number
-    /** Volume factor in [0, 1]. Default 0.7. Lower = smoother. */
-    volumeFactor?: number
+  period: number
+  /** Volume factor in [0, 1]. Default 0.7. Lower = smoother. */
+  volumeFactor?: number
 }
 
 function emaSeries(input: Float64Array, period: number): Float64Array {
-    const out = new Float64Array(input.length)
-    const k = 2 / (period + 1)
-    let prev = Number.NaN
-    for (let i = 0; i < input.length; i++) {
-        const v = input[i] as number
-        if (Number.isNaN(v)) {
-            out[i] = Number.NaN
-            continue
-        }
-        if (Number.isNaN(prev)) {
-            prev = v
-        } else {
-            prev = k * v + (1 - k) * prev
-        }
-        out[i] = prev
+  const out = new Float64Array(input.length)
+  const k = 2 / (period + 1)
+  let prev = Number.NaN
+  for (let i = 0; i < input.length; i++) {
+    const v = input[i] as number
+    if (Number.isNaN(v)) {
+      out[i] = Number.NaN
+      continue
     }
-    return out
+    if (Number.isNaN(prev)) {
+      prev = v
+    } else {
+      prev = k * v + (1 - k) * prev
+    }
+    out[i] = prev
+  }
+  return out
 }
 
 export function computeT3(prices: ReadonlyArray<number>, opts: T3Options): Float64Array {
-    const { period } = opts
-    const a = opts.volumeFactor ?? 0.7
-    if (period < 2 || !Number.isFinite(period)) throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeT3: period must be >= 2')
-    if (a < 0 || a > 1 || !Number.isFinite(a)) {
-        throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeT3: volumeFactor must be in [0, 1]')
+  const { period } = opts
+  const a = opts.volumeFactor ?? 0.7
+  if (period < 2 || !Number.isFinite(period))
+    throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeT3: period must be >= 2')
+  if (a < 0 || a > 1 || !Number.isFinite(a)) {
+    throw new KLineChartError(
+      'INDICATOR_INVALID_PARAM',
+      'computeT3: volumeFactor must be in [0, 1]',
+    )
+  }
+
+  const src = new Float64Array(prices.length)
+  for (let i = 0; i < prices.length; i++) src[i] = prices[i] as number
+
+  const e1 = emaSeries(src, period)
+  const e2 = emaSeries(e1, period)
+  const e3 = emaSeries(e2, period)
+  const e4 = emaSeries(e3, period)
+  const e5 = emaSeries(e4, period)
+  const e6 = emaSeries(e5, period)
+
+  const a2 = a * a
+  const a3 = a2 * a
+  const c1 = -a3
+  const c2 = 3 * a2 + 3 * a3
+  const c3 = -6 * a2 - 3 * a - 3 * a3
+  const c4 = 1 + 3 * a + a3 + 3 * a2
+
+  const out = new Float64Array(prices.length)
+  for (let i = 0; i < prices.length; i++) {
+    const v6 = e6[i] as number
+    const v5 = e5[i] as number
+    const v4 = e4[i] as number
+    const v3 = e3[i] as number
+    if (Number.isNaN(v6) || Number.isNaN(v5) || Number.isNaN(v4) || Number.isNaN(v3)) {
+      out[i] = Number.NaN
+    } else {
+      out[i] = c1 * v6 + c2 * v5 + c3 * v4 + c4 * v3
     }
-
-    const src = new Float64Array(prices.length)
-    for (let i = 0; i < prices.length; i++) src[i] = prices[i] as number
-
-    const e1 = emaSeries(src, period)
-    const e2 = emaSeries(e1, period)
-    const e3 = emaSeries(e2, period)
-    const e4 = emaSeries(e3, period)
-    const e5 = emaSeries(e4, period)
-    const e6 = emaSeries(e5, period)
-
-    const a2 = a * a
-    const a3 = a2 * a
-    const c1 = -a3
-    const c2 = 3 * a2 + 3 * a3
-    const c3 = -6 * a2 - 3 * a - 3 * a3
-    const c4 = 1 + 3 * a + a3 + 3 * a2
-
-    const out = new Float64Array(prices.length)
-    for (let i = 0; i < prices.length; i++) {
-        const v6 = e6[i] as number
-        const v5 = e5[i] as number
-        const v4 = e4[i] as number
-        const v3 = e3[i] as number
-        if (
-            Number.isNaN(v6) ||
-            Number.isNaN(v5) ||
-            Number.isNaN(v4) ||
-            Number.isNaN(v3)
-        ) {
-            out[i] = Number.NaN
-        } else {
-            out[i] = c1 * v6 + c2 * v5 + c3 * v4 + c4 * v3
-        }
-    }
-    return out
+  }
+  return out
 }

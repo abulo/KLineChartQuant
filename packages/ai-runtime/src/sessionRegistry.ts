@@ -31,19 +31,14 @@ export class SessionRegistry {
     return Array.from(this.sessions.keys())
   }
 
-  updateState(
-    sessionId: string,
-    descriptions: Record<string, ControllerDescription>,
-  ): void {
+  updateState(sessionId: string, descriptions: Record<string, ControllerDescription>): void {
     const existing = this.states.get(sessionId)
     if (existing) {
       this.states.set(sessionId, { ...existing, ...descriptions })
     }
   }
 
-  getState(
-    sessionId: string,
-  ): Record<string, ControllerDescription> | undefined {
+  getState(sessionId: string): Record<string, ControllerDescription> | undefined {
     return this.states.get(sessionId)
   }
 

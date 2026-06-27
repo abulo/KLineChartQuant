@@ -26,7 +26,11 @@ export function createTimeAxisRendererPlugin(options: {
 
     draw(context: RenderContext) {
       const { ctx, data, range, scrollLeft, kWidth, kGap, dpr, paneWidth } = context
-      const colors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
+      const colors = resolveThemeColors(
+        context.theme,
+        context.isAsiaMarket,
+        context.colorPresetSettings,
+      )
       const klineData = data as KLineData[]
 
       // 时间轴绘制到传入的 ctx
@@ -40,28 +44,34 @@ export function createTimeAxisRendererPlugin(options: {
       targetCtx.scale(dpr, dpr)
       targetCtx.clearRect(0, 0, w, h)
 
-      drawTimeAxis(targetCtx, {
-        x: 0,
-        y: 0,
-        width: w,
-        height: h,
-        data: klineData,
-        scrollLeft,
-        kWidth,
-        kGap,
-        startIndex: range.start,
-        endIndex: range.end,
-        dpr,
-        kLineCenters: context.kLineCenters,
-        visibleRange: range,
-        textColor: colors.text.secondary,
-        lineColor: colors.border.dark,
-        drawTopBorder: false,
-        drawBottomBorder: false,
-        period: context.period,
-        monthKeys: context.monthKeys,
-        dayKeys: context.dayKeys,
-      }, context.theme, context.isAsiaMarket, context.colorPresetSettings)
+      drawTimeAxis(
+        targetCtx,
+        {
+          x: 0,
+          y: 0,
+          width: w,
+          height: h,
+          data: klineData,
+          scrollLeft,
+          kWidth,
+          kGap,
+          startIndex: range.start,
+          endIndex: range.end,
+          dpr,
+          kLineCenters: context.kLineCenters,
+          visibleRange: range,
+          textColor: colors.text.secondary,
+          lineColor: colors.border.dark,
+          drawTopBorder: false,
+          drawBottomBorder: false,
+          period: context.period,
+          monthKeys: context.monthKeys,
+          dayKeys: context.dayKeys,
+        },
+        context.theme,
+        context.isAsiaMarket,
+        context.colorPresetSettings,
+      )
 
       // 绘制来自 xAxisRanges 的时间范围带（先于标签绘制）
       if (context.xAxisRanges) {
@@ -83,19 +93,25 @@ export function createTimeAxisRendererPlugin(options: {
       if (crosshair && typeof crosshair.index === 'number') {
         const k = klineData[crosshair.index]
         if (k) {
-            drawCrosshairTimeLabel(targetCtx, {
-                x: 0,
-                y: 0,
-                width: w,
-                height: h,
-                crosshairX: crosshair.x,
-                timestamp: k.timestamp,
-                dpr,
-                fontSize: 12,
-                bgColor: colors.crosshairLabelBg,
-                textColor: colors.crosshairLabelText,
-                period: context.period,
-            }, context.theme, context.isAsiaMarket, context.colorPresetSettings)
+          drawCrosshairTimeLabel(
+            targetCtx,
+            {
+              x: 0,
+              y: 0,
+              width: w,
+              height: h,
+              crosshairX: crosshair.x,
+              timestamp: k.timestamp,
+              dpr,
+              fontSize: 12,
+              bgColor: colors.crosshairLabelBg,
+              textColor: colors.crosshairLabelText,
+              period: context.period,
+            },
+            context.theme,
+            context.isAsiaMarket,
+            context.colorPresetSettings,
+          )
         }
       }
 
@@ -107,18 +123,24 @@ export function createTimeAxisRendererPlugin(options: {
 
           // 检查是否在可视范围内
           if (screenX >= 0 && screenX <= w) {
-            drawAxisTimeLabel(targetCtx, {
-              x: 0,
-              y: 0,
-              width: w,
-              height: h,
-              labelX: screenX,
-              timestamp: label.timestamp,
-              dpr,
-              fontSize: 12,
-              bgColor: label.style?.bgColor,
-              textColor: label.style?.textColor,
-            }, context.theme, context.isAsiaMarket, context.colorPresetSettings)
+            drawAxisTimeLabel(
+              targetCtx,
+              {
+                x: 0,
+                y: 0,
+                width: w,
+                height: h,
+                labelX: screenX,
+                timestamp: label.timestamp,
+                dpr,
+                fontSize: 12,
+                bgColor: label.style?.bgColor,
+                textColor: label.style?.textColor,
+              },
+              context.theme,
+              context.isAsiaMarket,
+              context.colorPresetSettings,
+            )
           }
         }
       }

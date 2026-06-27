@@ -30,9 +30,9 @@ export function useChartTheme(ctrl: Ref<ChartController | null>) {
 
   const themeCssVars = computed(() => {
     const theme = chartTheme.value === 'dark' ? darkTheme : lightTheme
-    const overrides = (chartSettings.value.colorPresetSettings as ColorPresetSettings | undefined)?.[
-      chartTheme.value
-    ]
+    const overrides = (
+      chartSettings.value.colorPresetSettings as ColorPresetSettings | undefined
+    )?.[chartTheme.value]
     if (overrides && Object.keys(overrides).length > 0) {
       return themeToCssVars({ ...theme, colors: { ...theme.colors, ...overrides } })
     }

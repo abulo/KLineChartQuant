@@ -41,12 +41,12 @@ import type { ChartTypeTransform, OHLCV, TransformedBar } from './types'
 export type HeikinAshiConfig = Record<string, never>
 
 interface HAState {
-    /** Previous HA_open. */
-    prevOpen: number
-    /** Previous HA_close. */
-    prevClose: number
-    /** Index of the next input bar (i.e. count of bars consumed so far). */
-    nextIndex: number
+  /** Previous HA_open. */
+  prevOpen: number
+  /** Previous HA_close. */
+  prevClose: number
+  /** Index of the next input bar (i.e. count of bars consumed so far). */
+  nextIndex: number
 }
 
 /**
@@ -58,59 +58,63 @@ interface HAState {
  * independent transform without crossed state.
  */
 export function createHeikinAshi(): ChartTypeTransform<HeikinAshiConfig> {
-    let state: HAState | null = null
+  let state: HAState | null = null
 
-    /**
-     * Compute one HA bar. `prev` is `null` for the very first bar in a series,
-     * which triggers the seed `HA_open = (O + C) / 2`.
-     */
-    const computeBar = (
-        bar: OHLCV,
-        prev: { prevOpen: number; prevClose: number } | null,
-        sourceIndex: number,
-    ): TransformedBar => {
-        const haClose = (bar.open + bar.high + bar.low + bar.close) / 4
-        const haOpen = prev === null ? (bar.open + bar.close) / 2 : (prev.prevOpen + prev.prevClose) / 2
-        const haHigh = Math.max(bar.high, haOpen, haClose)
-        const haLow = Math.min(bar.low, haOpen, haClose)
-        return {
-            timestamp: bar.timestamp,
-            open: haOpen,
-            high: haHigh,
-            low: haLow,
-            close: haClose,
-            volume: bar.volume,
-            sourceBarIndexStart: sourceIndex,
-            sourceBarIndexEnd: sourceIndex,
-        }
-    }
-
+  /**
+   * Compute one HA bar. `prev` is `null` for the very first bar in a series,
+   * which triggers the seed `HA_open = (O + C) / 2`.
+   */
+  const computeBar = (
+    bar: OHLCV,
+    prev: { prevOpen: number; prevClose: number } | null,
+    sourceIndex: number,
+  ): TransformedBar => {
+    const haClose = (bar.open + bar.high + bar.low + bar.close) / 4
+    const haOpen = prev === null ? (bar.open + bar.close) / 2 : (prev.prevOpen + prev.prevClose) / 2
+    const haHigh = Math.max(bar.high, haOpen, haClose)
+    const haLow = Math.min(bar.low, haOpen, haClose)
     return {
-        typeId: 'heikin-ashi',
-
-        transform(input: ReadonlyArray<OHLCV>): ReadonlyArray<TransformedBar> {
-            state = null
-            const out: TransformedBar[] = []
-            for (let i = 0; i < input.length; i++) {
-                const bar = input[i]
-                if (!bar) continue
-                const ha = computeBar(bar, state === null ? null : { prevOpen: state.prevOpen, prevClose: state.prevClose }, i)
-                out.push(ha)
-                state = { prevOpen: ha.open, prevClose: ha.close, nextIndex: i + 1 }
-            }
-            return out
-        },
-
-        appendBar(bar: OHLCV): ReadonlyArray<TransformedBar> {
-            const prev = state === null ? null : { prevOpen: state.prevOpen, prevClose: state.prevClose }
-            const nextIndex = state === null ? 0 : state.nextIndex
-            const ha = computeBar(bar, prev, nextIndex)
-            state = { prevOpen: ha.open, prevClose: ha.close, nextIndex: nextIndex + 1 }
-            return [ha]
-        },
-
-        reset(): void {
-            state = null
-        },
+      timestamp: bar.timestamp,
+      open: haOpen,
+      high: haHigh,
+      low: haLow,
+      close: haClose,
+      volume: bar.volume,
+      sourceBarIndexStart: sourceIndex,
+      sourceBarIndexEnd: sourceIndex,
     }
+  }
+
+  return {
+    typeId: 'heikin-ashi',
+
+    transform(input: ReadonlyArray<OHLCV>): ReadonlyArray<TransformedBar> {
+      state = null
+      const out: TransformedBar[] = []
+      for (let i = 0; i < input.length; i++) {
+        const bar = input[i]
+        if (!bar) continue
+        const ha = computeBar(
+          bar,
+          state === null ? null : { prevOpen: state.prevOpen, prevClose: state.prevClose },
+          i,
+        )
+        out.push(ha)
+        state = { prevOpen: ha.open, prevClose: ha.close, nextIndex: i + 1 }
+      }
+      return out
+    },
+
+    appendBar(bar: OHLCV): ReadonlyArray<TransformedBar> {
+      const prev = state === null ? null : { prevOpen: state.prevOpen, prevClose: state.prevClose }
+      const nextIndex = state === null ? 0 : state.nextIndex
+      const ha = computeBar(bar, prev, nextIndex)
+      state = { prevOpen: ha.open, prevClose: ha.close, nextIndex: nextIndex + 1 }
+      return [ha]
+    },
+
+    reset(): void {
+      state = null
+    },
+  }
 }

@@ -83,14 +83,16 @@ describe('SemanticChartController', () => {
 
     await controller.applyConfig(createConfig({}))
 
-    expect(chart.setSymbols).toHaveBeenCalledWith([{
-      symbol: '600000',
-      exchange: 'SH',
-      period: 'daily',
-      adjust: 'qfq',
-      source: 'baostock',
-      startDate: '2025-01-01',
-      endDate: '2025-01-02',
-    }])
+    expect(chart.setSymbols).toHaveBeenCalledWith([
+      {
+        symbol: '600000',
+        exchange: 'SH',
+        period: 'daily',
+        adjust: 'qfq',
+        source: 'baostock',
+        startDate: '2025-01-01',
+        endDate: '2025-01-02',
+      },
+    ])
   })
 })

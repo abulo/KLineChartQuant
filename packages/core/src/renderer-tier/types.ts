@@ -19,10 +19,10 @@ export type RendererTier = 'webgpu' | 'webgl2' | 'canvas2d' | 'none'
  * Exposed so consumers can write their own "at least X" guards.
  */
 export const RENDERER_TIER_RANK: Readonly<Record<RendererTier, number>> = {
-    webgpu: 3,
-    webgl2: 2,
-    canvas2d: 1,
-    none: 0,
+  webgpu: 3,
+  webgl2: 2,
+  canvas2d: 1,
+  none: 0,
 }
 
 /**
@@ -34,9 +34,9 @@ export const RENDERER_TIER_RANK: Readonly<Record<RendererTier, number>> = {
  * "we wanted WebGPU but it threw" telemetry.
  */
 export interface RendererTierResult {
-    readonly tier: RendererTier
-    readonly reason: string
-    readonly tried: ReadonlyArray<RendererTier>
+  readonly tier: RendererTier
+  readonly reason: string
+  readonly tried: ReadonlyArray<RendererTier>
 }
 
 /**
@@ -49,11 +49,11 @@ export interface RendererTierResult {
  * with the message folded into `reason`.
  */
 export interface RendererTierProbes {
-    readonly webgpu?: () => boolean
-    readonly webgl2?: () => boolean
-    readonly canvas2d?: () => boolean
+  readonly webgpu?: () => boolean
+  readonly webgl2?: () => boolean
+  readonly canvas2d?: () => boolean
 }
 
 export interface DetectRendererTierOptions {
-    readonly probes?: RendererTierProbes
+  readonly probes?: RendererTierProbes
 }

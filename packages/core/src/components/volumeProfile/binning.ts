@@ -53,81 +53,81 @@ import type { BinningMode, VolumeProfileBar } from './types'
  *   Closes API audit BLOCKER-002 (export * leakage taxonomy).
  */
 export function binBarToBuckets(
-    bar: VolumeProfileBar,
-    buckets: Float64Array,
-    binMin: number,
-    binSize: number,
-    binCount: number,
-    mode: BinningMode,
+  bar: VolumeProfileBar,
+  buckets: Float64Array,
+  binMin: number,
+  binSize: number,
+  binCount: number,
+  mode: BinningMode,
 ): void {
-    if (bar.volume === 0 || binCount === 0 || binSize <= 0) return
+  if (bar.volume === 0 || binCount === 0 || binSize <= 0) return
 
-    if (mode === 'typical-price') {
-        const tp = (bar.high + bar.low + bar.close) / 3
-        const idx = Math.floor((tp - binMin) / binSize)
-        if (idx < 0 || idx >= binCount) return
-        buckets[idx] = (buckets[idx] ?? 0) + bar.volume
-        return
-    }
+  if (mode === 'typical-price') {
+    const tp = (bar.high + bar.low + bar.close) / 3
+    const idx = Math.floor((tp - binMin) / binSize)
+    if (idx < 0 || idx >= binCount) return
+    buckets[idx] = (buckets[idx] ?? 0) + bar.volume
+    return
+  }
 
-    // Proportional mode — split the bar's volume across [low, high] by
-    // per-bucket overlap with the bar's range.
-    //
-    // The bar's price extent is [low, high]; the buckets cover the price
-    // axis at [binMin + i*binSize, binMin + (i+1)*binSize). We compute the
-    // overlap of each touched bucket with [low, high] and weight by it.
-    //
-    // Degenerate-range bars (high === low, e.g. a doji at exactly one
-    // tick) fall back to the typical-price behaviour — putting the volume
-    // in the bucket containing `low` is the correct limit as
-    // `high - low -> 0`.
-    const binMax = binMin + binCount * binSize
-    const barLow = bar.low
-    const barHigh = bar.high
+  // Proportional mode — split the bar's volume across [low, high] by
+  // per-bucket overlap with the bar's range.
+  //
+  // The bar's price extent is [low, high]; the buckets cover the price
+  // axis at [binMin + i*binSize, binMin + (i+1)*binSize). We compute the
+  // overlap of each touched bucket with [low, high] and weight by it.
+  //
+  // Degenerate-range bars (high === low, e.g. a doji at exactly one
+  // tick) fall back to the typical-price behaviour — putting the volume
+  // in the bucket containing `low` is the correct limit as
+  // `high - low -> 0`.
+  const binMax = binMin + binCount * binSize
+  const barLow = bar.low
+  const barHigh = bar.high
 
-    // Drop bars fully outside the configured price range — they can't
-    // contribute to any bucket.
-    if (barHigh < binMin || barLow >= binMax) return
+  // Drop bars fully outside the configured price range — they can't
+  // contribute to any bucket.
+  if (barHigh < binMin || barLow >= binMax) return
 
-    if (barHigh === barLow) {
-        const idx = Math.floor((barLow - binMin) / binSize)
-        if (idx < 0 || idx >= binCount) return
-        buckets[idx] = (buckets[idx] ?? 0) + bar.volume
-        return
-    }
+  if (barHigh === barLow) {
+    const idx = Math.floor((barLow - binMin) / binSize)
+    if (idx < 0 || idx >= binCount) return
+    buckets[idx] = (buckets[idx] ?? 0) + bar.volume
+    return
+  }
 
-    // Clamp the bar's range to the bucket grid so overlap math doesn't
-    // include the out-of-range portion.
-    const lo = barLow < binMin ? binMin : barLow
-    const hi = barHigh > binMax ? binMax : barHigh
+  // Clamp the bar's range to the bucket grid so overlap math doesn't
+  // include the out-of-range portion.
+  const lo = barLow < binMin ? binMin : barLow
+  const hi = barHigh > binMax ? binMax : barHigh
 
-    const firstIdx = Math.floor((lo - binMin) / binSize)
-    // For `hi` we use ceiling-of-(hi - binMin)/binSize, minus 1, so the
-    // top boundary `hi === binMin + k*binSize` belongs to bucket k-1
-    // (consistent with the half-open bucket convention `[lo, hi)`).
-    let lastIdx = Math.ceil((hi - binMin) / binSize) - 1
-    if (lastIdx < firstIdx) lastIdx = firstIdx
+  const firstIdx = Math.floor((lo - binMin) / binSize)
+  // For `hi` we use ceiling-of-(hi - binMin)/binSize, minus 1, so the
+  // top boundary `hi === binMin + k*binSize` belongs to bucket k-1
+  // (consistent with the half-open bucket convention `[lo, hi)`).
+  let lastIdx = Math.ceil((hi - binMin) / binSize) - 1
+  if (lastIdx < firstIdx) lastIdx = firstIdx
 
-    // Effective span used as the denominator. We weight against the
-    // *clamped* span (the part actually inside the bucket grid) so a bar
-    // that hangs off the bottom doesn't get "phantom" volume into the
-    // visible buckets. Trade-off: this means a bar partially outside
-    // contributes only its inside-range fraction. This matches the
-    // intuition of "what fraction of the bar's range fell into the
-    // profile window".
-    const span = hi - lo
-    if (span <= 0) return
+  // Effective span used as the denominator. We weight against the
+  // *clamped* span (the part actually inside the bucket grid) so a bar
+  // that hangs off the bottom doesn't get "phantom" volume into the
+  // visible buckets. Trade-off: this means a bar partially outside
+  // contributes only its inside-range fraction. This matches the
+  // intuition of "what fraction of the bar's range fell into the
+  // profile window".
+  const span = hi - lo
+  if (span <= 0) return
 
-    const volPerUnit = bar.volume / (barHigh - barLow)
+  const volPerUnit = bar.volume / (barHigh - barLow)
 
-    for (let i = firstIdx; i <= lastIdx; i++) {
-        if (i < 0 || i >= binCount) continue
-        const bucketLow = binMin + i * binSize
-        const bucketHigh = bucketLow + binSize
-        const overlapLow = lo > bucketLow ? lo : bucketLow
-        const overlapHigh = hi < bucketHigh ? hi : bucketHigh
-        const overlap = overlapHigh - overlapLow
-        if (overlap <= 0) continue
-        buckets[i] = (buckets[i] ?? 0) + overlap * volPerUnit
-    }
+  for (let i = firstIdx; i <= lastIdx; i++) {
+    if (i < 0 || i >= binCount) continue
+    const bucketLow = binMin + i * binSize
+    const bucketHigh = bucketLow + binSize
+    const overlapLow = lo > bucketLow ? lo : bucketLow
+    const overlapHigh = hi < bucketHigh ? hi : bucketHigh
+    const overlap = overlapHigh - overlapLow
+    if (overlap <= 0) continue
+    buckets[i] = (buckets[i] ?? 0) + overlap * volPerUnit
+  }
 }

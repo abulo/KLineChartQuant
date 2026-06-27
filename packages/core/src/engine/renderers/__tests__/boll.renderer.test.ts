@@ -84,7 +84,7 @@ function createMockPluginHost(state?: BOLLRenderState): PluginHost {
 
 function createMockRenderContext(
   ctx: CanvasRenderingContext2D,
-  overrides: Partial<RenderContext> = {}
+  overrides: Partial<RenderContext> = {},
 ): RenderContext {
   const mockPane = {
     height: 200,
@@ -127,9 +127,7 @@ function createTestBOLLState(overrides: Partial<BOLLRenderState> = {}): BOLLRend
   return {
     timestamp: Date.now(),
     series: Array.from({ length: 100 }, (_, i) =>
-      i < 19
-        ? undefined
-        : { upper: 110 + i * 0.1, middle: 100 + i * 0.1, lower: 90 + i * 0.1 }
+      i < 19 ? undefined : { upper: 110 + i * 0.1, middle: 100 + i * 0.1, lower: 90 + i * 0.1 },
     ),
     params: {
       period: 20,
@@ -217,7 +215,9 @@ describe('BOLL renderer draw', () => {
   })
 
   it('should draw band when showBand is true', () => {
-    const state = createTestBOLLState({ params: { ...createTestBOLLState().params, showBand: true } })
+    const state = createTestBOLLState({
+      params: { ...createTestBOLLState().params, showBand: true },
+    })
     const mockHost = createMockPluginHost(state)
     plugin = createBOLLRendererPlugin() as TestableBOLLRenderer
     plugin.onInstall(mockHost)
@@ -229,7 +229,9 @@ describe('BOLL renderer draw', () => {
   })
 
   it('should not draw band when showBand is false', () => {
-    const state = createTestBOLLState({ params: { ...createTestBOLLState().params, showBand: false } })
+    const state = createTestBOLLState({
+      params: { ...createTestBOLLState().params, showBand: false },
+    })
     const mockHost = createMockPluginHost(state)
     plugin = createBOLLRendererPlugin() as TestableBOLLRenderer
     plugin.onInstall(mockHost)
@@ -241,7 +243,9 @@ describe('BOLL renderer draw', () => {
   })
 
   it('should draw upper line when showUpper is true', () => {
-    const state = createTestBOLLState({ params: { ...createTestBOLLState().params, showUpper: true } })
+    const state = createTestBOLLState({
+      params: { ...createTestBOLLState().params, showUpper: true },
+    })
     const mockHost = createMockPluginHost(state)
     plugin = createBOLLRendererPlugin() as TestableBOLLRenderer
     plugin.onInstall(mockHost)
@@ -269,7 +273,7 @@ describe('BOLL renderer draw', () => {
   it('should not crash when series has undefined values', () => {
     const state = createTestBOLLState({
       series: Array.from({ length: 25 }, (_, i) =>
-        i < 19 ? undefined : { upper: 110, middle: 100, lower: 90 }
+        i < 19 ? undefined : { upper: 110, middle: 100, lower: 90 },
       ),
     })
     const mockHost = createMockPluginHost(state)
@@ -285,7 +289,14 @@ describe('BOLL renderer draw', () => {
 describe('BOLL renderer config', () => {
   it('getConfig should return current params from StateStore', () => {
     const state = createTestBOLLState({
-      params: { period: 25, multiplier: 3, showUpper: false, showMiddle: true, showLower: false, showBand: false },
+      params: {
+        period: 25,
+        multiplier: 3,
+        showUpper: false,
+        showMiddle: true,
+        showLower: false,
+        showBand: false,
+      },
     })
     const mockHost = createMockPluginHost(state)
     const plugin = createBOLLRendererPlugin() as TestableBOLLRenderer

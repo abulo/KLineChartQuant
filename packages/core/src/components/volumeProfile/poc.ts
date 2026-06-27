@@ -33,21 +33,21 @@
  *   Closes API audit BLOCKER-002 (export * leakage taxonomy).
  */
 export function findPOCIndex(buckets: Float64Array): number {
-    const n = buckets.length
-    if (n === 0) return -1
+  const n = buckets.length
+  if (n === 0) return -1
 
-    let bestIdx = 0
-    let bestVol = buckets[0] ?? 0
+  let bestIdx = 0
+  let bestVol = buckets[0] ?? 0
 
-    // Walk buckets[1..]; strictly-greater wins, equal does NOT (keeps the
-    // earliest index — the documented tie-breaker).
-    for (let i = 1; i < n; i++) {
-        const v = buckets[i] ?? 0
-        if (v > bestVol) {
-            bestVol = v
-            bestIdx = i
-        }
+  // Walk buckets[1..]; strictly-greater wins, equal does NOT (keeps the
+  // earliest index — the documented tie-breaker).
+  for (let i = 1; i < n; i++) {
+    const v = buckets[i] ?? 0
+    if (v > bestVol) {
+      bestVol = v
+      bestIdx = i
     }
+  }
 
-    return bestIdx
+  return bestIdx
 }

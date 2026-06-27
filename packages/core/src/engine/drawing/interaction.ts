@@ -127,9 +127,7 @@ export class DrawingInteractionController {
   onPointerMove(e: PointerEvent, container: HTMLElement): boolean {
     // 1) 正在拖拽
     if (this.dragHandler.isDragging()) {
-      const drawing = this.drawingState.getById(
-        this.dragHandler.getDraggingDrawingId() ?? '',
-      )
+      const drawing = this.drawingState.getById(this.dragHandler.getDraggingDrawingId() ?? '')
       if (!drawing) {
         this.dragHandler.endDrag()
         return false
@@ -218,7 +216,12 @@ export class DrawingInteractionController {
     const mouseX = e.clientX - rect.left
     const mouseY = e.clientY - rect.top
 
-    const hit = this.hitTester.hitTest(mouseX, mouseY, this.drawingState.getNonPreview(), this.adapter)
+    const hit = this.hitTester.hitTest(
+      mouseX,
+      mouseY,
+      this.drawingState.getNonPreview(),
+      this.adapter,
+    )
     if (!hit) {
       this.setSelected(null)
       return false
@@ -277,8 +280,7 @@ export class DrawingInteractionController {
     this.drawingState.removePreview()
 
     const kind = getDrawingKind(this.activeTool)
-    const params: Record<string, unknown> =
-      kind === 'regression-channel' ? { sigma: 2 } : {}
+    const params: Record<string, unknown> = kind === 'regression-channel' ? { sigma: 2 } : {}
 
     const normalizedAnchors =
       kind === 'flat-line' && anchors.length >= 3

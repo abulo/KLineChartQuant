@@ -22,96 +22,94 @@ import { createSignal, type Signal } from '../reactivity/signal'
 import type { Layer, PaintContext, Scene } from './types'
 
 export function createScene(): Scene {
-    // ---- internal state ----------------------------------------------------
-    // Mutable list held outside the signal so that signal.set always receives
-    // a fresh frozen-shape snapshot. We never expose this array directly.
-    let layerList: Layer[] = []
-    let disposed = false
-    const layersSignal: Signal<ReadonlyArray<Layer>> = createSignal<ReadonlyArray<Layer>>([])
+  // ---- internal state ----------------------------------------------------
+  // Mutable list held outside the signal so that signal.set always receives
+  // a fresh frozen-shape snapshot. We never expose this array directly.
+  let layerList: Layer[] = []
+  let disposed = false
+  const layersSignal: Signal<ReadonlyArray<Layer>> = createSignal<ReadonlyArray<Layer>>([])
 
-    const publish = (): void => {
-        layersSignal.set(layerList.slice() as ReadonlyArray<Layer>)
+  const publish = (): void => {
+    layersSignal.set(layerList.slice() as ReadonlyArray<Layer>)
+  }
+
+  // ---- public API --------------------------------------------------------
+
+  const addLayer = (layer: Layer): void => {
+    if (disposed) return
+    // Reject duplicate ids silently — protects against double-registration
+    // races where two systems (e.g. an indicator controller + a config
+    // restore) both attempt to add the same layer. The first wins.
+    if (layerList.some((existing) => existing.id === layer.id)) return
+    layerList = [...layerList, layer]
+    publish()
+  }
+
+  const removeLayer = (id: string): boolean => {
+    if (disposed) return false
+    const next = layerList.filter((layer) => layer.id !== id)
+    if (next.length === layerList.length) return false
+    layerList = next
+    publish()
+    return true
+  }
+
+  const getLayer = (id: string): Layer | null => {
+    if (disposed) return null
+    const hit = layerList.find((layer) => layer.id === id)
+    return hit ?? null
+  }
+
+  const setLayerVisibility = (id: string, visible: boolean): boolean => {
+    if (disposed) return false
+    const layer = layerList.find((l) => l.id === id)
+    if (!layer) return false
+    // `visible` is a mutable field on the layer (per the interface);
+    // mutating it does not affect the `layers` signal's identity because
+    // subscribers care about membership, not field state. This matches
+    // how chart adapters batch visibility toggles (no re-render storm).
+    layer.visible = visible
+    return true
+  }
+
+  const paintPane = (ctx: PaintContext): void => {
+    if (disposed) return
+    // Filter then stable-sort. Native Array.prototype.sort is required
+    // by ECMAScript 2019+ to be stable, so equal z values preserve the
+    // surviving registration order from the filter pass.
+    const candidates = layerList.filter((layer) => layer.paneRole === ctx.paneRole && layer.visible)
+    candidates.sort((a, b) => a.z - b.z)
+    for (const layer of candidates) {
+      layer.paint(ctx)
     }
+  }
 
-    // ---- public API --------------------------------------------------------
-
-    const addLayer = (layer: Layer): void => {
-        if (disposed) return
-        // Reject duplicate ids silently — protects against double-registration
-        // races where two systems (e.g. an indicator controller + a config
-        // restore) both attempt to add the same layer. The first wins.
-        if (layerList.some((existing) => existing.id === layer.id)) return
-        layerList = [...layerList, layer]
-        publish()
+  const dispose = (): void => {
+    if (disposed) return
+    disposed = true
+    // Snapshot first because layer.dispose may attempt further mutations
+    // through a stale reference — we want predictable iteration here.
+    const snapshot = layerList
+    layerList = []
+    for (const layer of snapshot) {
+      try {
+        layer.dispose()
+      } catch {
+        // Swallow per-layer dispose errors so one broken layer can't
+        // strand the rest. A logger would go here in production; the
+        // headless core does not own a logger contract yet.
+      }
     }
+    layersSignal.set([] as ReadonlyArray<Layer>)
+  }
 
-    const removeLayer = (id: string): boolean => {
-        if (disposed) return false
-        const next = layerList.filter((layer) => layer.id !== id)
-        if (next.length === layerList.length) return false
-        layerList = next
-        publish()
-        return true
-    }
-
-    const getLayer = (id: string): Layer | null => {
-        if (disposed) return null
-        const hit = layerList.find((layer) => layer.id === id)
-        return hit ?? null
-    }
-
-    const setLayerVisibility = (id: string, visible: boolean): boolean => {
-        if (disposed) return false
-        const layer = layerList.find((l) => l.id === id)
-        if (!layer) return false
-        // `visible` is a mutable field on the layer (per the interface);
-        // mutating it does not affect the `layers` signal's identity because
-        // subscribers care about membership, not field state. This matches
-        // how chart adapters batch visibility toggles (no re-render storm).
-        layer.visible = visible
-        return true
-    }
-
-    const paintPane = (ctx: PaintContext): void => {
-        if (disposed) return
-        // Filter then stable-sort. Native Array.prototype.sort is required
-        // by ECMAScript 2019+ to be stable, so equal z values preserve the
-        // surviving registration order from the filter pass.
-        const candidates = layerList.filter(
-            (layer) => layer.paneRole === ctx.paneRole && layer.visible,
-        )
-        candidates.sort((a, b) => a.z - b.z)
-        for (const layer of candidates) {
-            layer.paint(ctx)
-        }
-    }
-
-    const dispose = (): void => {
-        if (disposed) return
-        disposed = true
-        // Snapshot first because layer.dispose may attempt further mutations
-        // through a stale reference — we want predictable iteration here.
-        const snapshot = layerList
-        layerList = []
-        for (const layer of snapshot) {
-            try {
-                layer.dispose()
-            } catch {
-                // Swallow per-layer dispose errors so one broken layer can't
-                // strand the rest. A logger would go here in production; the
-                // headless core does not own a logger contract yet.
-            }
-        }
-        layersSignal.set([] as ReadonlyArray<Layer>)
-    }
-
-    return {
-        layers: layersSignal,
-        addLayer,
-        removeLayer,
-        getLayer,
-        setLayerVisibility,
-        paintPane,
-        dispose,
-    }
+  return {
+    layers: layersSignal,
+    addLayer,
+    removeLayer,
+    getLayer,
+    setLayerVisibility,
+    paintPane,
+    dispose,
+  }
 }

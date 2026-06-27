@@ -31,12 +31,12 @@ import { KLineChartError } from '../errors'
 import type { Theme } from './types'
 
 export interface ThemeToCssVarsOptions {
-    /**
-     * CSS custom-property prefix. Default `'--klc-'`. Must start with `--`.
-     * Including the trailing dash is recommended (kebab-case continues
-     * cleanly from there).
-     */
-    readonly prefix?: string
+  /**
+   * CSS custom-property prefix. Default `'--klc-'`. Must start with `--`.
+   * Including the trailing dash is recommended (kebab-case continues
+   * cleanly from there).
+   */
+  readonly prefix?: string
 }
 
 const DEFAULT_PREFIX = '--klc-'
@@ -49,37 +49,34 @@ const DEFAULT_PREFIX = '--klc-'
  *   'i1'                  → 'i1'   (already kebab-safe)
  */
 export function camelToKebab(s: string): string {
-    return s.replace(/[A-Z]/g, (m, i) => (i === 0 ? m.toLowerCase() : '-' + m.toLowerCase()))
+  return s.replace(/[A-Z]/g, (m, i) => (i === 0 ? m.toLowerCase() : '-' + m.toLowerCase()))
 }
 
-function flattenColors(
-    colors: Theme['colors'],
-    prefix: string,
-): Record<string, string> {
-    const out: Record<string, string> = {}
-    for (const [k, v] of Object.entries(colors)) {
-        if (typeof v === 'object' && v !== null) {
-            const ns = camelToKebab(k)
-            for (const [nk, nv] of Object.entries(v as Record<string, string>)) {
-                out[`${prefix}color-${ns}-${camelToKebab(nk)}`] = nv
-            }
-        } else {
-            out[`${prefix}color-${camelToKebab(k)}`] = v as string
-        }
+function flattenColors(colors: Theme['colors'], prefix: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(colors)) {
+    if (typeof v === 'object' && v !== null) {
+      const ns = camelToKebab(k)
+      for (const [nk, nv] of Object.entries(v as Record<string, string>)) {
+        out[`${prefix}color-${ns}-${camelToKebab(nk)}`] = nv
+      }
+    } else {
+      out[`${prefix}color-${camelToKebab(k)}`] = v as string
     }
-    return out
+  }
+  return out
 }
 
 function flattenFamily(
-    family: Record<string, string | number>,
-    prefix: string,
-    namespace: string,
+  family: Record<string, string | number>,
+  prefix: string,
+  namespace: string,
 ): Record<string, string> {
-    const out: Record<string, string> = {}
-    for (const [k, v] of Object.entries(family)) {
-        out[`${prefix}${namespace}-${camelToKebab(k)}`] = String(v)
-    }
-    return out
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(family)) {
+    out[`${prefix}${namespace}-${camelToKebab(k)}`] = String(v)
+  }
+  return out
 }
 
 /**
@@ -97,24 +94,26 @@ function flattenFamily(
  * and `mergeTheme(base, override)` produces a superset emit (keys are the
  * same; values may differ).
  */
-export function themeToCssVars(
-    theme: Theme,
-    opts?: ThemeToCssVarsOptions,
-): Record<string, string> {
-    const prefix = opts?.prefix ?? DEFAULT_PREFIX
-    if (!prefix.startsWith('--')) {
-        // Misuse caught here is much friendlier than the silent no-op CSS
-        // would give downstream.
-        throw new KLineChartError('INVALID_PARAM',
-            `themeToCssVars: prefix must start with '--', got ${JSON.stringify(prefix)}`,
-        )
-    }
-    return {
-        ...flattenColors(theme.colors, prefix),
-        ...flattenFamily(theme.spacing as unknown as Record<string, string>, prefix, 'spacing'),
-        ...flattenFamily(theme.typography as unknown as Record<string, string | number>, prefix, 'typography'),
-        ...flattenFamily(theme.motion as unknown as Record<string, string>, prefix, 'motion'),
-    }
+export function themeToCssVars(theme: Theme, opts?: ThemeToCssVarsOptions): Record<string, string> {
+  const prefix = opts?.prefix ?? DEFAULT_PREFIX
+  if (!prefix.startsWith('--')) {
+    // Misuse caught here is much friendlier than the silent no-op CSS
+    // would give downstream.
+    throw new KLineChartError(
+      'INVALID_PARAM',
+      `themeToCssVars: prefix must start with '--', got ${JSON.stringify(prefix)}`,
+    )
+  }
+  return {
+    ...flattenColors(theme.colors, prefix),
+    ...flattenFamily(theme.spacing as unknown as Record<string, string>, prefix, 'spacing'),
+    ...flattenFamily(
+      theme.typography as unknown as Record<string, string | number>,
+      prefix,
+      'typography',
+    ),
+    ...flattenFamily(theme.motion as unknown as Record<string, string>, prefix, 'motion'),
+  }
 }
 
 /**
@@ -130,11 +129,11 @@ export function themeToCssVars(
  * or `.klc-theme-dark` for scoped overrides.
  */
 export function toCssDeclarationBlock(
-    vars: Record<string, string>,
-    selector: string = ':root',
+  vars: Record<string, string>,
+  selector: string = ':root',
 ): string {
-    const decls = Object.entries(vars)
-        .map(([k, v]) => `  ${k}: ${v};`)
-        .join('\n')
-    return `${selector} {\n${decls}\n}`
+  const decls = Object.entries(vars)
+    .map(([k, v]) => `  ${k}: ${v};`)
+    .join('\n')
+  return `${selector} {\n${decls}\n}`
 }

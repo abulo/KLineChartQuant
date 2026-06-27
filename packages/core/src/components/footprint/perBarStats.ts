@@ -29,13 +29,13 @@ export type { FootprintBarCell, FootprintImbalance }
  * bar so it does not break the running cumulative sum downstream).
  */
 export function computeDelta(cells: ReadonlyArray<FootprintBarCell>): number {
-    let sum = 0
-    for (let i = 0; i < cells.length; i++) {
-        const c = cells[i]
-        if (c === undefined) continue
-        sum += c.askVol - c.bidVol
-    }
-    return sum
+  let sum = 0
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i]
+    if (c === undefined) continue
+    sum += c.askVol - c.bidVol
+  }
+  return sum
 }
 
 /**
@@ -44,16 +44,14 @@ export function computeDelta(cells: ReadonlyArray<FootprintBarCell>): number {
  * Empty input yields an empty array. We allocate a fresh array (not a typed
  * array) so consumers can splice/copy cheaply at the controller boundary.
  */
-export function computeCumulativeDelta(
-    perBarDeltas: ReadonlyArray<number>,
-): number[] {
-    const out: number[] = new Array(perBarDeltas.length)
-    let running = 0
-    for (let i = 0; i < perBarDeltas.length; i++) {
-        running += perBarDeltas[i] ?? 0
-        out[i] = running
-    }
-    return out
+export function computeCumulativeDelta(perBarDeltas: ReadonlyArray<number>): number[] {
+  const out: number[] = new Array(perBarDeltas.length)
+  let running = 0
+  for (let i = 0; i < perBarDeltas.length; i++) {
+    running += perBarDeltas[i] ?? 0
+    out[i] = running
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------
@@ -91,47 +89,47 @@ export function computeCumulativeDelta(
  * @param ratioThreshold  minimum dominant/weaker ratio to flag
  */
 export function computeDiagonalImbalances(
-    cells: ReadonlyArray<FootprintBarCell>,
-    ratioThreshold: number,
+  cells: ReadonlyArray<FootprintBarCell>,
+  ratioThreshold: number,
 ): ReadonlyArray<FootprintImbalance> {
-    const out: FootprintImbalance[] = []
-    const n = cells.length
-    if (n === 0) return out
+  const out: FootprintImbalance[] = []
+  const n = cells.length
+  if (n === 0) return out
 
-    for (let i = 0; i < n; i++) {
-        const c = cells[i]
-        if (c === undefined) continue
+  for (let i = 0; i < n; i++) {
+    const c = cells[i]
+    if (c === undefined) continue
 
-        // Buy imbalance: compare ask at i to bid at i-1 (the diagonal below).
-        if (i > 0) {
-            const below = cells[i - 1]
-            if (below !== undefined && below.bidVol > 0) {
-                const ratio = c.askVol / below.bidVol
-                if (ratio >= ratioThreshold) {
-                    out.push({
-                        priceIndex: i,
-                        direction: 'buy-imbalance',
-                        ratio,
-                    })
-                }
-            }
+    // Buy imbalance: compare ask at i to bid at i-1 (the diagonal below).
+    if (i > 0) {
+      const below = cells[i - 1]
+      if (below !== undefined && below.bidVol > 0) {
+        const ratio = c.askVol / below.bidVol
+        if (ratio >= ratioThreshold) {
+          out.push({
+            priceIndex: i,
+            direction: 'buy-imbalance',
+            ratio,
+          })
         }
-
-        // Sell imbalance: compare bid at i to ask at i+1 (the diagonal above).
-        if (i < n - 1) {
-            const above = cells[i + 1]
-            if (above !== undefined && above.askVol > 0) {
-                const ratio = c.bidVol / above.askVol
-                if (ratio >= ratioThreshold) {
-                    out.push({
-                        priceIndex: i,
-                        direction: 'sell-imbalance',
-                        ratio,
-                    })
-                }
-            }
-        }
+      }
     }
 
-    return out
+    // Sell imbalance: compare bid at i to ask at i+1 (the diagonal above).
+    if (i < n - 1) {
+      const above = cells[i + 1]
+      if (above !== undefined && above.askVol > 0) {
+        const ratio = c.bidVol / above.askVol
+        if (ratio >= ratioThreshold) {
+          out.push({
+            priceIndex: i,
+            direction: 'sell-imbalance',
+            ratio,
+          })
+        }
+      }
+    }
+  }
+
+  return out
 }

@@ -7,9 +7,7 @@ import { computeLinearRegression } from './linearRegression'
 // ---- Types ----
 
 /** 命中检测结果：anchorIndex 存在表示点到锚点，否则点到线段 */
-export type HitResult =
-  | { drawing: DrawingObject; anchorIndex: number }
-  | { drawing: DrawingObject }
+export type HitResult = { drawing: DrawingObject; anchorIndex: number } | { drawing: DrawingObject }
 
 /** 二维线段，两端点为屏幕坐标（px） */
 export interface LineSegment {
@@ -53,7 +51,13 @@ export class HitTester {
     for (const drawing of visibleDrawings) {
       // regression-channel: computed endpoints are also draggable
       if (drawing.kind === 'regression-channel' && drawing.anchors.length >= 2) {
-        const hit = this.hitTestRegressionEndpoints(drawing, mouseX, mouseY, adapter, regressionGeometryCache)
+        const hit = this.hitTestRegressionEndpoints(
+          drawing,
+          mouseX,
+          mouseY,
+          adapter,
+          regressionGeometryCache,
+        )
         if (hit) return hit
       }
 
@@ -94,7 +98,9 @@ export class HitTester {
 
     // regression-channel: compute from linear regression geometry
     if (drawing.kind === 'regression-channel') {
-      return this.getRegressionChannelGeometry(drawing, adapter, regressionGeometryCache)?.segments ?? []
+      return (
+        this.getRegressionChannelGeometry(drawing, adapter, regressionGeometryCache)?.segments ?? []
+      )
     }
 
     // Single-anchor drawings (horizontal-line, horizontal-ray, vertical-line, cross-line)
@@ -126,9 +132,10 @@ export class HitTester {
     }
 
     // Multi-anchor drawings (2+)
-    const points = drawing.anchors
-      .map((a) => anchorToScreen(a, adapter))
-      .filter(Boolean) as { x: number; y: number }[]
+    const points = drawing.anchors.map((a) => anchorToScreen(a, adapter)).filter(Boolean) as {
+      x: number
+      y: number
+    }[]
     if (points.length < 2) return []
 
     const segments: LineSegment[] = []
@@ -224,25 +231,35 @@ export class HitTester {
     const startIndex = Math.min(clampedFirst, clampedSecond)
     const endIndex = Math.max(clampedFirst, clampedSecond)
     const slice = data.slice(startIndex, endIndex + 1)
-    const regression = computeLinearRegression(
-      slice.map((item: { close: number }) => item.close),
-    )
+    const regression = computeLinearRegression(slice.map((item: { close: number }) => item.close))
     if (!regression) {
       cache?.set(drawing.id, null)
       return null
     }
 
-    const sigma = ((drawing.params as { sigma?: number } | undefined)?.sigma) ?? 2
+    const sigma = (drawing.params as { sigma?: number } | undefined)?.sigma ?? 2
     const offset = regression.stdDev * sigma
     const firstValue = regression.intercept
     const lastValue = regression.intercept + regression.slope * (slice.length - 1)
 
     const middleStart = anchorToScreen({ id: '', index: firstIndex, price: firstValue }, adapter)
     const middleEnd = anchorToScreen({ id: '', index: secondIndex, price: lastValue }, adapter)
-    const upperStart = anchorToScreen({ id: '', index: firstIndex, price: firstValue + offset }, adapter)
-    const upperEnd = anchorToScreen({ id: '', index: secondIndex, price: lastValue + offset }, adapter)
-    const lowerStart = anchorToScreen({ id: '', index: firstIndex, price: firstValue - offset }, adapter)
-    const lowerEnd = anchorToScreen({ id: '', index: secondIndex, price: lastValue - offset }, adapter)
+    const upperStart = anchorToScreen(
+      { id: '', index: firstIndex, price: firstValue + offset },
+      adapter,
+    )
+    const upperEnd = anchorToScreen(
+      { id: '', index: secondIndex, price: lastValue + offset },
+      adapter,
+    )
+    const lowerStart = anchorToScreen(
+      { id: '', index: firstIndex, price: firstValue - offset },
+      adapter,
+    )
+    const lowerEnd = anchorToScreen(
+      { id: '', index: secondIndex, price: lastValue - offset },
+      adapter,
+    )
 
     const segments: LineSegment[] = []
     if (middleStart && middleEnd) segments.push({ a: middleStart, b: middleEnd })

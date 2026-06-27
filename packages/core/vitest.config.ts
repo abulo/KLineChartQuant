@@ -10,30 +10,30 @@ const engineSrc = fileURLToPath(new URL('./src/engine/', import.meta.url))
 const pkgSrc = fileURLToPath(new URL('./src/', import.meta.url))
 
 export default defineConfig({
-    plugins: [
-        babel({
-            include: [/\/src\/.*\.tsx?$/],
-            exclude: [/node_modules/],
-            babelConfig: {
-                babelrc: false,
-                configFile: false,
-                plugins: [
-                    ['@babel/plugin-proposal-decorators', { version: '2023-11' }],
-                    ['@babel/plugin-transform-typescript', { allowDeclareFields: true }],
-                ],
-            },
-        }),
-    ],
-    test: {
-        environment: 'node',
-        include: ['src/**/*.test.ts'],
-    },
-    resolve: {
-        alias: [
-            // @/core/* → packages/core/src/engine/ (more specific, must come first)
-            { find: /^@\/core\//, replacement: `${engineSrc}` },
-            // @/* → packages/core/src/* (general fallback)
-            { find: /^@\//, replacement: `${pkgSrc}` },
+  plugins: [
+    babel({
+      include: [/\/src\/.*\.tsx?$/],
+      exclude: [/node_modules/],
+      babelConfig: {
+        babelrc: false,
+        configFile: false,
+        plugins: [
+          ['@babel/plugin-proposal-decorators', { version: '2023-11' }],
+          ['@babel/plugin-transform-typescript', { allowDeclareFields: true }],
         ],
-    },
+      },
+    }),
+  ],
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+  },
+  resolve: {
+    alias: [
+      // @/core/* → packages/core/src/engine/ (more specific, must come first)
+      { find: /^@\/core\//, replacement: `${engineSrc}` },
+      // @/* → packages/core/src/* (general fallback)
+      { find: /^@\//, replacement: `${pkgSrc}` },
+    ],
+  },
 })

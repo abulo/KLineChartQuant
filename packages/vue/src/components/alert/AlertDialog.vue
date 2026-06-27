@@ -212,622 +212,622 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type {
-  AlertEvent,
-  AlertRule,
-  AlertPredicate,
-  ChartController,
-} from '@363045841yyt/klinechart-core'
-import { useAlerts } from '../../composables/useAlerts'
-import BaseModal from '../BaseModal.vue'
-import AlertRuleForm from './AlertRuleForm.vue'
+  import { ref, watch } from 'vue'
+  import type {
+    AlertEvent,
+    AlertRule,
+    AlertPredicate,
+    ChartController,
+  } from '@363045841yyt/klinechart-core'
+  import { useAlerts } from '../../composables/useAlerts'
+  import BaseModal from '../BaseModal.vue'
+  import AlertRuleForm from './AlertRuleForm.vue'
 
-const props = defineProps<{
-  show: boolean
-  chartController: ChartController | null
-}>()
+  const props = defineProps<{
+    show: boolean
+    chartController: ChartController | null
+  }>()
 
-const emit = defineEmits<{
-  close: []
-}>()
+  const emit = defineEmits<{
+    close: []
+  }>()
 
-const tabs = [
-  { key: 'rules' as const, label: '规则' },
-  { key: 'history' as const, label: '历史' },
-]
-const activeTab = ref<'rules' | 'history'>('rules')
+  const tabs = [
+    { key: 'rules' as const, label: '规则' },
+    { key: 'history' as const, label: '历史' },
+  ]
+  const activeTab = ref<'rules' | 'history'>('rules')
 
-const {
-  rules,
-  events,
-  unreadCount,
-  resetUnread,
-  addRule,
-  removeRule,
-  setRuleEnabled,
-  updateRule,
-  clearEvents,
-} = useAlerts(() => props.chartController)
+  const {
+    rules,
+    events,
+    unreadCount,
+    resetUnread,
+    addRule,
+    removeRule,
+    setRuleEnabled,
+    updateRule,
+    clearEvents,
+  } = useAlerts(() => props.chartController)
 
-const editingRule = ref<AlertRule | 'new' | null>(null)
+  const editingRule = ref<AlertRule | 'new' | null>(null)
 
-watch(
-  () => props.show,
-  (open) => {
-    if (open) {
-      resetUnread()
-      activeTab.value = 'rules'
-    } else {
-      editingRule.value = null
+  watch(
+    () => props.show,
+    (open) => {
+      if (open) {
+        resetUnread()
+        activeTab.value = 'rules'
+      } else {
+        editingRule.value = null
+      }
+    },
+  )
+
+  function handleClose() {
+    editingRule.value = null
+    emit('close')
+  }
+
+  function startAddRule() {
+    editingRule.value = 'new'
+  }
+
+  function startEditRule(rule: AlertRule) {
+    editingRule.value = rule
+  }
+
+  function onRuleSave(rule: AlertRule) {
+    if (editingRule.value === 'new') {
+      addRule(rule)
+    } else if (editingRule.value && typeof editingRule.value !== 'string') {
+      const { id, ...patch } = rule
+      updateRule(editingRule.value.id, patch)
     }
-  },
-)
-
-function handleClose() {
-  editingRule.value = null
-  emit('close')
-}
-
-function startAddRule() {
-  editingRule.value = 'new'
-}
-
-function startEditRule(rule: AlertRule) {
-  editingRule.value = rule
-}
-
-function onRuleSave(rule: AlertRule) {
-  if (editingRule.value === 'new') {
-    addRule(rule)
-  } else if (editingRule.value && typeof editingRule.value !== 'string') {
-    const { id, ...patch } = rule
-    updateRule(editingRule.value.id, patch)
+    editingRule.value = null
   }
-  editingRule.value = null
-}
 
-function toggleRule(id: string, enabled: boolean) {
-  setRuleEnabled(id, enabled)
-}
-
-function clearHistory() {
-  clearEvents()
-}
-
-function describePredicate(rule: AlertRule): string {
-  const p = rule.predicate
-  switch (p.kind) {
-    case 'price-cross':
-      return `价格${directionLabel(p.direction)} ${p.price}`
-    case 'price-in-range':
-      return `价格在 ${p.min} ~ ${p.max} 之间`
-    case 'price-out-of-range':
-      return `价格超出 ${p.min} ~ ${p.max}`
-    case 'indicator-cross':
-      return `${p.indicatorId} ${directionLabel(p.direction)} ${p.threshold}`
-    case 'indicator-cross-indicator':
-      return `${p.aId} ${pairDirectionLabel(p.direction)} ${p.bId}`
-    case 'volume-spike':
-      return `成交量 ≥ ${p.multipleOfAvg}× ${p.lookbackBars}日均值`
-    default:
-      return `条件类型: ${(p as AlertPredicate).kind}`
+  function toggleRule(id: string, enabled: boolean) {
+    setRuleEnabled(id, enabled)
   }
-}
 
-function directionLabel(d: string): string {
-  switch (d) {
-    case 'up':
-      return '上穿'
-    case 'down':
-      return '下穿'
-    default:
-      return '穿越'
+  function clearHistory() {
+    clearEvents()
   }
-}
 
-function pairDirectionLabel(d: string): string {
-  switch (d) {
-    case 'a-above-b':
-      return '上穿'
-    case 'a-below-b':
-      return '下穿'
-    default:
-      return '交叉'
+  function describePredicate(rule: AlertRule): string {
+    const p = rule.predicate
+    switch (p.kind) {
+      case 'price-cross':
+        return `价格${directionLabel(p.direction)} ${p.price}`
+      case 'price-in-range':
+        return `价格在 ${p.min} ~ ${p.max} 之间`
+      case 'price-out-of-range':
+        return `价格超出 ${p.min} ~ ${p.max}`
+      case 'indicator-cross':
+        return `${p.indicatorId} ${directionLabel(p.direction)} ${p.threshold}`
+      case 'indicator-cross-indicator':
+        return `${p.aId} ${pairDirectionLabel(p.direction)} ${p.bId}`
+      case 'volume-spike':
+        return `成交量 ≥ ${p.multipleOfAvg}× ${p.lookbackBars}日均值`
+      default:
+        return `条件类型: ${(p as AlertPredicate).kind}`
+    }
   }
-}
 
-function formatCooldown(ms: number): string {
-  if (ms >= 60000) return `${Math.round(ms / 60000)}分钟`
-  if (ms >= 1000) return `${Math.round(ms / 1000)}秒`
-  return `${ms}ms`
-}
+  function directionLabel(d: string): string {
+    switch (d) {
+      case 'up':
+        return '上穿'
+      case 'down':
+        return '下穿'
+      default:
+        return '穿越'
+    }
+  }
 
-function formatTime(ts: number): string {
-  const d = new Date(ts)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getHours()}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-}
+  function pairDirectionLabel(d: string): string {
+    switch (d) {
+      case 'a-above-b':
+        return '上穿'
+      case 'a-below-b':
+        return '下穿'
+      default:
+        return '交叉'
+    }
+  }
 
-function formatPrice(v: number): string {
-  return v.toFixed(2)
-}
+  function formatCooldown(ms: number): string {
+    if (ms >= 60000) return `${Math.round(ms / 60000)}分钟`
+    if (ms >= 1000) return `${Math.round(ms / 1000)}秒`
+    return `${ms}ms`
+  }
 
-function formatVolume(v: number): string {
-  if (v >= 1e8) return `${(v / 1e8).toFixed(2)}亿`
-  if (v >= 1e4) return `${(v / 1e4).toFixed(1)}万`
-  return v.toFixed(0)
-}
+  function formatTime(ts: number): string {
+    const d = new Date(ts)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getHours()}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
+
+  function formatPrice(v: number): string {
+    return v.toFixed(2)
+  }
+
+  function formatVolume(v: number): string {
+    if (v >= 1e8) return `${(v / 1e8).toFixed(2)}亿`
+    if (v >= 1e4) return `${(v / 1e4).toFixed(1)}万`
+    return v.toFixed(0)
+  }
 </script>
 
 <style scoped>
-/* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════
    Tabs
 ══════════════════════════════════════════ */
-.alert-tabs {
-  display: flex;
-  gap: 4px;
-}
+  .alert-tabs {
+    display: flex;
+    gap: 4px;
+  }
 
-.alert-tab {
-  position: relative;
-  padding: 5px 14px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--klc-color-axis-text);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
+  .alert-tab {
+    position: relative;
+    padding: 5px 14px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--klc-color-axis-text);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
 
-.alert-tab:hover:not(.active) {
-  background: var(--klc-color-tag-bg-hover);
-  color: var(--klc-color-foreground);
-  border-color: var(--klc-color-border-button);
-}
+  .alert-tab:hover:not(.active) {
+    background: var(--klc-color-tag-bg-hover);
+    color: var(--klc-color-foreground);
+    border-color: var(--klc-color-border-button);
+  }
 
-.alert-tab.active {
-  background: var(--klc-color-foreground);
-  color: var(--klc-color-background);
-  border-color: var(--klc-color-foreground);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
-}
+  .alert-tab.active {
+    background: var(--klc-color-foreground);
+    color: var(--klc-color-background);
+    border-color: var(--klc-color-foreground);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  }
 
-.alert-tab-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 3px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 15px;
-  text-align: center;
-  border-radius: 999px;
-  box-shadow: 0 0 0 2px var(--klc-color-background);
-  pointer-events: none;
-}
+  .alert-tab-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px var(--klc-color-background);
+    pointer-events: none;
+  }
 
-/* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════
    Section Shell
 ══════════════════════════════════════════ */
-.alert-section {
-  padding: 2px 0 4px;
-}
+  .alert-section {
+    padding: 2px 0 4px;
+  }
 
-.alert-section-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  min-height: 28px;
-}
+  .alert-section-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    min-height: 28px;
+  }
 
-.alert-section-count {
-  font-size: 12px;
-  color: var(--klc-color-axis-text);
-}
+  .alert-section-count {
+    font-size: 12px;
+    color: var(--klc-color-axis-text);
+  }
 
-.alert-section-count strong {
-  font-weight: 600;
-  color: var(--klc-color-foreground);
-}
+  .alert-section-count strong {
+    font-weight: 600;
+    color: var(--klc-color-foreground);
+  }
 
-/* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════
    Add / Clear Buttons
 ══════════════════════════════════════════ */
-.alert-add-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 9px 14px;
-  border: 1.5px dashed var(--klc-color-border-button);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--klc-color-axis-text);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    color 0.15s,
-    background 0.15s;
-  margin-bottom: 10px;
-}
+  .alert-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 9px 14px;
+    border: 1.5px dashed var(--klc-color-border-button);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--klc-color-axis-text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      border-color 0.15s,
+      color 0.15s,
+      background 0.15s;
+    margin-bottom: 10px;
+  }
 
-.alert-add-btn:hover {
-  border-color: var(--klc-color-foreground);
-  color: var(--klc-color-foreground);
-  background: var(--klc-color-tag-bg-hover);
-}
+  .alert-add-btn:hover {
+    border-color: var(--klc-color-foreground);
+    color: var(--klc-color-foreground);
+    background: var(--klc-color-tag-bg-hover);
+  }
 
-.alert-add-btn:active {
-  opacity: 0.75;
-}
+  .alert-add-btn:active {
+    opacity: 0.75;
+  }
 
-.alert-clear-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border: 1px solid var(--klc-color-border-button);
-  border-radius: 5px;
-  background: transparent;
-  color: var(--klc-color-axis-text);
-  font-size: 12px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
-}
+  .alert-clear-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--klc-color-border-button);
+    border-radius: 5px;
+    background: transparent;
+    color: var(--klc-color-axis-text);
+    font-size: 12px;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+  }
 
-.alert-clear-btn:hover {
-  border-color: #dc2626;
-  color: #dc2626;
-  background: rgba(220, 38, 38, 0.06);
-}
+  .alert-clear-btn:hover {
+    border-color: #dc2626;
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.06);
+  }
 
-.alert-btn-icon {
-  width: 13px;
-  height: 13px;
-  flex-shrink: 0;
-}
+  .alert-btn-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
 
-/* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════
    Empty State
 ══════════════════════════════════════════ */
-.alert-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 40px 0 36px;
-  color: var(--klc-color-axis-text);
-}
+  .alert-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 40px 0 36px;
+    color: var(--klc-color-axis-text);
+  }
 
-.alert-empty-icon-wrap {
-  width: 52px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  background: var(--klc-color-tag-bg-hover);
-  margin-bottom: 4px;
-}
+  .alert-empty-icon-wrap {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: var(--klc-color-tag-bg-hover);
+    margin-bottom: 4px;
+  }
 
-.alert-empty-icon {
-  width: 26px;
-  height: 26px;
-  opacity: 0.45;
-}
+  .alert-empty-icon {
+    width: 26px;
+    height: 26px;
+    opacity: 0.45;
+  }
 
-.alert-empty-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--klc-color-foreground);
-  opacity: 0.7;
-}
+  .alert-empty-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--klc-color-foreground);
+    opacity: 0.7;
+  }
 
-.alert-empty-hint {
-  font-size: 11px;
-  color: var(--klc-color-axis-text);
-  opacity: 0.55;
-}
+  .alert-empty-hint {
+    font-size: 11px;
+    color: var(--klc-color-axis-text);
+    opacity: 0.55;
+  }
 
-/* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════
    Rule List
 ══════════════════════════════════════════ */
-.rule-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+  .rule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
 
-.rule-item {
-  padding: 10px 12px 8px;
-  border: 1px solid var(--klc-color-border-button);
-  border-radius: 8px;
-  background: var(--klc-color-background);
-  transition:
-    opacity 0.2s,
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
+  .rule-item {
+    padding: 10px 12px 8px;
+    border: 1px solid var(--klc-color-border-button);
+    border-radius: 8px;
+    background: var(--klc-color-background);
+    transition:
+      opacity 0.2s,
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
 
-.rule-item:hover {
-  border-color: var(--klc-color-axis-line);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
+  .rule-item:hover {
+    border-color: var(--klc-color-axis-line);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
 
-.rule-item.disabled {
-  opacity: 0.45;
-}
+  .rule-item.disabled {
+    opacity: 0.45;
+  }
 
-.rule-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
+  .rule-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
 
-.rule-item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
+  .rule-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
 
-.rule-item-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--klc-color-foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .rule-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--klc-color-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-.rule-item-predicate {
-  font-size: 11px;
-  color: var(--klc-color-axis-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .rule-item-predicate {
+    font-size: 11px;
+    color: var(--klc-color-axis-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-/* ── Actions ── */
-.rule-item-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
+  /* ── Actions ── */
+  .rule-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
 
-.rule-item-btn {
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--klc-color-axis-text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
-}
+  .rule-item-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--klc-color-axis-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+  }
 
-.rule-item-btn svg {
-  width: 13px;
-  height: 13px;
-}
+  .rule-item-btn svg {
+    width: 13px;
+    height: 13px;
+  }
 
-.rule-item-btn:hover {
-  background: var(--klc-color-tag-bg-hover);
-  color: var(--klc-color-foreground);
-  border-color: var(--klc-color-border-button);
-}
+  .rule-item-btn:hover {
+    background: var(--klc-color-tag-bg-hover);
+    color: var(--klc-color-foreground);
+    border-color: var(--klc-color-border-button);
+  }
 
-.rule-item-btn--danger:hover {
-  color: #dc2626;
-  border-color: rgba(220, 38, 38, 0.4);
-  background: rgba(220, 38, 38, 0.06);
-}
+  .rule-item-btn--danger:hover {
+    color: #dc2626;
+    border-color: rgba(220, 38, 38, 0.4);
+    background: rgba(220, 38, 38, 0.06);
+  }
 
-/* ── Meta Tags ── */
-.rule-item-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 7px;
-}
+  /* ── Meta Tags ── */
+  .rule-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 7px;
+  }
 
-.rule-meta-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-}
+  .rule-meta-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
 
-.rule-meta-tag--oneshot {
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #d97706;
-}
+  .rule-meta-tag--oneshot {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #d97706;
+  }
 
-.rule-meta-tag--cooldown {
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  color: #3b82f6;
-}
+  .rule-meta-tag--cooldown {
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: #3b82f6;
+  }
 
-.rule-meta-icon {
-  width: 10px;
-  height: 10px;
-}
+  .rule-meta-icon {
+    width: 10px;
+    height: 10px;
+  }
 
-/* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════
    Toggle Switch
 ══════════════════════════════════════════ */
-.rule-toggle {
-  position: relative;
-  display: inline-block;
-  width: 32px;
-  height: 18px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
+  .rule-toggle {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
 
-.rule-toggle input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+  .rule-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
 
-.rule-toggle-slider {
-  position: absolute;
-  inset: 0;
-  background: var(--klc-color-border-button);
-  border-radius: 999px;
-  transition: background 0.2s;
-}
+  .rule-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--klc-color-border-button);
+    border-radius: 999px;
+    transition: background 0.2s;
+  }
 
-.rule-toggle-slider::before {
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: 2px;
-  width: 14px;
-  height: 14px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
+  .rule-toggle-slider::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-.rule-toggle input:checked + .rule-toggle-slider {
-  background: #3b82f6;
-}
+  .rule-toggle input:checked + .rule-toggle-slider {
+    background: #3b82f6;
+  }
 
-.rule-toggle input:checked + .rule-toggle-slider::before {
-  transform: translateX(14px);
-}
+  .rule-toggle input:checked + .rule-toggle-slider::before {
+    transform: translateX(14px);
+  }
 
-.rule-toggle:hover .rule-toggle-slider {
-  filter: brightness(1.08);
-}
+  .rule-toggle:hover .rule-toggle-slider {
+    filter: brightness(1.08);
+  }
 
-/* ══════════════════════════════════════════
+  /* ══════════════════════════════════════════
    Event List
 ══════════════════════════════════════════ */
-.event-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
+  .event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
 
-.event-item {
-  padding: 9px 12px;
-  border: 1px solid var(--klc-color-border-button);
-  border-radius: 8px;
-  background: var(--klc-color-background);
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
+  .event-item {
+    padding: 9px 12px;
+    border: 1px solid var(--klc-color-border-button);
+    border-radius: 8px;
+    background: var(--klc-color-background);
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
 
-.event-item:hover {
-  border-color: var(--klc-color-axis-line);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-}
+  .event-item:hover {
+    border-color: var(--klc-color-axis-line);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  }
 
-.event-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
+  .event-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
 
-.event-item-left {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-}
+  .event-item-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+  }
 
-.event-item-dot {
-  flex-shrink: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #f59e0b;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-}
+  .event-item-dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  }
 
-.event-item-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--klc-color-foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .event-item-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--klc-color-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-.event-item-time {
-  font-size: 11px;
-  color: var(--klc-color-axis-text);
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-  opacity: 0.75;
-}
+  .event-item-time {
+    font-size: 11px;
+    color: var(--klc-color-axis-text);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    opacity: 0.75;
+  }
 
-/* ── Snapshot Bar ── */
-.event-item-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-top: 7px;
-  padding-top: 7px;
-  border-top: 1px solid var(--klc-color-border-button);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
+  /* ── Snapshot Bar ── */
+  .event-item-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 7px;
+    padding-top: 7px;
+    border-top: 1px solid var(--klc-color-border-button);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
 
-.event-bar-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  white-space: nowrap;
-  color: var(--klc-color-foreground);
-}
+  .event-bar-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    color: var(--klc-color-foreground);
+  }
 
-.event-bar-label {
-  font-weight: 600;
-  font-size: 10px;
-  color: var(--klc-color-axis-text);
-  opacity: 0.7;
-  letter-spacing: 0.02em;
-}
+  .event-bar-label {
+    font-weight: 600;
+    font-size: 10px;
+    color: var(--klc-color-axis-text);
+    opacity: 0.7;
+    letter-spacing: 0.02em;
+  }
 </style>

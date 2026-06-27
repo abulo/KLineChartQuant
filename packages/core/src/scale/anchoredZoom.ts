@@ -35,25 +35,25 @@
  */
 
 export interface AnchoredZoomOptions {
-    /** Screen X (logical px) where the wheel event fired. */
-    mouseX: number
-    /** Logical px on the left edge before bar 0. */
-    leftPadding: number
-    /** Current `firstVisibleIndex` (fractional). */
-    firstVisibleIndex: number
-    /** Current `barWidth` in logical px. */
-    barWidth: number
-    /** > 1 zoom in (wheel up), < 1 zoom out, === 1 no-op. */
-    zoomFactor: number
-    /** Lower clamp for the resulting bar width. Default 0.5 logical px. */
-    minBarWidth?: number
-    /** Upper clamp for the resulting bar width. Default 200 logical px. */
-    maxBarWidth?: number
+  /** Screen X (logical px) where the wheel event fired. */
+  mouseX: number
+  /** Logical px on the left edge before bar 0. */
+  leftPadding: number
+  /** Current `firstVisibleIndex` (fractional). */
+  firstVisibleIndex: number
+  /** Current `barWidth` in logical px. */
+  barWidth: number
+  /** > 1 zoom in (wheel up), < 1 zoom out, === 1 no-op. */
+  zoomFactor: number
+  /** Lower clamp for the resulting bar width. Default 0.5 logical px. */
+  minBarWidth?: number
+  /** Upper clamp for the resulting bar width. Default 200 logical px. */
+  maxBarWidth?: number
 }
 
 export interface AnchoredZoomResult {
-    firstVisibleIndex: number
-    barWidth: number
+  firstVisibleIndex: number
+  barWidth: number
 }
 
 const DEFAULT_MIN_BAR_WIDTH = 0.5
@@ -67,38 +67,38 @@ const DEFAULT_MAX_BAR_WIDTH = 200
  *   for stable user code. Closes API audit BLOCKER-002.
  */
 export function computeAnchoredZoom(opts: AnchoredZoomOptions): AnchoredZoomResult {
-    const {
-        mouseX,
-        leftPadding,
-        firstVisibleIndex,
-        barWidth,
-        zoomFactor,
-        minBarWidth = DEFAULT_MIN_BAR_WIDTH,
-        maxBarWidth = DEFAULT_MAX_BAR_WIDTH,
-    } = opts
+  const {
+    mouseX,
+    leftPadding,
+    firstVisibleIndex,
+    barWidth,
+    zoomFactor,
+    minBarWidth = DEFAULT_MIN_BAR_WIDTH,
+    maxBarWidth = DEFAULT_MAX_BAR_WIDTH,
+  } = opts
 
-    // No-op short-circuit — avoid round-trip rounding when not zooming.
-    if (zoomFactor === 1) {
-        return { firstVisibleIndex, barWidth }
-    }
+  // No-op short-circuit — avoid round-trip rounding when not zooming.
+  if (zoomFactor === 1) {
+    return { firstVisibleIndex, barWidth }
+  }
 
-    // Defensive: a non-positive or non-finite current barWidth would blow up the
-    // inverse formula. The TimeScale itself never lets barWidth reach 0, but we
-    // belt-and-brace it here so the function is total.
-    if (!Number.isFinite(barWidth) || barWidth <= 0) {
-        return { firstVisibleIndex, barWidth }
-    }
+  // Defensive: a non-positive or non-finite current barWidth would blow up the
+  // inverse formula. The TimeScale itself never lets barWidth reach 0, but we
+  // belt-and-brace it here so the function is total.
+  if (!Number.isFinite(barWidth) || barWidth <= 0) {
+    return { firstVisibleIndex, barWidth }
+  }
 
-    const dx = mouseX - leftPadding
-    const iAnchor = dx / barWidth + firstVisibleIndex
+  const dx = mouseX - leftPadding
+  const iAnchor = dx / barWidth + firstVisibleIndex
 
-    const rawNewBarWidth = barWidth * zoomFactor
-    const newBarWidth = Math.min(Math.max(rawNewBarWidth, minBarWidth), maxBarWidth)
+  const rawNewBarWidth = barWidth * zoomFactor
+  const newBarWidth = Math.min(Math.max(rawNewBarWidth, minBarWidth), maxBarWidth)
 
-    const newFirstVisibleIndex = iAnchor - dx / newBarWidth
+  const newFirstVisibleIndex = iAnchor - dx / newBarWidth
 
-    return {
-        firstVisibleIndex: newFirstVisibleIndex,
-        barWidth: newBarWidth,
-    }
+  return {
+    firstVisibleIndex: newFirstVisibleIndex,
+    barWidth: newBarWidth,
+  }
 }

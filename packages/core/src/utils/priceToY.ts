@@ -1,16 +1,16 @@
 export function priceToY(
-    price: number,
-    maxPrice: number,
-    minPrice: number,
-    canvasHeight: number,
-    paddingTop: number,
-    paddingBottom: number,
+  price: number,
+  maxPrice: number,
+  minPrice: number,
+  canvasHeight: number,
+  paddingTop: number,
+  paddingBottom: number,
 ): number {
-    const range = maxPrice - minPrice || 1
-    const ratio = (price - minPrice) / range
+  const range = maxPrice - minPrice || 1
+  const ratio = (price - minPrice) / range
 
-    const viewHeight = Math.max(1, canvasHeight - paddingTop - paddingBottom)
-    return paddingTop + viewHeight * (1 - ratio)
+  const viewHeight = Math.max(1, canvasHeight - paddingTop - paddingBottom)
+  return paddingTop + viewHeight * (1 - ratio)
 }
 
 /**
@@ -19,16 +19,16 @@ export function priceToY(
  * - paddingTop/paddingBottom 需与 priceToY 使用一致
  */
 export function yToPrice(
-    y: number,
-    maxPrice: number,
-    minPrice: number,
-    canvasHeight: number,
-    paddingTop: number,
-    paddingBottom: number,
+  y: number,
+  maxPrice: number,
+  minPrice: number,
+  canvasHeight: number,
+  paddingTop: number,
+  paddingBottom: number,
 ): number {
-    const range = maxPrice - minPrice || 1
-    const viewHeight = Math.max(1, canvasHeight - paddingTop - paddingBottom)
-    const clampedY = Math.min(Math.max(y, paddingTop), paddingTop + viewHeight)
-    const ratio = 1 - (clampedY - paddingTop) / viewHeight
-    return minPrice + ratio * range
+  const range = maxPrice - minPrice || 1
+  const viewHeight = Math.max(1, canvasHeight - paddingTop - paddingBottom)
+  const clampedY = Math.min(Math.max(y, paddingTop), paddingTop + viewHeight)
+  const ratio = 1 - (clampedY - paddingTop) / viewHeight
+  return minPrice + ratio * range
 }

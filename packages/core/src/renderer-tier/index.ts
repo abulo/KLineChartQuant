@@ -8,23 +8,23 @@
  */
 
 export {
-    detectRendererTier,
-    detectRendererTierOrThrow,
-    compareRendererTier,
-    isTierAtLeast,
+  detectRendererTier,
+  detectRendererTierOrThrow,
+  compareRendererTier,
+  isTierAtLeast,
 } from './detectRendererTier'
 export {
-    selectBackend,
-    selectBackendOrThrow,
-    type BackendFactory,
-    type BackendRegistry,
-    type BackendSelection,
-    type SelectBackendOptions,
+  selectBackend,
+  selectBackendOrThrow,
+  type BackendFactory,
+  type BackendRegistry,
+  type BackendSelection,
+  type SelectBackendOptions,
 } from './selectBackend'
 export {
-    RENDERER_TIER_RANK,
-    type RendererTier,
-    type RendererTierResult,
-    type RendererTierProbes,
-    type DetectRendererTierOptions,
+  RENDERER_TIER_RANK,
+  type RendererTier,
+  type RendererTierResult,
+  type RendererTierProbes,
+  type DetectRendererTierOptions,
 } from './types'

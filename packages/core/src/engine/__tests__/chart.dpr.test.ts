@@ -151,7 +151,9 @@ describe('Chart DPR pipeline', () => {
     const ro = ResizeObserverMock.instances[0]
     expect(ro).toBeDefined()
     expect(ro?.observe).toHaveBeenCalledTimes(2)
-    expect(ro?.observe).toHaveBeenNthCalledWith(1, chart.getDom().container, { box: 'device-pixel-content-box' })
+    expect(ro?.observe).toHaveBeenNthCalledWith(1, chart.getDom().container, {
+      box: 'device-pixel-content-box',
+    })
     expect(ro?.observe).toHaveBeenNthCalledWith(2, chart.getDom().container)
 
     await chart.destroy()
@@ -169,7 +171,9 @@ describe('Chart DPR pipeline', () => {
 
     ro?.emit({
       contentRect: { width: 1000, height: 600 } as DOMRectReadOnly,
-      devicePixelContentBoxSize: [{ inlineSize: 2000, blockSize: 1200 }] as unknown as ResizeObserverSize[],
+      devicePixelContentBoxSize: [
+        { inlineSize: 2000, blockSize: 1200 },
+      ] as unknown as ResizeObserverSize[],
       contentBoxSize: [{ inlineSize: 1000, blockSize: 600 }] as unknown as ResizeObserverSize[],
     })
 

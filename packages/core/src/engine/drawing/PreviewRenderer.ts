@@ -1,7 +1,13 @@
 import type { DrawingObject } from '../../plugin'
 import { PREVIEW_ID } from './DrawingState'
 import type { DrawingToolId } from './toolConfig'
-import { SINGLE_ANCHOR_TOOLS, DOUBLE_ANCHOR_TOOLS, TRIPLE_ANCHOR_TOOLS, getDrawingKind, CHANNEL_KINDS } from './toolConfig'
+import {
+  SINGLE_ANCHOR_TOOLS,
+  DOUBLE_ANCHOR_TOOLS,
+  TRIPLE_ANCHOR_TOOLS,
+  getDrawingKind,
+  CHANNEL_KINDS,
+} from './toolConfig'
 import type { DrawingAnchorInput } from './coordinateUtils'
 
 /**
@@ -106,8 +112,18 @@ export class PreviewRenderer {
         paneId: 'main',
         visible: true,
         anchors: [
-          { id: `${PREVIEW_ID}-a`, index: pendingAnchors[0]!.index, time: pendingAnchors[0]!.time, price: pendingAnchors[0]!.price },
-          { id: `${PREVIEW_ID}-b`, index: currentAnchor.index, time: currentAnchor.time, price: currentAnchor.price },
+          {
+            id: `${PREVIEW_ID}-a`,
+            index: pendingAnchors[0]!.index,
+            time: pendingAnchors[0]!.time,
+            price: pendingAnchors[0]!.price,
+          },
+          {
+            id: `${PREVIEW_ID}-b`,
+            index: currentAnchor.index,
+            time: currentAnchor.time,
+            price: currentAnchor.price,
+          },
         ],
         params: {},
         style: {
@@ -119,19 +135,20 @@ export class PreviewRenderer {
     }
 
     // pendingAnchors.length >= 2 — full 3-anchor preview
-    const thirdAnchor = activeTool === 'flat-line'
-      ? {
-          id: `${PREVIEW_ID}-c`,
-          index: pendingAnchors[1]!.index,
-          time: pendingAnchors[1]!.time,
-          price: currentAnchor.price,
-        }
-      : {
-          id: `${PREVIEW_ID}-c`,
-          index: currentAnchor.index,
-          time: currentAnchor.time,
-          price: currentAnchor.price,
-        }
+    const thirdAnchor =
+      activeTool === 'flat-line'
+        ? {
+            id: `${PREVIEW_ID}-c`,
+            index: pendingAnchors[1]!.index,
+            time: pendingAnchors[1]!.time,
+            price: currentAnchor.price,
+          }
+        : {
+            id: `${PREVIEW_ID}-c`,
+            index: currentAnchor.index,
+            time: currentAnchor.time,
+            price: currentAnchor.price,
+          }
 
     const isChannel = CHANNEL_KINDS.includes(getDrawingKind(activeTool) as any)
 
@@ -141,8 +158,18 @@ export class PreviewRenderer {
       paneId: 'main',
       visible: true,
       anchors: [
-        { id: `${PREVIEW_ID}-a`, index: pendingAnchors[0]!.index, time: pendingAnchors[0]!.time, price: pendingAnchors[0]!.price },
-        { id: `${PREVIEW_ID}-b`, index: pendingAnchors[1]!.index, time: pendingAnchors[1]!.time, price: pendingAnchors[1]!.price },
+        {
+          id: `${PREVIEW_ID}-a`,
+          index: pendingAnchors[0]!.index,
+          time: pendingAnchors[0]!.time,
+          price: pendingAnchors[0]!.price,
+        },
+        {
+          id: `${PREVIEW_ID}-b`,
+          index: pendingAnchors[1]!.index,
+          time: pendingAnchors[1]!.time,
+          price: pendingAnchors[1]!.price,
+        },
         thirdAnchor,
       ],
       params: {},

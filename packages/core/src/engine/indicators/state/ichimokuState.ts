@@ -14,36 +14,36 @@ import { createIndicatorStateKey } from '../../../plugin/stateKeys'
  * series 长度 = data.length + displacement，末尾 displacement 槽位为未来云（仅 spanA/spanB）。
  */
 export interface IchimokuPoint {
-    tenkan?: number
-    kijun?: number
-    spanA?: number
-    spanB?: number
-    chikou?: number
+  tenkan?: number
+  kijun?: number
+  spanA?: number
+  spanB?: number
+  chikou?: number
 }
 
 export interface IchimokuRenderState extends BaseIndicatorState {
-    timestamp: number
-    series: (IchimokuPoint | undefined)[]
-    params: {
-        tenkanPeriod: number
-        kijunPeriod: number
-        spanBPeriod: number
-        displacement: number
-        showTenkan: boolean
-        showKijun: boolean
-        showSpanA: boolean
-        showSpanB: boolean
-        showCloud: boolean
-        showChikou: boolean
-    }
-    valueMin: number
-    valueMax: number
-    visibleMin: number
-    visibleMax: number
+  timestamp: number
+  series: (IchimokuPoint | undefined)[]
+  params: {
+    tenkanPeriod: number
+    kijunPeriod: number
+    spanBPeriod: number
+    displacement: number
+    showTenkan: boolean
+    showKijun: boolean
+    showSpanA: boolean
+    showSpanB: boolean
+    showCloud: boolean
+    showChikou: boolean
+  }
+  valueMin: number
+  valueMax: number
+  visibleMin: number
+  visibleMax: number
 }
 
 export const createIchimokuStateKey = (paneId: string) =>
-    createIndicatorStateKey('ichimoku', paneId)
+  createIndicatorStateKey('ichimoku', paneId)
 
 export const DEFAULT_ICHIMOKU_TENKAN = 9
 export const DEFAULT_ICHIMOKU_KIJUN = 26
@@ -51,22 +51,22 @@ export const DEFAULT_ICHIMOKU_SPAN_B = 52
 export const DEFAULT_ICHIMOKU_DISPLACEMENT = 26
 
 export const EMPTY_ICHIMOKU_STATE: IchimokuRenderState = {
-    timestamp: 0,
-    series: [],
-    params: {
-        tenkanPeriod: DEFAULT_ICHIMOKU_TENKAN,
-        kijunPeriod: DEFAULT_ICHIMOKU_KIJUN,
-        spanBPeriod: DEFAULT_ICHIMOKU_SPAN_B,
-        displacement: DEFAULT_ICHIMOKU_DISPLACEMENT,
-        showTenkan: true,
-        showKijun: true,
-        showSpanA: true,
-        showSpanB: true,
-        showCloud: true,
-        showChikou: true,
-    },
-    valueMin: 0,
-    valueMax: 1,
-    visibleMin: Infinity,
-    visibleMax: -Infinity,
+  timestamp: 0,
+  series: [],
+  params: {
+    tenkanPeriod: DEFAULT_ICHIMOKU_TENKAN,
+    kijunPeriod: DEFAULT_ICHIMOKU_KIJUN,
+    spanBPeriod: DEFAULT_ICHIMOKU_SPAN_B,
+    displacement: DEFAULT_ICHIMOKU_DISPLACEMENT,
+    showTenkan: true,
+    showKijun: true,
+    showSpanA: true,
+    showSpanB: true,
+    showCloud: true,
+    showChikou: true,
+  },
+  valueMin: 0,
+  valueMax: 1,
+  visibleMin: Infinity,
+  visibleMax: -Infinity,
 }

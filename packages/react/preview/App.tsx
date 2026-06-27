@@ -48,14 +48,28 @@ export default function App() {
       <div style={styles.toolbar}>
         <div style={styles.toolbarLeft}>
           <button style={styles.btn} onClick={() => setShowModal(true)} title="Open Modal">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <line x1="3" y1="9" x2="21" y2="9" />
               <line x1="9" y1="3" x2="9" y2="21" />
             </svg>
           </button>
           <button style={styles.btn} onClick={toggleEmbedSize} title="Toggle embed size">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M8 3H5a2 2 0 0 0-2 2v3" />
               <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
               <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
@@ -64,18 +78,33 @@ export default function App() {
           </button>
         </div>
         <div style={styles.toolbarCenter}>
-          <span style={styles.sizeInfo}>Embed: {embedWidth} × {embedHeight}</span>
+          <span style={styles.sizeInfo}>
+            Embed: {embedWidth} × {embedHeight}
+          </span>
         </div>
         <div style={styles.toolbarRight}>
           <span style={styles.versionBadge}>React Preview</span>
-          <a style={styles.link} href="https://github.com/363045841/KLineChartQuant" target="_blank" rel="noopener noreferrer">
+          <a
+            style={styles.link}
+            href="https://github.com/363045841/KLineChartQuant"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
               <path d="M12 0C5.37 0 0 5.37 0 12a12 12 0 0 0 8.2 11.4c.6.1.82-.26.82-.58 0-.28-.01-1.03-.02-2.02-3.34.73-4.04-1.61-4.04-1.61-.55-1.38-1.33-1.75-1.33-1.75-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.08 1.84 2.83 1.3 3.52.99.1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.53.12-3.18 0 0 1-.32 3.3 1.23A11.5 11.5 0 0 1 12 5.8c1.02 0 2.04.14 3 .42 2.3-1.56 3.3-1.23 3.3-1.23.66 1.65.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.62-2.8 5.64-5.48 5.95.43.37.82 1.1.82 2.22 0 1.6-.01 2.9-.01 3.3 0 .32.22.69.82.57A12 12 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
             </svg>
           </a>
-          <a style={styles.link} href="https://www.npmjs.com/package/@363045841yyt/klinechart" target="_blank" rel="noopener noreferrer">
+          <a
+            style={styles.link}
+            href="https://www.npmjs.com/package/@363045841yyt/klinechart"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <svg viewBox="0 0 1024 1024" width="20" height="20">
-              <path d="M0 312.928v341.344h284.416v56.832H512v-56.832h512V312.928z m284.416 284.32H227.584v-170.656h-56.96v170.656H56.96v-227.456h227.456z m170.656 0v56.992h-113.696v-284.448h227.584v227.488h-113.888z m512.064 0H910.4v-170.656h-56.992v170.656h-56.96v-170.656h-56.736v170.656h-113.952v-227.456h341.408zM455.04 426.656H512v113.792h-56.96z" fill="#CB3837" />
+              <path
+                d="M0 312.928v341.344h284.416v56.832H512v-56.832h512V312.928z m284.416 284.32H227.584v-170.656h-56.96v170.656H56.96v-227.456h227.456z m170.656 0v56.992h-113.696v-284.448h227.584v227.488h-113.888z m512.064 0H910.4v-170.656h-56.992v170.656h-56.96v-170.656h-56.736v170.656h-113.952v-227.456h341.408zM455.04 426.656H512v113.792h-56.96z"
+                fill="#CB3837"
+              />
             </svg>
           </a>
         </div>
@@ -101,16 +130,15 @@ export default function App() {
 
       {showModal && (
         <div style={styles.modalOverlay} onClick={() => setShowModal(false)}>
-          <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <header style={styles.modalHeader}>
               <span>K-Line Chart in Modal</span>
-              <button style={styles.closeBtn} onClick={() => setShowModal(false)}>×</button>
+              <button style={styles.closeBtn} onClick={() => setShowModal(false)}>
+                ×
+              </button>
             </header>
             <div style={styles.modalBody}>
-              <KLineChartWC
-                dataFetcher={dataFetcher}
-                style={{ width: '100%', height: '100%' }}
-              />
+              <KLineChartWC dataFetcher={dataFetcher} style={{ width: '100%', height: '100%' }} />
             </div>
           </div>
         </div>

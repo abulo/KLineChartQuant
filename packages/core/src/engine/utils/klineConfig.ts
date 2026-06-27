@@ -10,9 +10,9 @@
  * @returns 奇数化后的物理像素宽度
  */
 export function calcKWidthPx(kWidth: number, dpr: number): number {
-    let px = Math.max(1, Math.round(kWidth * dpr))
-    if (px % 2 === 0 && px > 1) px -= 1
-    return px
+  let px = Math.max(1, Math.round(kWidth * dpr))
+  if (px % 2 === 0 && px > 1) px -= 1
+  return px
 }
 
 /**
@@ -23,25 +23,25 @@ export function calcKWidthPx(kWidth: number, dpr: number): number {
  * @returns 物理像素和逻辑像素的配置对象
  */
 export function getPhysicalKLineConfig(kWidth: number, kGap: number, dpr: number) {
-    const kWidthPx = calcKWidthPx(kWidth, dpr)
-    const kGapPx = Math.round(kGap * dpr)
-    const unitPx = kWidthPx + kGapPx
-    const startXPx = kGapPx
+  const kWidthPx = calcKWidthPx(kWidth, dpr)
+  const kGapPx = Math.round(kGap * dpr)
+  const unitPx = kWidthPx + kGapPx
+  const startXPx = kGapPx
 
-    // 转回逻辑像素（供需要逻辑像素的地方使用）
-    const kWidthLogical = kWidthPx / dpr
-    const kGapLogical = kGapPx / dpr
-    const unitLogical = unitPx / dpr
-    const startXLogical = startXPx / dpr
+  // 转回逻辑像素（供需要逻辑像素的地方使用）
+  const kWidthLogical = kWidthPx / dpr
+  const kGapLogical = kGapPx / dpr
+  const unitLogical = unitPx / dpr
+  const startXLogical = startXPx / dpr
 
-    return {
-        kWidthPx,
-        kGapPx,
-        unitPx,
-        startXPx,
-        kWidthLogical,
-        kGapLogical,
-        unitLogical,
-        startXLogical,
-    }
+  return {
+    kWidthPx,
+    kGapPx,
+    unitPx,
+    startXPx,
+    kWidthLogical,
+    kGapLogical,
+    unitLogical,
+    startXLogical,
+  }
 }

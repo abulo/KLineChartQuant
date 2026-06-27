@@ -1,5 +1,9 @@
 import type { KLineData } from '../types/price'
-import { VolumePriceRelation, type VolumePriceConfig, DEFAULT_VOLUME_PRICE_CONFIG } from '../types/volumePrice'
+import {
+  VolumePriceRelation,
+  type VolumePriceConfig,
+  DEFAULT_VOLUME_PRICE_CONFIG,
+} from '../types/volumePrice'
 
 // 重新导出默认配置，方便外部使用
 export { DEFAULT_VOLUME_PRICE_CONFIG }
@@ -113,7 +117,7 @@ function getPrefixSum(data: KLineData[]): VolumePrefixSum {
 function analyzeVolumePriceRelation(
   data: KLineData[],
   index: number,
-  config: VolumePriceConfig
+  config: VolumePriceConfig,
 ): VolumePriceRelation {
   const curVolume = data[index]?.volume
   if (index < 1 || index >= data.length || !curVolume) {
@@ -174,7 +178,7 @@ export function analyzeVolumePriceRelationBatch(
   data: KLineData[],
   startIndex: number,
   endIndex: number,
-  config: VolumePriceConfig = DEFAULT_VOLUME_PRICE_CONFIG
+  config: VolumePriceConfig = DEFAULT_VOLUME_PRICE_CONFIG,
 ): VolumePriceRelation[] {
   const prefixSum = getPrefixSum(data)
 

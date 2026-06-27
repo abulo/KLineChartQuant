@@ -34,36 +34,36 @@ export type ScaleMode = 'linear' | 'log'
  * this is what lets the user pan to "half a bar" or scroll into the future.
  */
 export interface TimeScale {
-    /** Inverse: screen X (logical px) → fractional bar index. */
-    xToBarIndex(x: number): number
-    /** Forward: fractional bar index → screen X (logical px). */
-    barIndexToX(i: number): number
+  /** Inverse: screen X (logical px) → fractional bar index. */
+  xToBarIndex(x: number): number
+  /** Forward: fractional bar index → screen X (logical px). */
+  barIndexToX(i: number): number
 
-    /** Fractional, may be negative or > N. */
-    readonly firstVisibleIndex: Signal<number>
-    /** Logical pixels per bar. Clamped by the caller (e.g. zoom) not the scale. */
-    readonly barWidth: Signal<number>
-    /** Logical pixels added on the left edge before bar 0. */
-    readonly leftPadding: Signal<number>
+  /** Fractional, may be negative or > N. */
+  readonly firstVisibleIndex: Signal<number>
+  /** Logical pixels per bar. Clamped by the caller (e.g. zoom) not the scale. */
+  readonly barWidth: Signal<number>
+  /** Logical pixels added on the left edge before bar 0. */
+  readonly leftPadding: Signal<number>
 
-    setFirstVisibleIndex(i: number): void
-    setBarWidth(w: number): void
-    setLeftPadding(p: number): void
+  setFirstVisibleIndex(i: number): void
+  setBarWidth(w: number): void
+  setLeftPadding(p: number): void
 
-    /**
-     * Attach (or detach with `null`) a wall-clock calendar so the scale can
-     * answer `timeToBarIndex` / `barIndexToTime`. Bar indices not covered by
-     * the calendar return `null` — *time is a label, not a coordinate*.
-     */
-    setCalendar(c: { barTimestamps: ReadonlyArray<number> } | null): void
+  /**
+   * Attach (or detach with `null`) a wall-clock calendar so the scale can
+   * answer `timeToBarIndex` / `barIndexToTime`. Bar indices not covered by
+   * the calendar return `null` — *time is a label, not a coordinate*.
+   */
+  setCalendar(c: { barTimestamps: ReadonlyArray<number> } | null): void
 
-    /** wall-clock ms → fractional bar index; `null` if no calendar / out of range. */
-    timeToBarIndex(timestamp: number): number | null
-    /** fractional bar index → wall-clock ms; `null` if no calendar / out of range. */
-    barIndexToTime(i: number): number | null
+  /** wall-clock ms → fractional bar index; `null` if no calendar / out of range. */
+  timeToBarIndex(timestamp: number): number | null
+  /** fractional bar index → wall-clock ms; `null` if no calendar / out of range. */
+  barIndexToTime(i: number): number | null
 
-    /** Detach signal subscribers and release any internal listeners. */
-    dispose(): void
+  /** Detach signal subscribers and release any internal listeners. */
+  dispose(): void
 }
 
 /**
@@ -75,26 +75,26 @@ export interface TimeScale {
  * y = `height`.
  */
 export interface PriceScale {
-    /** Forward: price → screen Y (top-origin, increases downward). */
-    priceToY(p: number): number
-    /** Inverse: screen Y → price. */
-    yToPrice(y: number): number
+  /** Forward: price → screen Y (top-origin, increases downward). */
+  priceToY(p: number): number
+  /** Inverse: screen Y → price. */
+  yToPrice(y: number): number
 
-    readonly mode: Signal<ScaleMode>
-    readonly visibleMin: Signal<number>
-    readonly visibleMax: Signal<number>
-    readonly height: Signal<number>
+  readonly mode: Signal<ScaleMode>
+  readonly visibleMin: Signal<number>
+  readonly visibleMax: Signal<number>
+  readonly height: Signal<number>
 
-    /** Set `'linear'` or `'log'`; throws on `'log'` if `visibleMin <= 0`. */
-    setMode(mode: ScaleMode): void
-    /** Update visible range. Triggers the origin-shift rebaseline check. */
-    setVisibleRange(min: number, max: number): void
-    setHeight(h: number): void
+  /** Set `'linear'` or `'log'`; throws on `'log'` if `visibleMin <= 0`. */
+  setMode(mode: ScaleMode): void
+  /** Update visible range. Triggers the origin-shift rebaseline check. */
+  setVisibleRange(min: number, max: number): void
+  setHeight(h: number): void
 
-    /** Origin-shift reference; managed automatically but exposed for tests. */
-    readonly originShiftRef: Signal<number>
-    /** Returns `p - originShiftRef.peek()` — what to upload to the GPU as fp32. */
-    toShiftedFp32(p: number): number
+  /** Origin-shift reference; managed automatically but exposed for tests. */
+  readonly originShiftRef: Signal<number>
+  /** Returns `p - originShiftRef.peek()` — what to upload to the GPU as fp32. */
+  toShiftedFp32(p: number): number
 
-    dispose(): void
+  dispose(): void
 }

@@ -6,6 +6,6 @@
  * @returns tick 数量
  */
 export function calculateTickCount(height: number, isMain?: boolean): number {
-    const tickSpacing = 60  // 固定间距
-    return Math.max(3, Math.round(height / tickSpacing) + 1)
+  const tickSpacing = 60 // 固定间距
+  return Math.max(3, Math.round(height / tickSpacing) + 1)
 }

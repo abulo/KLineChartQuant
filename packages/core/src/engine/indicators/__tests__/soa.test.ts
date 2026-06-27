@@ -34,7 +34,11 @@ import type {
 function calcBOLLDataSoA(layout: KLineSoALayout, period: number, multiplier: number): BOLLPoint[] {
   return calcBOLLData(SharedKLineBuffer.toKLineData(layout), period, multiplier)
 }
-function calcEXPMADataSoA(layout: KLineSoALayout, fastPeriod: number, slowPeriod: number): EXPMAPoint[] {
+function calcEXPMADataSoA(
+  layout: KLineSoALayout,
+  fastPeriod: number,
+  slowPeriod: number,
+): EXPMAPoint[] {
   return calcEXPMAData(SharedKLineBuffer.toKLineData(layout), fastPeriod, slowPeriod)
 }
 function calcENEDataSoA(layout: KLineSoALayout, period: number, deviation: number): ENEPoint[] {
@@ -58,13 +62,25 @@ function calcMOMDataSoA(layout: KLineSoALayout, period: number): (number | undef
 function calcWMSRDataSoA(layout: KLineSoALayout, period: number): (number | undefined)[] {
   return calcWMSRData(SharedKLineBuffer.toKLineData(layout), period)
 }
-function calcKSTDataSoA(layout: KLineSoALayout, roc1: number, roc2: number, roc3: number, roc4: number, signalPeriod: number): KSTPoint[] {
+function calcKSTDataSoA(
+  layout: KLineSoALayout,
+  roc1: number,
+  roc2: number,
+  roc3: number,
+  roc4: number,
+  signalPeriod: number,
+): KSTPoint[] {
   return calcKSTData(SharedKLineBuffer.toKLineData(layout), roc1, roc2, roc3, roc4, signalPeriod)
 }
 function calcFASTKDataSoA(layout: KLineSoALayout, period: number): (number | undefined)[] {
   return calcFASTKData(SharedKLineBuffer.toKLineData(layout), period)
 }
-function calcMACDDataSoA(layout: KLineSoALayout, fastPeriod: number, slowPeriod: number, signalPeriod: number): MACDPoint[] {
+function calcMACDDataSoA(
+  layout: KLineSoALayout,
+  fastPeriod: number,
+  slowPeriod: number,
+  signalPeriod: number,
+): MACDPoint[] {
   return calcMACDData(SharedKLineBuffer.toKLineData(layout), fastPeriod, slowPeriod, signalPeriod)
 }
 
@@ -105,7 +121,7 @@ function generateTestData(length: number): KLineData[] {
 function compareNumberArrays(
   a: (number | undefined)[],
   b: (number | undefined)[],
-  epsilon: number = 1e-10
+  epsilon: number = 1e-10,
 ): boolean {
   if (a.length !== b.length) return false
 
@@ -171,7 +187,7 @@ describe('SharedKLineBuffer', () => {
       expect(layoutWithVolume.hasVolume).toBe(true)
       expect(layoutWithVolume.hasTurnover).toBe(true)
 
-      const dataWithoutVolume: KLineData[] = dataWithVolume.map(d => ({
+      const dataWithoutVolume: KLineData[] = dataWithVolume.map((d) => ({
         timestamp: d.timestamp,
         open: d.open,
         high: d.high,
@@ -220,7 +236,7 @@ describe('SharedKLineBuffer', () => {
     })
 
     it('应该正确处理缺失的 volume 和 turnover', () => {
-      const dataWithoutVolume: KLineData[] = testData.slice(0, 10).map(d => ({
+      const dataWithoutVolume: KLineData[] = testData.slice(0, 10).map((d) => ({
         timestamp: d.timestamp,
         open: d.open,
         high: d.high,
@@ -303,7 +319,11 @@ describe('SharedKLineBuffer', () => {
 
     it('越界范围应该自动截断', () => {
       const layout = SharedKLineBuffer.fromKLineData(testData)
-      const subview = SharedKLineBuffer.createSubview(layout, testDataLength - 5, testDataLength + 10)
+      const subview = SharedKLineBuffer.createSubview(
+        layout,
+        testDataLength - 5,
+        testDataLength + 10,
+      )
 
       expect(subview.length).toBe(5)
     })

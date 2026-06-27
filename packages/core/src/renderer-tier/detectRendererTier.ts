@@ -29,10 +29,10 @@
 
 import { KLineChartError } from '../errors'
 import {
-    RENDERER_TIER_RANK,
-    type DetectRendererTierOptions,
-    type RendererTier,
-    type RendererTierResult,
+  RENDERER_TIER_RANK,
+  type DetectRendererTierOptions,
+  type RendererTier,
+  type RendererTierResult,
 } from './types'
 
 // ---------------------------------------------------------------------------
@@ -40,29 +40,29 @@ import {
 // ---------------------------------------------------------------------------
 
 function probeWebGpu(): boolean {
-    const nav = (globalThis as { navigator?: unknown }).navigator
-    if (typeof nav !== 'object' || nav === null) return false
-    return 'gpu' in (nav as object)
+  const nav = (globalThis as { navigator?: unknown }).navigator
+  if (typeof nav !== 'object' || nav === null) return false
+  return 'gpu' in (nav as object)
 }
 
 function probeWebGl2(): boolean {
-    const doc = (globalThis as { document?: { createElement?: (s: string) => unknown } }).document
-    if (typeof doc?.createElement !== 'function') return false
-    const canvas = doc.createElement('canvas') as {
-        getContext?: (id: string) => unknown
-    }
-    if (typeof canvas.getContext !== 'function') return false
-    return canvas.getContext('webgl2') !== null
+  const doc = (globalThis as { document?: { createElement?: (s: string) => unknown } }).document
+  if (typeof doc?.createElement !== 'function') return false
+  const canvas = doc.createElement('canvas') as {
+    getContext?: (id: string) => unknown
+  }
+  if (typeof canvas.getContext !== 'function') return false
+  return canvas.getContext('webgl2') !== null
 }
 
 function probeCanvas2d(): boolean {
-    const doc = (globalThis as { document?: { createElement?: (s: string) => unknown } }).document
-    if (typeof doc?.createElement !== 'function') return false
-    const canvas = doc.createElement('canvas') as {
-        getContext?: (id: string) => unknown
-    }
-    if (typeof canvas.getContext !== 'function') return false
-    return canvas.getContext('2d') !== null
+  const doc = (globalThis as { document?: { createElement?: (s: string) => unknown } }).document
+  if (typeof doc?.createElement !== 'function') return false
+  const canvas = doc.createElement('canvas') as {
+    getContext?: (id: string) => unknown
+  }
+  if (typeof canvas.getContext !== 'function') return false
+  return canvas.getContext('2d') !== null
 }
 
 // ---------------------------------------------------------------------------
@@ -70,12 +70,12 @@ function probeCanvas2d(): boolean {
 // ---------------------------------------------------------------------------
 
 function runProbe(probe: () => boolean): { ok: boolean; error: string | null } {
-    try {
-        return { ok: probe() === true, error: null }
-    } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e)
-        return { ok: false, error: msg }
-    }
+  try {
+    return { ok: probe() === true, error: null }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ok: false, error: msg }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -91,39 +91,35 @@ const TIER_ORDER: ReadonlyArray<RendererTier> = ['webgpu', 'webgl2', 'canvas2d']
  * pick the renderer backend; persist the result if you re-mount, since
  * recomputing is cheap but not free (probing creates a throwaway canvas).
  */
-export function detectRendererTier(
-    opts?: DetectRendererTierOptions,
-): RendererTierResult {
-    const probes = opts?.probes ?? {}
-    const reasonParts: string[] = []
-    const tried: RendererTier[] = []
+export function detectRendererTier(opts?: DetectRendererTierOptions): RendererTierResult {
+  const probes = opts?.probes ?? {}
+  const reasonParts: string[] = []
+  const tried: RendererTier[] = []
 
-    for (const tier of TIER_ORDER) {
-        tried.push(tier)
-        const probe =
-            tier === 'webgpu'
-                ? (probes.webgpu ?? probeWebGpu)
-                : tier === 'webgl2'
-                    ? (probes.webgl2 ?? probeWebGl2)
-                    : (probes.canvas2d ?? probeCanvas2d)
-        const r = runProbe(probe)
-        if (r.ok) {
-            return {
-                tier,
-                reason: `selected ${tier} (${reasonParts.length === 0 ? 'first probe succeeded' : reasonParts.join('; ')})`,
-                tried: [...tried],
-            }
-        }
-        reasonParts.push(
-            r.error === null ? `${tier}: not available` : `${tier}: threw "${r.error}"`,
-        )
-    }
-
-    return {
-        tier: 'none',
-        reason: `no tier available — ${reasonParts.join('; ')}`,
+  for (const tier of TIER_ORDER) {
+    tried.push(tier)
+    const probe =
+      tier === 'webgpu'
+        ? (probes.webgpu ?? probeWebGpu)
+        : tier === 'webgl2'
+          ? (probes.webgl2 ?? probeWebGl2)
+          : (probes.canvas2d ?? probeCanvas2d)
+    const r = runProbe(probe)
+    if (r.ok) {
+      return {
+        tier,
+        reason: `selected ${tier} (${reasonParts.length === 0 ? 'first probe succeeded' : reasonParts.join('; ')})`,
         tried: [...tried],
+      }
     }
+    reasonParts.push(r.error === null ? `${tier}: not available` : `${tier}: threw "${r.error}"`)
+  }
+
+  return {
+    tier: 'none',
+    reason: `no tier available — ${reasonParts.join('; ')}`,
+    tried: [...tried],
+  }
 }
 
 /**
@@ -131,17 +127,12 @@ export function detectRendererTier(
  * renderable tier is found. Use when you want a hard failure rather
  * than a silent `'none'`.
  */
-export function detectRendererTierOrThrow(
-    opts?: DetectRendererTierOptions,
-): RendererTierResult {
-    const r = detectRendererTier(opts)
-    if (r.tier === 'none') {
-        throw new KLineChartError(
-            'INVALID_STATE',
-            `detectRendererTierOrThrow: ${r.reason}`,
-        )
-    }
-    return r
+export function detectRendererTierOrThrow(opts?: DetectRendererTierOptions): RendererTierResult {
+  const r = detectRendererTier(opts)
+  if (r.tier === 'none') {
+    throw new KLineChartError('INVALID_STATE', `detectRendererTierOrThrow: ${r.reason}`)
+  }
+  return r
 }
 
 /**
@@ -152,11 +143,11 @@ export function detectRendererTierOrThrow(
  *   compareRendererTier('webgl2', 'webgl2') === 0
  */
 export function compareRendererTier(a: RendererTier, b: RendererTier): -1 | 0 | 1 {
-    const ra = RENDERER_TIER_RANK[a]
-    const rb = RENDERER_TIER_RANK[b]
-    if (ra > rb) return 1
-    if (ra < rb) return -1
-    return 0
+  const ra = RENDERER_TIER_RANK[a]
+  const rb = RENDERER_TIER_RANK[b]
+  if (ra > rb) return 1
+  if (ra < rb) return -1
+  return 0
 }
 
 /**
@@ -164,5 +155,5 @@ export function compareRendererTier(a: RendererTier, b: RendererTier): -1 | 0 | 
  * (e.g. GPU compute volume profile needs `>= 'webgl2'`).
  */
 export function isTierAtLeast(tier: RendererTier, minimum: RendererTier): boolean {
-    return compareRendererTier(tier, minimum) >= 0
+  return compareRendererTier(tier, minimum) >= 0
 }

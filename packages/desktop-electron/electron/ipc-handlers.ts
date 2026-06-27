@@ -19,15 +19,21 @@ export function registerIpcHandlers(): void {
   })
 
   // ── File dialogs ──
-  ipcMain.handle('file:save-dialog', async (_event, options: { defaultName?: string; filters?: Array<{ name: string; extensions: string[] }> }) => {
-    const win = getFocusedWindow()
-    if (!win) return null
-    const result = await dialog.showSaveDialog(win, {
-      defaultPath: options.defaultName,
-      filters: options.filters ?? [{ name: 'All Files', extensions: ['*'] }],
-    })
-    return result.canceled ? null : result.filePath
-  })
+  ipcMain.handle(
+    'file:save-dialog',
+    async (
+      _event,
+      options: { defaultName?: string; filters?: Array<{ name: string; extensions: string[] }> },
+    ) => {
+      const win = getFocusedWindow()
+      if (!win) return null
+      const result = await dialog.showSaveDialog(win, {
+        defaultPath: options.defaultName,
+        filters: options.filters ?? [{ name: 'All Files', extensions: ['*'] }],
+      })
+      return result.canceled ? null : result.filePath
+    },
+  )
 
   ipcMain.handle('file:save', async (_event, filePath: string, content: string) => {
     try {
@@ -38,15 +44,24 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('file:open-dialog', async (_event, options: { filters?: Array<{ name: string; extensions: string[] }>; multiSelections?: boolean }) => {
-    const win = getFocusedWindow()
-    if (!win) return null
-    const result = await dialog.showOpenDialog(win, {
-      properties: options.multiSelections ? ['openFile', 'multiSelections'] : ['openFile'],
-      filters: options.filters ?? [{ name: 'All Files', extensions: ['*'] }],
-    })
-    return result.canceled ? null : result.filePaths
-  })
+  ipcMain.handle(
+    'file:open-dialog',
+    async (
+      _event,
+      options: {
+        filters?: Array<{ name: string; extensions: string[] }>
+        multiSelections?: boolean
+      },
+    ) => {
+      const win = getFocusedWindow()
+      if (!win) return null
+      const result = await dialog.showOpenDialog(win, {
+        properties: options.multiSelections ? ['openFile', 'multiSelections'] : ['openFile'],
+        filters: options.filters ?? [{ name: 'All Files', extensions: ['*'] }],
+      })
+      return result.canceled ? null : result.filePaths
+    },
+  )
 
   ipcMain.handle('file:read', async (_event, filePath: string) => {
     return await readFile(filePath, 'utf-8')

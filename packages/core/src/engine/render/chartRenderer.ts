@@ -2,10 +2,27 @@ import type { KLineData } from '../../types/price'
 import type { ChartSettings } from '../../config/chartSettings'
 import type { SymbolSpec } from '../../controllers/types'
 import { getVisibleRange } from '../viewport/viewport'
-import type { RendererPlugin, RendererPluginWithHost, PluginHostImpl, RenderContext, YAxisLabel, XAxisLabel, YAxisRange, XAxisRange, YAxisTick } from '../../plugin'
+import type {
+  RendererPlugin,
+  RendererPluginWithHost,
+  PluginHostImpl,
+  RenderContext,
+  YAxisLabel,
+  XAxisLabel,
+  YAxisRange,
+  XAxisRange,
+  YAxisTick,
+} from '../../plugin'
 import { calculateTickCount } from '../utils/tickCount'
 import { RendererPluginManager, wrapPaneInfo } from '../../plugin'
-import type { ChartDom, PaneSpec, ChartOptions, KLinePositions, Viewport, ViewportState } from '../chartTypes'
+import type {
+  ChartDom,
+  PaneSpec,
+  ChartOptions,
+  KLinePositions,
+  Viewport,
+  ViewportState,
+} from '../chartTypes'
 import { PaneRenderer } from '../paneRenderer'
 import { SharedWebGLSurface } from '../renderers/webgl/sharedWebGLSurface'
 import { MarkerManager, type CustomMarkerEntity } from '../marker/registry'
@@ -23,7 +40,10 @@ import { createDrawingRendererPlugin, createDrawingLabelOverlayPlugin } from '..
 import { createGridLinesRendererPlugin } from '../renderers/gridLines'
 import { createCandleRenderer } from '../renderers/candle'
 import { createComparisonLineRenderer } from '../renderers/comparisonLine'
-import { createLastPriceLineRendererPlugin, createLastPriceLabelRegistrarPlugin } from '../renderers/lastPrice'
+import {
+  createLastPriceLineRendererPlugin,
+  createLastPriceLabelRegistrarPlugin,
+} from '../renderers/lastPrice'
 import { createCustomMarkersRenderer } from '../renderers/customMarkers'
 import { createExtremaMarkersRendererPlugin } from '../renderers/extremaMarkers'
 import { createYAxisRendererPlugin } from '../renderers/yAxis'
@@ -107,54 +127,64 @@ export class ChartRenderer {
     this.useDrawingPlugin(createLastPriceLabelRegistrarPlugin())
     this.useDrawingPlugin(createCustomMarkersRenderer())
     this.useDrawingPlugin(createExtremaMarkersRendererPlugin())
-    this.useDrawingPlugin(createMainIndicatorLegendRendererPlugin({
-      yPaddingPx: opt.yPaddingPx,
-    }))
-    this.useDrawingPlugin(createYAxisRendererPlugin({
-      axisWidth,
-      yPaddingPx: opt.yPaddingPx,
-      getCrosshair: () => {
-        const pos = interaction.crosshairPos
-        const price = interaction.crosshairPrice
-        const activePaneId = interaction.activePaneId
-        if (pos && price !== null) {
-          return { y: pos.y, price, activePaneId }
-        }
-        return null
-      },
-    }))
-    this.useDrawingPlugin(createCrosshairRendererPlugin({
-      getCrosshairState: () => ({
-        pos: interaction.crosshairPos,
-        activePaneId: interaction.activePaneId,
-        isDragging: interaction.isDraggingState(),
-        price: interaction.crosshairPrice,
+    this.useDrawingPlugin(
+      createMainIndicatorLegendRendererPlugin({
+        yPaddingPx: opt.yPaddingPx,
       }),
-    }))
-    this.useDrawingPlugin(createLeftYAxisRendererPlugin({
-      axisWidth: opt.leftAxisWidth,
-      yPaddingPx: opt.yPaddingPx,
-      getCrosshair: () => {
-        const pos = interaction.crosshairPos
-        const price = interaction.crosshairPrice
-        const activePaneId = interaction.activePaneId
-        if (pos && price !== null) {
-          return { y: pos.y, price, activePaneId }
-        }
-        return null
-      },
-    }))
-    this.useDrawingPlugin(createTimeAxisRendererPlugin({
-      height: opt.bottomAxisHeight,
-      getCrosshair: () => {
-        const pos = interaction.crosshairPos
-        const idx = interaction.crosshairIndex
-        if (pos && idx !== null) {
-          return { x: pos.x, index: idx }
-        }
-        return null
-      },
-    }))
+    )
+    this.useDrawingPlugin(
+      createYAxisRendererPlugin({
+        axisWidth,
+        yPaddingPx: opt.yPaddingPx,
+        getCrosshair: () => {
+          const pos = interaction.crosshairPos
+          const price = interaction.crosshairPrice
+          const activePaneId = interaction.activePaneId
+          if (pos && price !== null) {
+            return { y: pos.y, price, activePaneId }
+          }
+          return null
+        },
+      }),
+    )
+    this.useDrawingPlugin(
+      createCrosshairRendererPlugin({
+        getCrosshairState: () => ({
+          pos: interaction.crosshairPos,
+          activePaneId: interaction.activePaneId,
+          isDragging: interaction.isDraggingState(),
+          price: interaction.crosshairPrice,
+        }),
+      }),
+    )
+    this.useDrawingPlugin(
+      createLeftYAxisRendererPlugin({
+        axisWidth: opt.leftAxisWidth,
+        yPaddingPx: opt.yPaddingPx,
+        getCrosshair: () => {
+          const pos = interaction.crosshairPos
+          const price = interaction.crosshairPrice
+          const activePaneId = interaction.activePaneId
+          if (pos && price !== null) {
+            return { y: pos.y, price, activePaneId }
+          }
+          return null
+        },
+      }),
+    )
+    this.useDrawingPlugin(
+      createTimeAxisRendererPlugin({
+        height: opt.bottomAxisHeight,
+        getCrosshair: () => {
+          const pos = interaction.crosshairPos
+          const idx = interaction.crosshairIndex
+          if (pos && idx !== null) {
+            return { x: pos.x, index: idx }
+          }
+          return null
+        },
+      }),
+    )
   }
 
   registerDrawingPlugins(): void {
@@ -162,7 +192,10 @@ export class ChartRenderer {
     this.useDrawingPlugin(createDrawingLabelOverlayPlugin({ store: this.drawingStore }))
   }
 
-  private useDrawingPlugin(plugin: RendererPlugin | RendererPluginWithHost, config?: Record<string, unknown>): void {
+  private useDrawingPlugin(
+    plugin: RendererPlugin | RendererPluginWithHost,
+    config?: Record<string, unknown>,
+  ): void {
     this.deps.getRendererPluginManager().register(plugin)
     if (config && plugin.setConfig) {
       plugin.setConfig(config)
@@ -214,7 +247,8 @@ export class ChartRenderer {
         const scrollContent = dom.scrollContent
         if (scrollContent) {
           const dataManager = this.deps.getDataManager()
-          const w = Math.max(dataManager.getContentWidth(), dataManager.getLeftLoadBufferWidth()) + 'px'
+          const w =
+            Math.max(dataManager.getContentWidth(), dataManager.getLeftLoadBufferWidth()) + 'px'
           if (scrollContent.style.width !== w) scrollContent.style.width = w
         }
         this.deps.getViewportManager().applyPendingScrollLeft(c)
@@ -228,7 +262,8 @@ export class ChartRenderer {
     const frame = this.prepareFrameData(level)
     if (!frame) {
       const dataManager = this.deps.getDataManager()
-      if (dataManager.getInternalData().length === 0 && dataManager.getTimeShareData().length === 0) this.clearAllCanvases()
+      if (dataManager.getInternalData().length === 0 && dataManager.getTimeShareData().length === 0)
+        this.clearAllCanvases()
       return
     }
 
@@ -241,25 +276,49 @@ export class ChartRenderer {
     if (mode.useIndicatorScheduler) {
       const indicatorManager = this.deps.getIndicatorManager()
       indicatorManager.indicatorSchedulerAccessor.setActiveMainIndicators(
-        [...indicatorManager.mainIndicatorsSignalPeek.entries()].map(([id, entry]) => ({ id, params: entry.params })),
+        [...indicatorManager.mainIndicatorsSignalPeek.entries()].map(([id, entry]) => ({
+          id,
+          params: entry.params,
+        })),
       )
     }
-    const mainIndicatorRange = useCachedFrame ? null : this.deps.getIndicatorManager().indicatorSchedulerAccessor.getMainIndicatorPriceRange()
+    const mainIndicatorRange = useCachedFrame
+      ? null
+      : this.deps.getIndicatorManager().indicatorSchedulerAccessor.getMainIndicatorPriceRange()
     const hasCrosshair = this.deps.getInteraction().getCrosshairIndex() !== null
 
     const { sharedXAxisLabels, sharedXAxisRanges } = this.renderPanes(
-      vp, range, kLinePositions, kLineCenters, kBarRects, kWidthPx,
-      mainIndicatorRange, hasCrosshair, useCachedFrame, level,
+      vp,
+      range,
+      kLinePositions,
+      kLineCenters,
+      kBarRects,
+      kWidthPx,
+      mainIndicatorRange,
+      hasCrosshair,
+      useCachedFrame,
+      level,
     )
 
     this.overlayHadCrosshair = hasCrosshair
-    this.renderXAxis(vp, range, kLinePositions, kLineCenters, kBarRects, kWidthPx, sharedXAxisLabels, sharedXAxisRanges)
+    this.renderXAxis(
+      vp,
+      range,
+      kLinePositions,
+      kLineCenters,
+      kBarRects,
+      kWidthPx,
+      sharedXAxisLabels,
+      sharedXAxisRanges,
+    )
   }
 
   private prepareFrameData(level: UpdateLevel): FrameContext | null {
     const useCachedFrame = level === UpdateLevel.Overlay && this.cachedDrawFrame !== null
 
-    const vp = useCachedFrame ? this.cachedDrawFrame!.viewport : this.deps.getViewportManager().computeViewport()
+    const vp = useCachedFrame
+      ? this.cachedDrawFrame!.viewport
+      : this.deps.getViewportManager().computeViewport()
     if (!vp) return null
 
     const internalData = this.deps.getDataManager().getRenderData() as KLineData[]
@@ -269,26 +328,27 @@ export class ChartRenderer {
     const rawRange = useCachedFrame
       ? this.cachedDrawFrame!.range
       : (() => {
-        const { start, end } = getVisibleRange(
-          vp.scrollLeft,
-          vp.plotWidth,
-          opt.kWidth,
-          opt.kGap,
-          internalData.length,
-          vp.dpr,
-        )
-        return { start, end }
-      })()
+          const { start, end } = getVisibleRange(
+            vp.scrollLeft,
+            vp.plotWidth,
+            opt.kWidth,
+            opt.kGap,
+            internalData.length,
+            vp.dpr,
+          )
+          return { start, end }
+        })()
     const range = { start: Math.max(0, rawRange.start), end: rawRange.end }
 
     const dataManager = this.deps.getDataManager()
     const mode = this.deps.getActiveMode()
-    if (!useCachedFrame && (
-      range.start !== dataManager.lastVisibleRange.start
-      || range.end !== dataManager.lastVisibleRange.end
-      || rawRange.start !== dataManager.lastRawVisibleRange.start
-      || rawRange.end !== dataManager.lastRawVisibleRange.end
-    )) {
+    if (
+      !useCachedFrame &&
+      (range.start !== dataManager.lastVisibleRange.start ||
+        range.end !== dataManager.lastVisibleRange.end ||
+        rawRange.start !== dataManager.lastRawVisibleRange.start ||
+        rawRange.end !== dataManager.lastRawVisibleRange.end)
+    ) {
       if (mode.useIndicatorScheduler) {
         this.deps.getIndicatorManager().indicatorSchedulerAccessor.updateVisibleRange(range)
       }
@@ -337,7 +397,7 @@ export class ChartRenderer {
             kLineCenters[i] = Math.round((i + 0.5) * step * dpr) / dpr
             kLinePositions[i] = Math.round(i * step * dpr) / dpr
           }
-          kWidthPx = Math.round(totalWidth * dpr / count)
+          kWidthPx = Math.round((totalWidth * dpr) / count)
 
           const logicalBarWidth = Math.max(1, step * 0.6)
           const barWidthPx = Math.round(logicalBarWidth * dpr)
@@ -366,7 +426,13 @@ export class ChartRenderer {
     }
 
     return {
-      vp, range, kLinePositions, kLineCenters, kBarRects, kWidthPx, useCachedFrame,
+      vp,
+      range,
+      kLinePositions,
+      kLineCenters,
+      kBarRects,
+      kWidthPx,
+      useCachedFrame,
       data: internalData,
       mainIndicatorRange: null,
       hasCrosshair: false,
@@ -375,7 +441,12 @@ export class ChartRenderer {
     }
   }
 
-  private clearAxisCtx(ctx: CanvasRenderingContext2D, dpr: number, width: number, height: number): void {
+  private clearAxisCtx(
+    ctx: CanvasRenderingContext2D,
+    dpr: number,
+    width: number,
+    height: number,
+  ): void {
     ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, width, height + 2 / dpr)
@@ -434,8 +505,10 @@ export class ChartRenderer {
       const { candleSurface, lineSurface } = renderer.getWebGL()
 
       if (!useCachedFrame) {
-        const indicatorRange = pane.role === 'price' && mode.useIndicatorScheduler ? mainIndicatorRange : null
-        const comparisonRange = pane.id === 'main' ? dataManager.getComparisonEquivalentPriceRange(range) : null
+        const indicatorRange =
+          pane.role === 'price' && mode.useIndicatorScheduler ? mainIndicatorRange : null
+        const comparisonRange =
+          pane.id === 'main' ? dataManager.getComparisonEquivalentPriceRange(range) : null
         const mergedRange = this.mergeNumericRanges(indicatorRange, comparisonRange)
         mode.updatePaneRange(pane as any, range, dataManager, mergedRange)
         if (pane.id === 'main' && this.settings.disableMainPaneVerticalScroll) {
@@ -444,7 +517,9 @@ export class ChartRenderer {
       }
 
       const shouldUpdateMain = level === UpdateLevel.Main || level === UpdateLevel.All
-      const shouldUpdateOverlay = level === UpdateLevel.All || (level === UpdateLevel.Overlay && (hasCrosshair || this.overlayHadCrosshair))
+      const shouldUpdateOverlay =
+        level === UpdateLevel.All ||
+        (level === UpdateLevel.Overlay && (hasCrosshair || this.overlayHadCrosshair))
 
       if (shouldUpdateMain && mainCtx) {
         mainCtx.setTransform(1, 0, 0, 1, 0, 0)

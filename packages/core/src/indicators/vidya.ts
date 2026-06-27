@@ -18,63 +18,64 @@ import { KLineChartError } from '../errors'
  */
 
 export interface VidyaOptions {
-    period: number
-    /** Window for the CMO numerator/denominator. Default 9. */
-    cmoPeriod?: number
+  period: number
+  /** Window for the CMO numerator/denominator. Default 9. */
+  cmoPeriod?: number
 }
 
 export function computeVIDYA(prices: ReadonlyArray<number>, opts: VidyaOptions): Float64Array {
-    const { period } = opts
-    const cmoPeriod = opts.cmoPeriod ?? 9
-    if (period < 2 || !Number.isFinite(period)) throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeVIDYA: period must be >= 2')
-    if (cmoPeriod < 1 || !Number.isFinite(cmoPeriod)) {
-        throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeVIDYA: cmoPeriod must be >= 1')
+  const { period } = opts
+  const cmoPeriod = opts.cmoPeriod ?? 9
+  if (period < 2 || !Number.isFinite(period))
+    throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeVIDYA: period must be >= 2')
+  if (cmoPeriod < 1 || !Number.isFinite(cmoPeriod)) {
+    throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeVIDYA: cmoPeriod must be >= 1')
+  }
+
+  const n = prices.length
+  const out = new Float64Array(n)
+  const baseAlpha = 2 / (period + 1)
+
+  // Rolling sums of gain / loss across the cmoPeriod window of diffs.
+  let gainSum = 0
+  let lossSum = 0
+  let prev = Number.NaN
+
+  for (let i = 0; i < n; i++) {
+    if (i === 0) {
+      out[i] = Number.NaN
+      continue
+    }
+    const cur = prices[i] as number
+    const previous = prices[i - 1] as number
+    const diff = cur - previous
+    const gain = diff > 0 ? diff : 0
+    const loss = diff < 0 ? -diff : 0
+    gainSum += gain
+    lossSum += loss
+
+    // Drop the diff that just slid out of the window.
+    if (i > cmoPeriod) {
+      const drop = (prices[i - cmoPeriod] as number) - (prices[i - cmoPeriod - 1] as number)
+      if (drop > 0) gainSum -= drop
+      else if (drop < 0) lossSum += drop // (-drop is the abs)
     }
 
-    const n = prices.length
-    const out = new Float64Array(n)
-    const baseAlpha = 2 / (period + 1)
-
-    // Rolling sums of gain / loss across the cmoPeriod window of diffs.
-    let gainSum = 0
-    let lossSum = 0
-    let prev = Number.NaN
-
-    for (let i = 0; i < n; i++) {
-        if (i === 0) {
-            out[i] = Number.NaN
-            continue
-        }
-        const cur = prices[i] as number
-        const previous = prices[i - 1] as number
-        const diff = cur - previous
-        const gain = diff > 0 ? diff : 0
-        const loss = diff < 0 ? -diff : 0
-        gainSum += gain
-        lossSum += loss
-
-        // Drop the diff that just slid out of the window.
-        if (i > cmoPeriod) {
-            const drop = (prices[i - cmoPeriod] as number) - (prices[i - cmoPeriod - 1] as number)
-            if (drop > 0) gainSum -= drop
-            else if (drop < 0) lossSum += drop // (-drop is the abs)
-        }
-
-        if (i < cmoPeriod) {
-            out[i] = Number.NaN
-            continue
-        }
-
-        const denom = gainSum + lossSum
-        const cmoAbs = denom === 0 ? 0 : Math.abs((gainSum - lossSum) / denom)
-        const alpha = baseAlpha * cmoAbs
-
-        if (Number.isNaN(prev)) {
-            prev = cur
-        } else {
-            prev = alpha * cur + (1 - alpha) * prev
-        }
-        out[i] = prev
+    if (i < cmoPeriod) {
+      out[i] = Number.NaN
+      continue
     }
-    return out
+
+    const denom = gainSum + lossSum
+    const cmoAbs = denom === 0 ? 0 : Math.abs((gainSum - lossSum) / denom)
+    const alpha = baseAlpha * cmoAbs
+
+    if (Number.isNaN(prev)) {
+      prev = cur
+    } else {
+      prev = alpha * cur + (1 - alpha) * prev
+    }
+    out[i] = prev
+  }
+  return out
 }

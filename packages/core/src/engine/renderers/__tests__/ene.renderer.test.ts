@@ -77,7 +77,7 @@ function createMockPluginHost(state?: ENERenderState): PluginHost {
 
 function createMockRenderContext(
   ctx: CanvasRenderingContext2D,
-  overrides: Partial<RenderContext> = {}
+  overrides: Partial<RenderContext> = {},
 ): RenderContext {
   const mockPane = {
     yAxis: {
@@ -115,9 +115,7 @@ function createTestENERenderState(overrides: Partial<ENERenderState> = {}): ENER
   return {
     timestamp: Date.now(),
     series: Array.from({ length: 100 }, (_, i) =>
-      i < 9
-        ? undefined
-        : { upper: 111 + i * 0.1, middle: 100 + i * 0.1, lower: 89 + i * 0.1 }
+      i < 9 ? undefined : { upper: 111 + i * 0.1, middle: 100 + i * 0.1, lower: 89 + i * 0.1 },
     ),
     params: {
       period: 10,
@@ -255,7 +253,7 @@ describe('ENE renderer draw', () => {
   it('should skip undefined values at start of series', () => {
     const state = createTestENERenderState({
       series: Array.from({ length: 15 }, (_, i) =>
-        i < 9 ? undefined : { upper: 111, middle: 100, lower: 89 }
+        i < 9 ? undefined : { upper: 111, middle: 100, lower: 89 },
       ),
     })
     const mockHost = createMockPluginHost(state)

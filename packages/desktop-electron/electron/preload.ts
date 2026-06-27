@@ -10,13 +10,19 @@ const api = {
     },
   },
   file: {
-    saveDialog(options: { defaultName?: string; filters?: Array<{ name: string; extensions: string[] }> }): Promise<string | null> {
+    saveDialog(options: {
+      defaultName?: string
+      filters?: Array<{ name: string; extensions: string[] }>
+    }): Promise<string | null> {
       return ipcRenderer.invoke('file:save-dialog', options)
     },
     saveFile(filePath: string, content: string): Promise<boolean> {
       return ipcRenderer.invoke('file:save', filePath, content)
     },
-    openDialog(options: { filters?: Array<{ name: string; extensions: string[] }>; multiSelections?: boolean }): Promise<string[] | null> {
+    openDialog(options: {
+      filters?: Array<{ name: string; extensions: string[] }>
+      multiSelections?: boolean
+    }): Promise<string[] | null> {
       return ipcRenderer.invoke('file:open-dialog', options)
     },
     readFile(filePath: string): Promise<string> {

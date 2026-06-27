@@ -109,8 +109,7 @@ export const INDICATOR_TOOLS: McpToolSchema[] = [
       properties: {
         instanceId: {
           type: 'string',
-          description:
-            'New instance id, or null if the indicator was already active.',
+          description: 'New instance id, or null if the indicator was already active.',
         },
       },
     },
@@ -161,13 +160,19 @@ export const DATA_TOOLS: McpToolSchema[] = [
       type: 'object',
       properties: {
         symbol: { type: 'string', description: 'Ticker symbol, e.g. AAPL, BTC/USDT, 600519.' },
-        exchange: { type: 'string', description: 'Optional exchange name, e.g. NASDAQ, SSE, SZSE, HKEX, BINANCE.' },
+        exchange: {
+          type: 'string',
+          description: 'Optional exchange name, e.g. NASDAQ, SSE, SZSE, HKEX, BINANCE.',
+        },
         period: {
           type: 'string',
           description:
             'Timeframe / bar period. Common values: daily, 1min, 5min, 15min, 30min, 60min, weekly, monthly, quarterly, yearly.',
         },
-        adjust: { type: 'string', description: 'Adjust type: qfq (forward), hfq (backward), none (raw).' },
+        adjust: {
+          type: 'string',
+          description: 'Adjust type: qfq (forward), hfq (backward), none (raw).',
+        },
         source: { type: 'string', description: 'Data source identifier.' },
         startDate: { type: 'string', description: 'Start date YYYY-MM-DD.' },
         endDate: { type: 'string', description: 'End date YYYY-MM-DD.' },
@@ -189,7 +194,11 @@ export const DATA_TOOLS: McpToolSchema[] = [
           items: {
             type: 'object',
             properties: {
-              timestamp: { type: 'number', description: 'Unix timestamp in milliseconds. Optional; omitted for intraday bars without a fixed close time.' },
+              timestamp: {
+                type: 'number',
+                description:
+                  'Unix timestamp in milliseconds. Optional; omitted for intraday bars without a fixed close time.',
+              },
               open: { type: 'number', description: 'Opening price of the bar.' },
               high: { type: 'number', description: 'Highest price during the bar period.' },
               low: { type: 'number', description: 'Lowest price during the bar period.' },
@@ -218,7 +227,11 @@ export const DATA_TOOLS: McpToolSchema[] = [
           items: {
             type: 'object',
             properties: {
-              timestamp: { type: 'number', description: 'Unix timestamp in milliseconds. Used to match existing bars — bars without timestamp update the last visible bar.' },
+              timestamp: {
+                type: 'number',
+                description:
+                  'Unix timestamp in milliseconds. Used to match existing bars — bars without timestamp update the last visible bar.',
+              },
               open: { type: 'number', description: 'Opening price of the bar.' },
               high: { type: 'number', description: 'Highest price during the bar period.' },
               low: { type: 'number', description: 'Lowest price during the bar period.' },
@@ -244,12 +257,19 @@ export const DATA_TOOLS: McpToolSchema[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        symbol: { type: 'string', description: 'Ticker symbol to compare, e.g. SPY, MSFT, 000001.' },
-        exchange: { type: 'string', description: 'Exchange name, e.g. NYSE, SSE, SZSE, HKEX, BINANCE. Matches the primary symbol\'s exchange if omitted.' },
+        symbol: {
+          type: 'string',
+          description: 'Ticker symbol to compare, e.g. SPY, MSFT, 000001.',
+        },
+        exchange: {
+          type: 'string',
+          description:
+            "Exchange name, e.g. NYSE, SSE, SZSE, HKEX, BINANCE. Matches the primary symbol's exchange if omitted.",
+        },
         source: {
           type: 'string',
           description:
-            'Data source identifier, e.g. gotdx, tradingview. Defaults to the primary symbol\'s source if omitted.',
+            "Data source identifier, e.g. gotdx, tradingview. Defaults to the primary symbol's source if omitted.",
         },
       },
       required: ['symbol'],
@@ -258,12 +278,14 @@ export const DATA_TOOLS: McpToolSchema[] = [
   },
   {
     name: 'data.removeComparisonSymbol',
-    description:
-      'Remove a previously added comparison/overlay symbol from the chart.',
+    description: 'Remove a previously added comparison/overlay symbol from the chart.',
     inputSchema: {
       type: 'object',
       properties: {
-        symbol: { type: 'string', description: 'Symbol to remove from comparisons, e.g. SPY, MSFT.' },
+        symbol: {
+          type: 'string',
+          description: 'Symbol to remove from comparisons, e.g. SPY, MSFT.',
+        },
       },
       required: ['symbol'],
     },
@@ -283,7 +305,11 @@ export const DRAWING_TOOLS: McpToolSchema[] = [
       properties: {
         tool: {
           oneOf: [
-            { type: 'string', enum: ['trendline', 'horizontal', 'fib', 'rectangle', 'arrow'], description: 'Drawing tool type.' },
+            {
+              type: 'string',
+              enum: ['trendline', 'horizontal', 'fib', 'rectangle', 'arrow'],
+              description: 'Drawing tool type.',
+            },
             { type: 'null', description: 'Deactivate drawing tool.' },
           ],
           description:
@@ -409,7 +435,10 @@ export const MARKER_TOOLS: McpToolSchema[] = [
             type: 'object',
             properties: {
               id: { type: 'string', description: 'Unique marker identifier.' },
-              date: { type: 'string', description: 'Date string: YYYY-MM-DD for daily, YYYY-MM-DD HH:mm for intraday.' },
+              date: {
+                type: 'string',
+                description: 'Date string: YYYY-MM-DD for daily, YYYY-MM-DD HH:mm for intraday.',
+              },
               shape: {
                 type: 'string',
                 enum: ['arrow_up', 'arrow_down', 'flag', 'circle', 'rectangle', 'diamond'],
@@ -426,7 +455,11 @@ export const MARKER_TOOLS: McpToolSchema[] = [
                 type: 'object',
                 properties: {
                   text: { type: 'string', description: 'Label text content.' },
-                  position: { type: 'string', enum: ['left', 'right', 'top', 'bottom', 'inside'], description: 'Label position relative to marker.' },
+                  position: {
+                    type: 'string',
+                    enum: ['left', 'right', 'top', 'bottom', 'inside'],
+                    description: 'Label position relative to marker.',
+                  },
                 },
                 required: ['text'],
                 description: 'Optional text label.',
@@ -516,14 +549,7 @@ export const ALERT_TOOLS: McpToolSchema[] = [
         direction: { type: 'string', enum: ['up', 'down', 'any'] },
         oneShot: { type: 'boolean' },
       },
-      required: [
-        'id',
-        'name',
-        'indicatorId',
-        'threshold',
-        'direction',
-        'oneShot',
-      ],
+      required: ['id', 'name', 'indicatorId', 'threshold', 'direction', 'oneShot'],
     },
     safety: 'mutates-state',
   },

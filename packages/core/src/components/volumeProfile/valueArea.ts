@@ -57,131 +57,131 @@ import type { ValueAreaResult } from './types'
  *   for stable user code. Closes API audit BLOCKER-002.
  */
 export function computeValueArea(
-    buckets: Float64Array,
-    pocIndex: number,
-    targetPercent: number,
+  buckets: Float64Array,
+  pocIndex: number,
+  targetPercent: number,
 ): ValueAreaResult {
-    const n = buckets.length
+  const n = buckets.length
 
-    // -------------------------------------------------------------------
-    // Empty histogram → degenerate result.
-    // -------------------------------------------------------------------
-    if (n === 0) {
-        return {
-            vahIndex: 0,
-            valIndex: 0,
-            pocIndex: 0,
-            totalVolume: 0,
-            vaVolume: 0,
-            vaPercent: 0,
-        }
-    }
-
-    // Clamp pocIndex defensively. The controller always passes a valid
-    // value, but valueArea.ts is also exported for direct use.
-    const poc = pocIndex < 0 ? 0 : pocIndex >= n ? n - 1 : pocIndex
-
-    // -------------------------------------------------------------------
-    // Total volume — single pass.
-    // -------------------------------------------------------------------
-    let totalVolume = 0
-    for (let i = 0; i < n; i++) {
-        totalVolume += buckets[i] ?? 0
-    }
-
-    // Zero-volume case → degenerate result, VA collapses to POC.
-    if (totalVolume === 0) {
-        return {
-            vahIndex: poc,
-            valIndex: poc,
-            pocIndex: poc,
-            totalVolume: 0,
-            vaVolume: 0,
-            vaPercent: 0,
-        }
-    }
-
-    // -------------------------------------------------------------------
-    // Seed the Value Area with the POC bucket.
-    // -------------------------------------------------------------------
-    let valIdx = poc
-    let vahIdx = poc
-    let vaVolume = buckets[poc] ?? 0
-
-    const pct = targetPercent < 0 ? 0 : targetPercent > 1 ? 1 : targetPercent
-    const target = totalVolume * pct
-
-    // Already covered (rare — happens when POC bucket alone is > target%).
-    // Still proceeds via the loop guard.
-
-    // -------------------------------------------------------------------
-    // Greedy expansion.
-    // -------------------------------------------------------------------
-    while (vaVolume < target) {
-        const canUp = vahIdx < n - 1
-        const canDown = valIdx > 0
-
-        if (!canUp && !canDown) break // exhausted entire histogram
-
-        // Single-side: only one direction has a neighbour.
-        if (canUp && !canDown) {
-            vahIdx += 1
-            vaVolume += buckets[vahIdx] ?? 0
-            continue
-        }
-        if (!canUp && canDown) {
-            valIdx -= 1
-            vaVolume += buckets[valIdx] ?? 0
-            continue
-        }
-
-        const upVol = buckets[vahIdx + 1] ?? 0
-        const downVol = buckets[valIdx - 1] ?? 0
-
-        let goUp: boolean
-
-        if (upVol > downVol) {
-            goUp = true
-        } else if (downVol > upVol) {
-            goUp = false
-        } else {
-            // ----- Tie: expand toward POC (see (A)/(B) in header). -----
-            // Distance from each *current* boundary to the POC. The
-            // boundary that's farther from POC is on the "long" side; we
-            // pull the VA back toward POC by extending the *closer*
-            // boundary (i.e. the side that has further to travel before
-            // it leaves POC's neighbourhood).
-            //
-            // Equivalently: pick the boundary whose distance to POC is
-            // smaller — that side still has room to grow "around" POC,
-            // the other side has already drifted.
-            const distUp = vahIdx - poc // >= 0
-            const distDown = poc - valIdx // >= 0
-            if (distUp < distDown) {
-                goUp = true
-            } else if (distDown < distUp) {
-                goUp = false
-            } else {
-                // Equidistant — documented upper-side preference (B).
-                goUp = true
-            }
-        }
-
-        if (goUp) {
-            vahIdx += 1
-            vaVolume += buckets[vahIdx] ?? 0
-        } else {
-            valIdx -= 1
-            vaVolume += buckets[valIdx] ?? 0
-        }
-    }
-
+  // -------------------------------------------------------------------
+  // Empty histogram → degenerate result.
+  // -------------------------------------------------------------------
+  if (n === 0) {
     return {
-        vahIndex: vahIdx,
-        valIndex: valIdx,
-        pocIndex: poc,
-        totalVolume,
-        vaVolume,
-        vaPercent: totalVolume === 0 ? 0 : vaVolume / totalVolume,
+      vahIndex: 0,
+      valIndex: 0,
+      pocIndex: 0,
+      totalVolume: 0,
+      vaVolume: 0,
+      vaPercent: 0,
     }
+  }
+
+  // Clamp pocIndex defensively. The controller always passes a valid
+  // value, but valueArea.ts is also exported for direct use.
+  const poc = pocIndex < 0 ? 0 : pocIndex >= n ? n - 1 : pocIndex
+
+  // -------------------------------------------------------------------
+  // Total volume — single pass.
+  // -------------------------------------------------------------------
+  let totalVolume = 0
+  for (let i = 0; i < n; i++) {
+    totalVolume += buckets[i] ?? 0
+  }
+
+  // Zero-volume case → degenerate result, VA collapses to POC.
+  if (totalVolume === 0) {
+    return {
+      vahIndex: poc,
+      valIndex: poc,
+      pocIndex: poc,
+      totalVolume: 0,
+      vaVolume: 0,
+      vaPercent: 0,
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Seed the Value Area with the POC bucket.
+  // -------------------------------------------------------------------
+  let valIdx = poc
+  let vahIdx = poc
+  let vaVolume = buckets[poc] ?? 0
+
+  const pct = targetPercent < 0 ? 0 : targetPercent > 1 ? 1 : targetPercent
+  const target = totalVolume * pct
+
+  // Already covered (rare — happens when POC bucket alone is > target%).
+  // Still proceeds via the loop guard.
+
+  // -------------------------------------------------------------------
+  // Greedy expansion.
+  // -------------------------------------------------------------------
+  while (vaVolume < target) {
+    const canUp = vahIdx < n - 1
+    const canDown = valIdx > 0
+
+    if (!canUp && !canDown) break // exhausted entire histogram
+
+    // Single-side: only one direction has a neighbour.
+    if (canUp && !canDown) {
+      vahIdx += 1
+      vaVolume += buckets[vahIdx] ?? 0
+      continue
+    }
+    if (!canUp && canDown) {
+      valIdx -= 1
+      vaVolume += buckets[valIdx] ?? 0
+      continue
+    }
+
+    const upVol = buckets[vahIdx + 1] ?? 0
+    const downVol = buckets[valIdx - 1] ?? 0
+
+    let goUp: boolean
+
+    if (upVol > downVol) {
+      goUp = true
+    } else if (downVol > upVol) {
+      goUp = false
+    } else {
+      // ----- Tie: expand toward POC (see (A)/(B) in header). -----
+      // Distance from each *current* boundary to the POC. The
+      // boundary that's farther from POC is on the "long" side; we
+      // pull the VA back toward POC by extending the *closer*
+      // boundary (i.e. the side that has further to travel before
+      // it leaves POC's neighbourhood).
+      //
+      // Equivalently: pick the boundary whose distance to POC is
+      // smaller — that side still has room to grow "around" POC,
+      // the other side has already drifted.
+      const distUp = vahIdx - poc // >= 0
+      const distDown = poc - valIdx // >= 0
+      if (distUp < distDown) {
+        goUp = true
+      } else if (distDown < distUp) {
+        goUp = false
+      } else {
+        // Equidistant — documented upper-side preference (B).
+        goUp = true
+      }
+    }
+
+    if (goUp) {
+      vahIdx += 1
+      vaVolume += buckets[vahIdx] ?? 0
+    } else {
+      valIdx -= 1
+      vaVolume += buckets[valIdx] ?? 0
+    }
+  }
+
+  return {
+    vahIndex: vahIdx,
+    valIndex: valIdx,
+    pocIndex: poc,
+    totalVolume,
+    vaVolume,
+    vaPercent: totalVolume === 0 ? 0 : vaVolume / totalVolume,
+  }
 }

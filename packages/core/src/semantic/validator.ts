@@ -3,7 +3,13 @@
  * 包含 JSON Schema 校验、安全校验、业务逻辑校验
  */
 
-import type { SemanticChartConfig, DataConfig, ValidationResult, SecurityResult, MarkerStyle } from './types'
+import type {
+  SemanticChartConfig,
+  DataConfig,
+  ValidationResult,
+  SecurityResult,
+  MarkerStyle,
+} from './types'
 
 // ============ 常量定义 ============
 
@@ -87,9 +93,7 @@ export class SemanticConfigValidator {
    */
   validateRawInput(raw: string): ValidationResult {
     const byteLength =
-      typeof TextEncoder !== 'undefined'
-        ? new TextEncoder().encode(raw).byteLength
-        : raw.length * 3 // SSR 降级：保守估计
+      typeof TextEncoder !== 'undefined' ? new TextEncoder().encode(raw).byteLength : raw.length * 3 // SSR 降级：保守估计
 
     if (byteLength > this.limits.maxJsonSize) {
       return { valid: false, errors: ['JSON payload too large (max 64KB)'] }
@@ -117,7 +121,9 @@ export class SemanticConfigValidator {
       const ajv = await this.getAjv()
       const valid = ajv.validate('https://kmap.dev/schemas/semantic-chart-config/1.0.0', config)
       if (!valid) {
-        const errors = ajv.errors?.map((e: { instancePath: string; message?: string }) => `${e.instancePath} ${e.message}`) || ['Schema validation failed']
+        const errors = ajv.errors?.map(
+          (e: { instancePath: string; message?: string }) => `${e.instancePath} ${e.message}`,
+        ) || ['Schema validation failed']
         return { valid: false, errors }
       }
     } catch {
@@ -217,7 +223,9 @@ export class SemanticConfigValidator {
     const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
 
     if (diffDays > maxDays) {
-      errors.push(`Date range exceeds maximum for period "${data.period}" (max ${maxDays} days, got ${diffDays})`)
+      errors.push(
+        `Date range exceeds maximum for period "${data.period}" (max ${maxDays} days, got ${diffDays})`,
+      )
     }
 
     if (diffDays < 0) {
@@ -265,7 +273,11 @@ export class SemanticConfigValidator {
           _colorCtx.fillStyle = '#000000'
           _colorCtx.fillStyle = value
           // 浏览器会过滤非法值，如果返回的不是合法颜色说明有问题
-          if (_colorCtx.fillStyle === '#000000' && value !== '#000000' && !value.startsWith('#000')) {
+          if (
+            _colorCtx.fillStyle === '#000000' &&
+            value !== '#000000' &&
+            !value.startsWith('#000')
+          ) {
             errors.push(`Potentially unsafe ${field} in marker "${markerId}": ${value}`)
           }
         }
@@ -282,7 +294,9 @@ export class SemanticConfigValidator {
     const errors: string[] = []
 
     if (!SemanticConfigValidator.DATE_PATTERN.test(date)) {
-      errors.push(`Invalid date format in marker "${markerId}": ${date} (expected YYYY-MM-DD or YYYY-MM-DD HH:mm)`)
+      errors.push(
+        `Invalid date format in marker "${markerId}": ${date} (expected YYYY-MM-DD or YYYY-MM-DD HH:mm)`,
+      )
       return errors
     }
 

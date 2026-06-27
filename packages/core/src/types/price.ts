@@ -37,7 +37,6 @@ export interface KLineDailyDongCaiResponse extends KLineData {
   turnoverRate: number
 }
 
-
 export interface TimeShareData {
   timestamp: number
   price: number
@@ -48,7 +47,13 @@ export interface TimeShareData {
 
 export function isTimeShareData(data: unknown[]): data is TimeShareData[] {
   const first = data[0]
-  return data.length > 0 && first !== null && typeof first === 'object' && 'price' in (first as object) && 'average' in (first as object)
+  return (
+    data.length > 0 &&
+    first !== null &&
+    typeof first === 'object' &&
+    'price' in (first as object) &&
+    'average' in (first as object)
+  )
 }
 
 export function toKLineData(arr: KLineDailyDongCaiResponse[]): KLineData[] {

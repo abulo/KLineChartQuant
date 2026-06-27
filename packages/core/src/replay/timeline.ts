@@ -25,16 +25,13 @@ export type BarCalendar = ReadonlyArray<number>
  *
  * Returns `null` if the calendar is empty or the index is out of range.
  */
-export function barIndexToTimestamp(
-    calendar: BarCalendar,
-    barIndex: number,
-): number | null {
-    if (calendar.length === 0) return null
-    if (!Number.isFinite(barIndex)) return null
-    const idx = Math.floor(barIndex)
-    if (idx < 0 || idx >= calendar.length) return null
-    // We've bounds-checked the index, so this access is safe.
-    return calendar[idx] as number
+export function barIndexToTimestamp(calendar: BarCalendar, barIndex: number): number | null {
+  if (calendar.length === 0) return null
+  if (!Number.isFinite(barIndex)) return null
+  const idx = Math.floor(barIndex)
+  if (idx < 0 || idx >= calendar.length) return null
+  // We've bounds-checked the index, so this access is safe.
+  return calendar[idx] as number
 }
 
 /**
@@ -48,31 +45,28 @@ export function barIndexToTimestamp(
  *
  * Returns `null` if the calendar is empty or `ts` precedes the first bar.
  */
-export function timestampToBarIndex(
-    calendar: BarCalendar,
-    ts: number,
-): number | null {
-    if (calendar.length === 0) return null
-    if (!Number.isFinite(ts)) return null
-    const first = calendar[0] as number
-    if (ts < first) return null
-    const last = calendar[calendar.length - 1] as number
-    if (ts >= last) return calendar.length - 1
+export function timestampToBarIndex(calendar: BarCalendar, ts: number): number | null {
+  if (calendar.length === 0) return null
+  if (!Number.isFinite(ts)) return null
+  const first = calendar[0] as number
+  if (ts < first) return null
+  const last = calendar[calendar.length - 1] as number
+  if (ts >= last) return calendar.length - 1
 
-    // Binary search for the largest index `i` such that calendar[i] <= ts.
-    let lo = 0
-    let hi = calendar.length - 1
-    while (lo < hi) {
-        // Bias the midpoint up so `lo` converges to the upper bound.
-        const mid = (lo + hi + 1) >>> 1
-        const v = calendar[mid] as number
-        if (v <= ts) {
-            lo = mid
-        } else {
-            hi = mid - 1
-        }
+  // Binary search for the largest index `i` such that calendar[i] <= ts.
+  let lo = 0
+  let hi = calendar.length - 1
+  while (lo < hi) {
+    // Bias the midpoint up so `lo` converges to the upper bound.
+    const mid = (lo + hi + 1) >>> 1
+    const v = calendar[mid] as number
+    if (v <= ts) {
+      lo = mid
+    } else {
+      hi = mid - 1
     }
-    return lo
+  }
+  return lo
 }
 
 /**
@@ -86,21 +80,21 @@ export function timestampToBarIndex(
  * but a calendar is available, so wall-clock pacing self-calibrates.
  */
 export function inferBarIntervalMs(calendar: BarCalendar): number | null {
-    if (calendar.length < 2) return null
-    const deltas: number[] = []
-    for (let i = 1; i < calendar.length; i++) {
-        const a = calendar[i - 1] as number
-        const b = calendar[i] as number
-        const d = b - a
-        if (d > 0) deltas.push(d)
-    }
-    if (deltas.length === 0) return null
-    deltas.sort((a, b) => a - b)
-    const mid = deltas.length >>> 1
-    if (deltas.length % 2 === 1) {
-        return deltas[mid] as number
-    }
-    const lo = deltas[mid - 1] as number
-    const hi = deltas[mid] as number
-    return (lo + hi) / 2
+  if (calendar.length < 2) return null
+  const deltas: number[] = []
+  for (let i = 1; i < calendar.length; i++) {
+    const a = calendar[i - 1] as number
+    const b = calendar[i] as number
+    const d = b - a
+    if (d > 0) deltas.push(d)
+  }
+  if (deltas.length === 0) return null
+  deltas.sort((a, b) => a - b)
+  const mid = deltas.length >>> 1
+  if (deltas.length % 2 === 1) {
+    return deltas[mid] as number
+  }
+  const lo = deltas[mid - 1] as number
+  const hi = deltas[mid] as number
+  return (lo + hi) / 2
 }

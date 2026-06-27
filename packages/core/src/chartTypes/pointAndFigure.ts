@@ -77,31 +77,31 @@ import { KLineChartError } from '../errors'
 import type { ChartTypeTransform, OHLCV, TransformedBar } from './types'
 
 export interface PointAndFigureConfig {
-    /** Box height in price units. Must be > 0. */
-    boxSize: number
-    /** Reversal in number of boxes. Classic value is 3. Must be >= 1. */
-    reversal: number
+  /** Box height in price units. Must be > 0. */
+  boxSize: number
+  /** Reversal in number of boxes. Classic value is 3. Must be >= 1. */
+  reversal: number
 }
 
 interface PFColumn {
-    direction: 'up' | 'down'
-    /** Price of the column's first box (entry). */
-    startPrice: number
-    /** Price of the column's current frontier box. */
-    endPrice: number
-    /** Source index range this column has aggregated. */
-    sourceStart: number
-    sourceEnd: number
-    /** Sum of input bar volumes accumulated into this column. */
-    volume: number
-    /** Timestamp of the last bar that touched this column. */
-    timestamp: number
+  direction: 'up' | 'down'
+  /** Price of the column's first box (entry). */
+  startPrice: number
+  /** Price of the column's current frontier box. */
+  endPrice: number
+  /** Source index range this column has aggregated. */
+  sourceStart: number
+  sourceEnd: number
+  /** Sum of input bar volumes accumulated into this column. */
+  volume: number
+  /** Timestamp of the last bar that touched this column. */
+  timestamp: number
 }
 
 interface PFState {
-    column: PFColumn | null
-    nextIndex: number
-    closedColumns: TransformedBar[]
+  column: PFColumn | null
+  nextIndex: number
+  closedColumns: TransformedBar[]
 }
 
 /**
@@ -110,169 +110,175 @@ interface PFState {
  * one direction so the two endpoints are the extremes).
  */
 const columnToBar = (col: PFColumn): TransformedBar => {
-    const open = col.startPrice
-    const close = col.endPrice
-    const high = Math.max(open, close)
-    const low = Math.min(open, close)
-    return {
-        timestamp: col.timestamp,
-        open,
-        high,
-        low,
-        close,
-        volume: col.volume,
-        sourceBarIndexStart: col.sourceStart,
-        sourceBarIndexEnd: col.sourceEnd,
-        meta: { direction: col.direction },
-    }
+  const open = col.startPrice
+  const close = col.endPrice
+  const high = Math.max(open, close)
+  const low = Math.min(open, close)
+  return {
+    timestamp: col.timestamp,
+    open,
+    high,
+    low,
+    close,
+    volume: col.volume,
+    sourceBarIndexStart: col.sourceStart,
+    sourceBarIndexEnd: col.sourceEnd,
+    meta: { direction: col.direction },
+  }
 }
 
 export function createPointAndFigure(): ChartTypeTransform<PointAndFigureConfig> {
-    let state: PFState = { column: null, nextIndex: 0, closedColumns: [] }
-    let activeConfig: PointAndFigureConfig = { boxSize: 1, reversal: 3 }
+  let state: PFState = { column: null, nextIndex: 0, closedColumns: [] }
+  let activeConfig: PointAndFigureConfig = { boxSize: 1, reversal: 3 }
 
-    /** Snap `p` down to the nearest box boundary. */
-    const floorToBox = (p: number, box: number): number => Math.floor(p / box) * box
-    /** Snap `p` up to the nearest box boundary. */
-    const ceilToBox = (p: number, box: number): number => Math.ceil(p / box) * box
+  /** Snap `p` down to the nearest box boundary. */
+  const floorToBox = (p: number, box: number): number => Math.floor(p / box) * box
+  /** Snap `p` up to the nearest box boundary. */
+  const ceilToBox = (p: number, box: number): number => Math.ceil(p / box) * box
 
-    /**
-     * Process one input bar and return any column(s) that **closed** as a
-     * result. The in-progress column is held in `state.column` and is NOT
-     * returned until it closes (i.e. a reversal pushes it into closedColumns).
-     */
-    const consumeBar = (bar: OHLCV): TransformedBar[] => {
-        const sourceIndex = state.nextIndex
-        state.nextIndex = sourceIndex + 1
-        const { boxSize, reversal } = activeConfig
-        const closed: TransformedBar[] = []
+  /**
+   * Process one input bar and return any column(s) that **closed** as a
+   * result. The in-progress column is held in `state.column` and is NOT
+   * returned until it closes (i.e. a reversal pushes it into closedColumns).
+   */
+  const consumeBar = (bar: OHLCV): TransformedBar[] => {
+    const sourceIndex = state.nextIndex
+    state.nextIndex = sourceIndex + 1
+    const { boxSize, reversal } = activeConfig
+    const closed: TransformedBar[] = []
 
-        // Seed: no current column. Anchor an X column on the bar's low/high
-        // rounded to box boundaries. If high-low rounds to the same box (very
-        // narrow bar) we still create a degenerate column of height zero so
-        // the chart has a starting point — it will be extended by future bars.
-        if (state.column === null) {
-            const start = floorToBox(bar.low, boxSize)
-            const end = floorToBox(bar.high, boxSize)
-            state.column = {
-                direction: 'up',
-                startPrice: start,
-                endPrice: end,
-                sourceStart: sourceIndex,
-                sourceEnd: sourceIndex,
-                volume: bar.volume,
-                timestamp: bar.timestamp,
-            }
-            return closed
-        }
+    // Seed: no current column. Anchor an X column on the bar's low/high
+    // rounded to box boundaries. If high-low rounds to the same box (very
+    // narrow bar) we still create a degenerate column of height zero so
+    // the chart has a starting point — it will be extended by future bars.
+    if (state.column === null) {
+      const start = floorToBox(bar.low, boxSize)
+      const end = floorToBox(bar.high, boxSize)
+      state.column = {
+        direction: 'up',
+        startPrice: start,
+        endPrice: end,
+        sourceStart: sourceIndex,
+        sourceEnd: sourceIndex,
+        volume: bar.volume,
+        timestamp: bar.timestamp,
+      }
+      return closed
+    }
 
-        const col = state.column
+    const col = state.column
 
-        if (col.direction === 'up') {
-            // Try extension first (extension wins ties — see file header).
-            const newHigh = floorToBox(bar.high, boxSize)
-            if (newHigh >= col.endPrice + boxSize) {
-                col.endPrice = newHigh
-                col.sourceEnd = sourceIndex
-                col.volume += bar.volume
-                col.timestamp = bar.timestamp
-                return closed
-            }
-            // Then reversal.
-            if (bar.low <= col.endPrice - reversal * boxSize) {
-                // Close the X column.
-                closed.push(columnToBar(col))
-                state.closedColumns.push(closed[closed.length - 1] as TransformedBar)
-                // Start a new O column ONE box below the X column's high.
-                const newColumnStart = col.endPrice - boxSize
-                const newColumnEnd = ceilToBox(bar.low, boxSize)
-                state.column = {
-                    direction: 'down',
-                    startPrice: newColumnStart,
-                    endPrice: newColumnEnd <= newColumnStart ? newColumnEnd : newColumnStart,
-                    sourceStart: sourceIndex,
-                    sourceEnd: sourceIndex,
-                    volume: bar.volume,
-                    timestamp: bar.timestamp,
-                }
-                return closed
-            }
-            // Bar does nothing — still attribute volume + advance source range
-            // so the column's metadata reflects the bars that touched it.
-            col.sourceEnd = sourceIndex
-            col.volume += bar.volume
-            col.timestamp = bar.timestamp
-            return closed
-        }
-
-        // col.direction === 'down'
-        const newLow = ceilToBox(bar.low, boxSize)
-        if (newLow <= col.endPrice - boxSize) {
-            col.endPrice = newLow
-            col.sourceEnd = sourceIndex
-            col.volume += bar.volume
-            col.timestamp = bar.timestamp
-            return closed
-        }
-        if (bar.high >= col.endPrice + reversal * boxSize) {
-            closed.push(columnToBar(col))
-            state.closedColumns.push(closed[closed.length - 1] as TransformedBar)
-            const newColumnStart = col.endPrice + boxSize
-            const newColumnEnd = floorToBox(bar.high, boxSize)
-            state.column = {
-                direction: 'up',
-                startPrice: newColumnStart,
-                endPrice: newColumnEnd >= newColumnStart ? newColumnEnd : newColumnStart,
-                sourceStart: sourceIndex,
-                sourceEnd: sourceIndex,
-                volume: bar.volume,
-                timestamp: bar.timestamp,
-            }
-            return closed
-        }
+    if (col.direction === 'up') {
+      // Try extension first (extension wins ties — see file header).
+      const newHigh = floorToBox(bar.high, boxSize)
+      if (newHigh >= col.endPrice + boxSize) {
+        col.endPrice = newHigh
         col.sourceEnd = sourceIndex
         col.volume += bar.volume
         col.timestamp = bar.timestamp
         return closed
+      }
+      // Then reversal.
+      if (bar.low <= col.endPrice - reversal * boxSize) {
+        // Close the X column.
+        closed.push(columnToBar(col))
+        state.closedColumns.push(closed[closed.length - 1] as TransformedBar)
+        // Start a new O column ONE box below the X column's high.
+        const newColumnStart = col.endPrice - boxSize
+        const newColumnEnd = ceilToBox(bar.low, boxSize)
+        state.column = {
+          direction: 'down',
+          startPrice: newColumnStart,
+          endPrice: newColumnEnd <= newColumnStart ? newColumnEnd : newColumnStart,
+          sourceStart: sourceIndex,
+          sourceEnd: sourceIndex,
+          volume: bar.volume,
+          timestamp: bar.timestamp,
+        }
+        return closed
+      }
+      // Bar does nothing — still attribute volume + advance source range
+      // so the column's metadata reflects the bars that touched it.
+      col.sourceEnd = sourceIndex
+      col.volume += bar.volume
+      col.timestamp = bar.timestamp
+      return closed
     }
 
-    const resetState = (): void => {
-        state = { column: null, nextIndex: 0, closedColumns: [] }
+    // col.direction === 'down'
+    const newLow = ceilToBox(bar.low, boxSize)
+    if (newLow <= col.endPrice - boxSize) {
+      col.endPrice = newLow
+      col.sourceEnd = sourceIndex
+      col.volume += bar.volume
+      col.timestamp = bar.timestamp
+      return closed
     }
-
-    return {
-        typeId: 'point-and-figure',
-
-        transform(
-            input: ReadonlyArray<OHLCV>,
-            config: PointAndFigureConfig,
-        ): ReadonlyArray<TransformedBar> {
-            if (config.boxSize <= 0) {
-                throw new KLineChartError('CHART_TYPE_CONFIG_INVALID', 'createPointAndFigure: boxSize must be > 0')
-            }
-            if (config.reversal < 1 || !Number.isFinite(config.reversal)) {
-                throw new KLineChartError('CHART_TYPE_CONFIG_INVALID', 'createPointAndFigure: reversal must be >= 1')
-            }
-            activeConfig = config
-            resetState()
-            for (const bar of input) {
-                consumeBar(bar)
-            }
-            // Batch mode includes the currently-open column as the last entry —
-            // see file header. Incremental mode does not.
-            const out = state.closedColumns.slice()
-            if (state.column !== null) {
-                out.push(columnToBar(state.column))
-            }
-            return out
-        },
-
-        appendBar(bar: OHLCV): ReadonlyArray<TransformedBar> {
-            return consumeBar(bar)
-        },
-
-        reset(): void {
-            resetState()
-        },
+    if (bar.high >= col.endPrice + reversal * boxSize) {
+      closed.push(columnToBar(col))
+      state.closedColumns.push(closed[closed.length - 1] as TransformedBar)
+      const newColumnStart = col.endPrice + boxSize
+      const newColumnEnd = floorToBox(bar.high, boxSize)
+      state.column = {
+        direction: 'up',
+        startPrice: newColumnStart,
+        endPrice: newColumnEnd >= newColumnStart ? newColumnEnd : newColumnStart,
+        sourceStart: sourceIndex,
+        sourceEnd: sourceIndex,
+        volume: bar.volume,
+        timestamp: bar.timestamp,
+      }
+      return closed
     }
+    col.sourceEnd = sourceIndex
+    col.volume += bar.volume
+    col.timestamp = bar.timestamp
+    return closed
+  }
+
+  const resetState = (): void => {
+    state = { column: null, nextIndex: 0, closedColumns: [] }
+  }
+
+  return {
+    typeId: 'point-and-figure',
+
+    transform(
+      input: ReadonlyArray<OHLCV>,
+      config: PointAndFigureConfig,
+    ): ReadonlyArray<TransformedBar> {
+      if (config.boxSize <= 0) {
+        throw new KLineChartError(
+          'CHART_TYPE_CONFIG_INVALID',
+          'createPointAndFigure: boxSize must be > 0',
+        )
+      }
+      if (config.reversal < 1 || !Number.isFinite(config.reversal)) {
+        throw new KLineChartError(
+          'CHART_TYPE_CONFIG_INVALID',
+          'createPointAndFigure: reversal must be >= 1',
+        )
+      }
+      activeConfig = config
+      resetState()
+      for (const bar of input) {
+        consumeBar(bar)
+      }
+      // Batch mode includes the currently-open column as the last entry —
+      // see file header. Incremental mode does not.
+      const out = state.closedColumns.slice()
+      if (state.column !== null) {
+        out.push(columnToBar(state.column))
+      }
+      return out
+    },
+
+    appendBar(bar: OHLCV): ReadonlyArray<TransformedBar> {
+      return consumeBar(bar)
+    },
+
+    reset(): void {
+      resetState()
+    },
+  }
 }

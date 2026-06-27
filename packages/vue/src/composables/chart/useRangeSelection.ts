@@ -1,6 +1,10 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import { formatTimestamp } from '@363045841yyt/klinechart-core'
-import type { KLineData, ChartController, DataFetcher } from '@363045841yyt/klinechart-core/controllers'
+import type {
+  KLineData,
+  ChartController,
+  DataFetcher,
+} from '@363045841yyt/klinechart-core/controllers'
 import { calcRangeOverlayPixel } from '../../tools/calcRangeOverlayPixel'
 import type { Bounds } from '../../tools/calcRangeOverlayPixel'
 import {
@@ -59,7 +63,15 @@ export function useRangeSelection(options: {
   dataFetcher: Ref<DataFetcher | null>
   batchStockCodes: Ref<string[]>
 }) {
-  const { controller, activeToolId, containerRef, dataVersion, viewportVersion, dataFetcher, batchStockCodes } = options
+  const {
+    controller,
+    activeToolId,
+    containerRef,
+    dataVersion,
+    viewportVersion,
+    dataFetcher,
+    batchStockCodes,
+  } = options
 
   const customStartDate = ref('')
   const customEndDate = ref('')
@@ -76,8 +88,7 @@ export function useRangeSelection(options: {
 
   const rangeSelectionReady = computed(
     () =>
-      rangeSelection.value.startTimestamp !== null &&
-      rangeSelection.value.endTimestamp !== null,
+      rangeSelection.value.startTimestamp !== null && rangeSelection.value.endTimestamp !== null,
   )
 
   const rangeSelectionBounds: ComputedRef<Bounds | null> = computed(() => {
@@ -335,7 +346,8 @@ export function useRangeSelection(options: {
     const mainStockCode = controller.value?.symbols.peek()?.[0]?.symbol ?? 'unknown'
     const batchCodes = batchStockCodes.value.filter((c) => c !== mainStockCode)
     const total = 1 + batchCodes.length
-    const prefix = batchStockCodes.value.length > 0 ? `batch${batchStockCodes.value.length + 1}` : mainStockCode
+    const prefix =
+      batchStockCodes.value.length > 0 ? `batch${batchStockCodes.value.length + 1}` : mainStockCode
 
     const allItems: KLineData[] = []
 

@@ -32,8 +32,8 @@ import type { AggressorSide, Trade, TradeWithFlag } from './types'
  */
 export type { AggressorSide, Trade, TradeWithFlag }
 export interface AggressorResult {
-    side: AggressorSide | 'unknown'
-    inferred: boolean
+  side: AggressorSide | 'unknown'
+  inferred: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -50,14 +50,12 @@ export interface AggressorResult {
  * lets the controller fall back to the configured heuristic only when truly
  * needed.
  */
-export function classifyExplicit(
-    trade: TradeWithFlag,
-): AggressorResult | null {
-    if (trade.isBuyerMaker === undefined) return null
-    return {
-        side: trade.isBuyerMaker ? 'sell' : 'buy',
-        inferred: false,
-    }
+export function classifyExplicit(trade: TradeWithFlag): AggressorResult | null {
+  if (trade.isBuyerMaker === undefined) return null
+  return {
+    side: trade.isBuyerMaker ? 'sell' : 'buy',
+    inferred: false,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -70,8 +68,8 @@ export function classifyExplicit(
  * (per-symbol if multiplexing).
  */
 export interface TickRuleState {
-    prevPrice: number | null
-    prevSide: AggressorSide | null
+  prevPrice: number | null
+  prevSide: AggressorSide | null
 }
 
 /**
@@ -84,31 +82,28 @@ export interface TickRuleState {
  *
  * The state is MUTATED so subsequent calls inherit the running context.
  */
-export function classifyTickRule(
-    state: TickRuleState,
-    trade: Trade,
-): AggressorResult {
-    const prev = state.prevPrice
-    let side: AggressorSide | 'unknown'
+export function classifyTickRule(state: TickRuleState, trade: Trade): AggressorResult {
+  const prev = state.prevPrice
+  let side: AggressorSide | 'unknown'
 
-    if (prev === null) {
-        side = 'unknown'
-    } else if (trade.price > prev) {
-        side = 'buy'
-    } else if (trade.price < prev) {
-        side = 'sell'
-    } else {
-        // zero-tick: inherit previous decision; 'unknown' if no prior side.
-        side = state.prevSide ?? 'unknown'
-    }
+  if (prev === null) {
+    side = 'unknown'
+  } else if (trade.price > prev) {
+    side = 'buy'
+  } else if (trade.price < prev) {
+    side = 'sell'
+  } else {
+    // zero-tick: inherit previous decision; 'unknown' if no prior side.
+    side = state.prevSide ?? 'unknown'
+  }
 
-    // Update running state. We commit a known side; we deliberately do NOT
-    // overwrite `prevSide` with 'unknown', otherwise a single missing-price
-    // trade would poison the carry-over for the rest of the stream.
-    state.prevPrice = trade.price
-    if (side === 'buy' || side === 'sell') state.prevSide = side
+  // Update running state. We commit a known side; we deliberately do NOT
+  // overwrite `prevSide` with 'unknown', otherwise a single missing-price
+  // trade would poison the carry-over for the rest of the stream.
+  state.prevPrice = trade.price
+  if (side === 'buy' || side === 'sell') state.prevSide = side
 
-    return { side, inferred: true }
+  return { side, inferred: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -137,29 +132,29 @@ export interface LeeReadyState extends TickRuleState {}
  * tick-rule fallback has the latest context.
  */
 export function classifyLeeReady(
-    state: LeeReadyState,
-    trade: Trade,
-    bid: number,
-    ask: number,
+  state: LeeReadyState,
+  trade: Trade,
+  bid: number,
+  ask: number,
 ): AggressorResult {
-    const quotesUsable = Number.isFinite(bid) && Number.isFinite(ask)
+  const quotesUsable = Number.isFinite(bid) && Number.isFinite(ask)
 
-    if (!quotesUsable) {
-        return classifyTickRule(state, trade)
-    }
-
-    const mid = (bid + ask) / 2
-
-    if (trade.price > mid) {
-        state.prevPrice = trade.price
-        state.prevSide = 'buy'
-        return { side: 'buy', inferred: true }
-    }
-    if (trade.price < mid) {
-        state.prevPrice = trade.price
-        state.prevSide = 'sell'
-        return { side: 'sell', inferred: true }
-    }
-    // price == mid → fall back to tick rule (which updates state).
+  if (!quotesUsable) {
     return classifyTickRule(state, trade)
+  }
+
+  const mid = (bid + ask) / 2
+
+  if (trade.price > mid) {
+    state.prevPrice = trade.price
+    state.prevSide = 'buy'
+    return { side: 'buy', inferred: true }
+  }
+  if (trade.price < mid) {
+    state.prevPrice = trade.price
+    state.prevSide = 'sell'
+    return { side: 'sell', inferred: true }
+  }
+  // price == mid → fall back to tick rule (which updates state).
+  return classifyTickRule(state, trade)
 }

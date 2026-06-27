@@ -43,75 +43,75 @@
 </template>
 
 <script setup lang="ts">
-import CanvasToolbar from './common/CanvasToolbar.vue'
+  import CanvasToolbar from './common/CanvasToolbar.vue'
 
-defineProps<{
-  startDate: string
-  endDate: string
-  startLabel: string
-  endLabel: string
-  count: number
-}>()
+  defineProps<{
+    startDate: string
+    endDate: string
+    startLabel: string
+    endLabel: string
+    count: number
+  }>()
 
-defineEmits<{
-  'update:startDate': [value: string]
-  'update:endDate': [value: string]
-  export: []
-  clear: []
-  batchSetting: []
-}>()
+  defineEmits<{
+    'update:startDate': [value: string]
+    'update:endDate': [value: string]
+    export: []
+    clear: []
+    batchSetting: []
+  }>()
 </script>
 
 <style scoped>
-.range-input {
-  color: var(--klc-color-axis-text);
-  font-size: 12px;
-  white-space: nowrap;
-  border: none;
-  background: transparent;
-  outline: none;
-  padding: 0 8px;
-  width: auto;
-  field-sizing: content;
-  min-width: 60px;
-  height: 26px;
-  box-sizing: border-box;
-  font-family: inherit;
-  border-radius: 4px;
-  text-align: center;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
+  .range-input {
+    color: var(--klc-color-axis-text);
+    font-size: 12px;
+    white-space: nowrap;
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 0 8px;
+    width: auto;
+    field-sizing: content;
+    min-width: 60px;
+    height: 26px;
+    box-sizing: border-box;
+    font-family: inherit;
+    border-radius: 4px;
+    text-align: center;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
 
-.range-input::placeholder {
-  color: var(--klc-color-axis-text);
-  opacity: 0.6;
-}
+  .range-input::placeholder {
+    color: var(--klc-color-axis-text);
+    opacity: 0.6;
+  }
 
-.range-input:hover,
-.range-input:focus {
-  background: var(--klc-color-grid-minor);
-  color: var(--klc-color-foreground);
-}
+  .range-input:hover,
+  .range-input:focus {
+    background: var(--klc-color-grid-minor);
+    color: var(--klc-color-foreground);
+  }
 
-.range-sep {
-  color: var(--klc-color-axis-text);
-  font-size: 12px;
-  opacity: 0.6;
-  user-select: none;
-}
+  .range-sep {
+    color: var(--klc-color-axis-text);
+    font-size: 12px;
+    opacity: 0.6;
+    user-select: none;
+  }
 
-.range-count {
-  color: var(--klc-color-axis-text);
-  font-size: 12px;
-  white-space: nowrap;
-  user-select: none;
-  padding: 0 8px;
-  margin-right: 4px;
-  display: flex;
-  align-items: center;
-  height: 18px;
-  border-right: 1px solid var(--klc-color-border-button);
-}
+  .range-count {
+    color: var(--klc-color-axis-text);
+    font-size: 12px;
+    white-space: nowrap;
+    user-select: none;
+    padding: 0 8px;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+    height: 18px;
+    border-right: 1px solid var(--klc-color-border-button);
+  }
 </style>

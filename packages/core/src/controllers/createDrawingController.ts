@@ -18,79 +18,73 @@
  */
 
 import { createSignal, type Signal } from '../reactivity'
-import type {
-    DrawingController,
-    DrawingState,
-    DrawingToolType,
-} from './types'
+import type { DrawingController, DrawingState, DrawingToolType } from './types'
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
 export interface DrawingInit {
-    initialActiveTool?: DrawingToolType | null
-    initialDrawingCount?: number
+  initialActiveTool?: DrawingToolType | null
+  initialDrawingCount?: number
 }
 
-export function createDrawingController(
-    init?: DrawingInit,
-): DrawingController {
-    // -------------------------------------------------------------------
-    // Single signal that bundles both fields. This matches the interface
-    // contract (`state: Signal<DrawingState>`) and ensures both fields are
-    // updated atomically — subscribers receive one notification per change.
-    // -------------------------------------------------------------------
-    const initialCount = Math.max(0, init?.initialDrawingCount ?? 0)
-    const state: Signal<DrawingState> = createSignal<DrawingState>({
-        activeTool: init?.initialActiveTool ?? null,
-        drawingCount: initialCount,
-    })
+export function createDrawingController(init?: DrawingInit): DrawingController {
+  // -------------------------------------------------------------------
+  // Single signal that bundles both fields. This matches the interface
+  // contract (`state: Signal<DrawingState>`) and ensures both fields are
+  // updated atomically — subscribers receive one notification per change.
+  // -------------------------------------------------------------------
+  const initialCount = Math.max(0, init?.initialDrawingCount ?? 0)
+  const state: Signal<DrawingState> = createSignal<DrawingState>({
+    activeTool: init?.initialActiveTool ?? null,
+    drawingCount: initialCount,
+  })
 
-    // -------------------------------------------------------------------
-    // Mutations — every update goes through immutable spread.
-    // -------------------------------------------------------------------
-    function setActiveTool(tool: DrawingToolType | null): void {
-        const current = state.peek()
-        if (current.activeTool === tool) return // no change
-        state.set({ ...current, activeTool: tool })
-    }
+  // -------------------------------------------------------------------
+  // Mutations — every update goes through immutable spread.
+  // -------------------------------------------------------------------
+  function setActiveTool(tool: DrawingToolType | null): void {
+    const current = state.peek()
+    if (current.activeTool === tool) return // no change
+    state.set({ ...current, activeTool: tool })
+  }
 
-    function clearAll(): void {
-        const current = state.peek()
-        if (current.drawingCount === 0) return // no change
-        state.set({ ...current, drawingCount: 0 })
-    }
+  function clearAll(): void {
+    const current = state.peek()
+    if (current.drawingCount === 0) return // no change
+    state.set({ ...current, drawingCount: 0 })
+  }
 
-    function deleteLast(): void {
-        const current = state.peek()
-        if (current.drawingCount <= 0) return // floor at 0 — no-op
-        state.set({ ...current, drawingCount: current.drawingCount - 1 })
-    }
+  function deleteLast(): void {
+    const current = state.peek()
+    if (current.drawingCount <= 0) return // floor at 0 — no-op
+    state.set({ ...current, drawingCount: current.drawingCount - 1 })
+  }
 
-    // -------------------------------------------------------------------
-    // Disposal — idempotent. After dispose() all mutators silently no-op,
-    // matching the dispose semantics of createIndicatorSelectorController.
-    // -------------------------------------------------------------------
-    let disposed = false
+  // -------------------------------------------------------------------
+  // Disposal — idempotent. After dispose() all mutators silently no-op,
+  // matching the dispose semantics of createIndicatorSelectorController.
+  // -------------------------------------------------------------------
+  let disposed = false
 
-    function dispose(): void {
-        if (disposed) return
-        disposed = true
-    }
+  function dispose(): void {
+    if (disposed) return
+    disposed = true
+  }
 
-    function guard<T extends (...args: never[]) => unknown>(fn: T): T {
-        return ((...args: Parameters<T>): ReturnType<T> => {
-            if (disposed) return undefined as ReturnType<T>
-            return fn(...args) as ReturnType<T>
-        }) as T
-    }
+  function guard<T extends (...args: never[]) => unknown>(fn: T): T {
+    return ((...args: Parameters<T>): ReturnType<T> => {
+      if (disposed) return undefined as ReturnType<T>
+      return fn(...args) as ReturnType<T>
+    }) as T
+  }
 
-    return {
-        state,
-        setActiveTool: guard(setActiveTool),
-        clearAll: guard(clearAll),
-        deleteLast: guard(deleteLast),
-        dispose,
-    }
+  return {
+    state,
+    setActiveTool: guard(setActiveTool),
+    clearAll: guard(clearAll),
+    deleteLast: guard(deleteLast),
+    dispose,
+  }
 }

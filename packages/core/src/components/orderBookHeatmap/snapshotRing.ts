@@ -16,50 +16,53 @@ import type { BookSnapshot, SnapshotRing } from './types'
 import { KLineChartError } from '../../errors'
 
 export function createSnapshotRing(capacity: number): SnapshotRing {
-    if (!Number.isInteger(capacity) || capacity <= 0) {
-        throw new KLineChartError('HEATMAP_CONFIG_INVALID', 'createSnapshotRing: capacity must be a positive integer')
-    }
-    const cap = capacity
-    const slots: Array<BookSnapshot | null> = new Array(cap).fill(null)
-    let head = 0 // index of the next write slot
-    let count = 0 // number of populated slots; saturates at cap
+  if (!Number.isInteger(capacity) || capacity <= 0) {
+    throw new KLineChartError(
+      'HEATMAP_CONFIG_INVALID',
+      'createSnapshotRing: capacity must be a positive integer',
+    )
+  }
+  const cap = capacity
+  const slots: Array<BookSnapshot | null> = new Array(cap).fill(null)
+  let head = 0 // index of the next write slot
+  let count = 0 // number of populated slots; saturates at cap
 
-    function push(snapshot: BookSnapshot): void {
-        slots[head] = snapshot
-        head = (head + 1) % cap
-        if (count < cap) count++
-    }
+  function push(snapshot: BookSnapshot): void {
+    slots[head] = snapshot
+    head = (head + 1) % cap
+    if (count < cap) count++
+  }
 
-    function toArray(): ReadonlyArray<BookSnapshot> {
-        if (count === 0) return []
-        const out: BookSnapshot[] = new Array(count)
-        // Oldest index when full = head (next write slot); when not full = 0.
-        const start = count < cap ? 0 : head
-        for (let i = 0; i < count; i++) {
-            const slot = slots[(start + i) % cap]
-            // Guarded above by count; slots[(start+i)%cap] is non-null.
-            out[i] = slot as BookSnapshot
-        }
-        return out
+  function toArray(): ReadonlyArray<BookSnapshot> {
+    if (count === 0) return []
+    const out: BookSnapshot[] = new Array(count)
+    // Oldest index when full = head (next write slot); when not full = 0.
+    const start = count < cap ? 0 : head
+    for (let i = 0; i < count; i++) {
+      const slot = slots[(start + i) % cap]
+      // Guarded above by count; slots[(start+i)%cap] is non-null.
+      out[i] = slot as BookSnapshot
     }
+    return out
+  }
 
-    function size(): number {
-        return count
-    }
+  function size(): number {
+    return count
+  }
 
-    function clear(): void {
-        for (let i = 0; i < cap; i++) slots[i] = null
-        head = 0
-        count = 0
-    }
+  function clear(): void {
+    for (let i = 0; i < cap; i++) slots[i] = null
+    head = 0
+    count = 0
+  }
 
-    return {
-        get capacity() {
-            return cap
-        },
-        push,
-        toArray,
-        size,
-        clear,
-    }
+  return {
+    get capacity() {
+      return cap
+    },
+    push,
+    toArray,
+    size,
+    clear,
+  }
 }

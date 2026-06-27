@@ -37,98 +37,104 @@ import type { BaseBar, ResampledBar } from './types'
  *   for stable user code. Closes API audit BLOCKER-002.
  */
 export function resampleBars(
-    bars: ReadonlyArray<BaseBar>,
-    baseIntervalMs: number,
-    targetIntervalMs: number,
+  bars: ReadonlyArray<BaseBar>,
+  baseIntervalMs: number,
+  targetIntervalMs: number,
 ): ReadonlyArray<ResampledBar> {
-    if (!Number.isFinite(baseIntervalMs) || baseIntervalMs <= 0) {
-        throw new KLineChartError('MTF_CONFIG_INVALID', 'resampleBars: baseIntervalMs must be a positive finite number')
-    }
-    if (!Number.isFinite(targetIntervalMs) || targetIntervalMs <= 0) {
-        throw new KLineChartError('MTF_CONFIG_INVALID', 'resampleBars: targetIntervalMs must be a positive finite number')
-    }
-    if (targetIntervalMs % baseIntervalMs !== 0) {
-        throw new KLineChartError(
-            'MTF_CONFIG_INVALID',
-            `resampleBars: targetIntervalMs (${targetIntervalMs}) must be an integer ` +
-                `multiple of baseIntervalMs (${baseIntervalMs}); got remainder ` +
-                `${targetIntervalMs % baseIntervalMs}`,
-        )
-    }
+  if (!Number.isFinite(baseIntervalMs) || baseIntervalMs <= 0) {
+    throw new KLineChartError(
+      'MTF_CONFIG_INVALID',
+      'resampleBars: baseIntervalMs must be a positive finite number',
+    )
+  }
+  if (!Number.isFinite(targetIntervalMs) || targetIntervalMs <= 0) {
+    throw new KLineChartError(
+      'MTF_CONFIG_INVALID',
+      'resampleBars: targetIntervalMs must be a positive finite number',
+    )
+  }
+  if (targetIntervalMs % baseIntervalMs !== 0) {
+    throw new KLineChartError(
+      'MTF_CONFIG_INVALID',
+      `resampleBars: targetIntervalMs (${targetIntervalMs}) must be an integer ` +
+        `multiple of baseIntervalMs (${baseIntervalMs}); got remainder ` +
+        `${targetIntervalMs % baseIntervalMs}`,
+    )
+  }
 
-    if (bars.length === 0) return []
+  if (bars.length === 0) return []
 
-    // Fast path: no aggregation required. Caller may still want shape parity
-    // (each base bar gets sourceStart === sourceEnd === its own index), so we
-    // wrap each base bar as a 1-source-bar `ResampledBar`.
-    if (targetIntervalMs === baseIntervalMs) {
-        const out: ResampledBar[] = new Array(bars.length)
-        for (let i = 0; i < bars.length; i++) {
-            const b = bars[i]
-            out[i] = {
-                timestamp: b.timestamp,
-                open: b.open,
-                high: b.high,
-                low: b.low,
-                close: b.close,
-                volume: b.volume,
-                sourceStart: i,
-                sourceEnd: i,
-            }
-        }
-        return out
-    }
-
-    const out: ResampledBar[] = []
-
-    let bucketStart = -1 // inclusive index in `bars`
-    let bucketTs = 0
-    let open = 0
-    let high = -Infinity
-    let low = Infinity
-    let close = 0
-    let volume = 0
-
-    const flush = (endIdx: number): void => {
-        if (bucketStart < 0) return
-        out.push({
-            timestamp: bucketTs,
-            open,
-            high,
-            low,
-            close,
-            volume,
-            sourceStart: bucketStart,
-            sourceEnd: endIdx,
-        })
-    }
-
+  // Fast path: no aggregation required. Caller may still want shape parity
+  // (each base bar gets sourceStart === sourceEnd === its own index), so we
+  // wrap each base bar as a 1-source-bar `ResampledBar`.
+  if (targetIntervalMs === baseIntervalMs) {
+    const out: ResampledBar[] = new Array(bars.length)
     for (let i = 0; i < bars.length; i++) {
-        const bar = bars[i]
-        const ts = Math.floor(bar.timestamp / targetIntervalMs) * targetIntervalMs
+      const b = bars[i]
+      out[i] = {
+        timestamp: b.timestamp,
+        open: b.open,
+        high: b.high,
+        low: b.low,
+        close: b.close,
+        volume: b.volume,
+        sourceStart: i,
+        sourceEnd: i,
+      }
+    }
+    return out
+  }
 
-        if (bucketStart < 0 || ts !== bucketTs) {
-            // Boundary crossed (or first iteration). Flush the previous bucket.
-            if (bucketStart >= 0) flush(i - 1)
-            bucketStart = i
-            bucketTs = ts
-            open = bar.open
-            high = bar.high
-            low = bar.low
-            close = bar.close
-            volume = bar.volume
-            continue
-        }
+  const out: ResampledBar[] = []
 
-        // Same bucket: fold this bar in.
-        if (bar.high > high) high = bar.high
-        if (bar.low < low) low = bar.low
-        close = bar.close
-        volume += bar.volume
+  let bucketStart = -1 // inclusive index in `bars`
+  let bucketTs = 0
+  let open = 0
+  let high = -Infinity
+  let low = Infinity
+  let close = 0
+  let volume = 0
+
+  const flush = (endIdx: number): void => {
+    if (bucketStart < 0) return
+    out.push({
+      timestamp: bucketTs,
+      open,
+      high,
+      low,
+      close,
+      volume,
+      sourceStart: bucketStart,
+      sourceEnd: endIdx,
+    })
+  }
+
+  for (let i = 0; i < bars.length; i++) {
+    const bar = bars[i]
+    const ts = Math.floor(bar.timestamp / targetIntervalMs) * targetIntervalMs
+
+    if (bucketStart < 0 || ts !== bucketTs) {
+      // Boundary crossed (or first iteration). Flush the previous bucket.
+      if (bucketStart >= 0) flush(i - 1)
+      bucketStart = i
+      bucketTs = ts
+      open = bar.open
+      high = bar.high
+      low = bar.low
+      close = bar.close
+      volume = bar.volume
+      continue
     }
 
-    // Final bucket — may be partial (fewer than targetIntervalMs/baseIntervalMs bars).
-    flush(bars.length - 1)
+    // Same bucket: fold this bar in.
+    if (bar.high > high) high = bar.high
+    if (bar.low < low) low = bar.low
+    close = bar.close
+    volume += bar.volume
+  }
 
-    return out
+  // Final bucket — may be partial (fewer than targetIntervalMs/baseIntervalMs bars).
+  flush(bars.length - 1)
+
+  return out
 }

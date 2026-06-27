@@ -32,12 +32,12 @@ import type { Signal } from '../reactivity/signal'
  * peeking at layer ids.
  */
 export type LayerRole =
-    | 'background' // grid, axes
-    | 'primary' // candles, volume bars
-    | 'indicator' // MA, BOLL, indicator-defined plots
-    | 'component' // Volume Profile, Heatmap, Footprint
-    | 'drawing' // user drawings
-    | 'overlay' // crosshair, hover, legends
+  | 'background' // grid, axes
+  | 'primary' // candles, volume bars
+  | 'indicator' // MA, BOLL, indicator-defined plots
+  | 'component' // Volume Profile, Heatmap, Footprint
+  | 'drawing' // user drawings
+  | 'overlay' // crosshair, hover, legends
 
 /**
  * Which pane a layer belongs to. The chart has a main pane (candles +
@@ -74,13 +74,13 @@ export type PaneRole = 'main' | 'sub'
  *   in milliseconds. May be `0` on the very first frame.
  */
 export interface PaintContext {
-    renderer: Renderer
-    region: SurfaceRegion
-    paneRole: PaneRole
-    /** monotonically increasing frame counter for animation/timing */
-    frameNumber: number
-    /** time elapsed since last frame in ms (for animations) */
-    deltaMs: number
+  renderer: Renderer
+  region: SurfaceRegion
+  paneRole: PaneRole
+  /** monotonically increasing frame counter for animation/timing */
+  frameNumber: number
+  /** time elapsed since last frame in ms (for animations) */
+  deltaMs: number
 }
 
 /**
@@ -100,17 +100,17 @@ export interface PaintContext {
  *   back to visible is cheap.
  */
 export interface Layer {
-    readonly id: string
-    readonly role: LayerRole
-    /** which pane this layer belongs to */
-    readonly paneRole: PaneRole
-    /** lower z first; ties broken by registration order */
-    readonly z: number
-    /** quick toggle without removing the layer from the scene */
-    visible: boolean
+  readonly id: string
+  readonly role: LayerRole
+  /** which pane this layer belongs to */
+  readonly paneRole: PaneRole
+  /** lower z first; ties broken by registration order */
+  readonly z: number
+  /** quick toggle without removing the layer from the scene */
+  visible: boolean
 
-    paint(ctx: PaintContext): void
-    dispose(): void
+  paint(ctx: PaintContext): void
+  dispose(): void
 }
 
 /**
@@ -129,15 +129,15 @@ export interface Layer {
  * no-ops. This matches the renderer's "dispose freezes the object" semantics.
  */
 export interface Scene {
-    readonly layers: Signal<ReadonlyArray<Layer>>
+  readonly layers: Signal<ReadonlyArray<Layer>>
 
-    addLayer(layer: Layer): void
-    removeLayer(id: string): boolean
-    getLayer(id: string): Layer | null
-    setLayerVisibility(id: string, visible: boolean): boolean
+  addLayer(layer: Layer): void
+  removeLayer(id: string): boolean
+  getLayer(id: string): Layer | null
+  setLayerVisibility(id: string, visible: boolean): boolean
 
-    /** paint layers for one pane in z-order, then by registration order */
-    paintPane(ctx: PaintContext): void
+  /** paint layers for one pane in z-order, then by registration order */
+  paintPane(ctx: PaintContext): void
 
-    dispose(): void
+  dispose(): void
 }

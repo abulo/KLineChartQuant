@@ -51,7 +51,7 @@ export class StateStore {
   clearByOwner(ownerId: string): void {
     const namespaces = this.ownerNamespaces.get(ownerId)
     if (namespaces) {
-      namespaces.forEach(ns => {
+      namespaces.forEach((ns) => {
         this.states.delete(ns)
         if (import.meta.env.DEV) {
           console.debug(`[StateStore] Cleared state: ${ns} (owner: ${ownerId})`)

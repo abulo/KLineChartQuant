@@ -1,7 +1,14 @@
 export type { MAFlags } from './movingAverages'
 export { DEFAULT_MA_PERIODS, calcMAData } from './movingAverages'
 export type { EXPMAPoint } from './movingAverages'
-export { calcEXPMAData, calcWMAData, calcDEMAData, calcTEMAData, calcHMAData, calcKAMAData } from './movingAverages'
+export {
+  calcEXPMAData,
+  calcWMAData,
+  calcDEMAData,
+  calcTEMAData,
+  calcHMAData,
+  calcKAMAData,
+} from './movingAverages'
 
 export type { BOLLPoint } from './bands'
 export { calcBOLLData } from './bands'
@@ -29,9 +36,25 @@ export { calcTRIXData } from './oscillators'
 
 export { calcATRData, calcHVData, calcParkinsonData, calcChaikinVolData } from './volatility'
 
-export { calcVMAData, calcOBVData, calcPVTData, calcVWAPData, calcCMFData, calcMFIData } from './volume'
+export {
+  calcVMAData,
+  calcOBVData,
+  calcPVTData,
+  calcVWAPData,
+  calcCMFData,
+  calcMFIData,
+} from './volume'
 export type { VolumeProfileBin, VolumeProfileResult } from './volume'
 export { calcVolumeProfileData } from './volume'
 
-export type { PivotPoint, FibPoint, SwingPoint, StructureEventKind, StructureEvent, StructureSnapshot, ZoneKind, Zone } from './patterns'
+export type {
+  PivotPoint,
+  FibPoint,
+  SwingPoint,
+  StructureEventKind,
+  StructureEvent,
+  StructureSnapshot,
+  ZoneKind,
+  Zone,
+} from './patterns'
 export { calcPivotData, calcFibData, calcStructureData, calcZonesData } from './patterns'

@@ -8,7 +8,11 @@ import { ENE_STATE_KEY } from '@/core/indicators/state/eneState'
 import type { PluginHost, RenderContext, RendererPluginWithHost } from '@/plugin'
 import type { KLineData } from '@/types/price'
 import type { Pane } from '@/core/layout/pane'
-import type { GetTitleInfoFn, TitleInfo, TitleValueItem } from '@/engine/indicators/indicatorMetadata'
+import type {
+  GetTitleInfoFn,
+  TitleInfo,
+  TitleValueItem,
+} from '@/engine/indicators/indicatorMetadata'
 import type { IndicatorScheduler } from '@/engine/indicators/indicatorScheduler'
 
 // Type helper for tests - we know these methods exist on the implementation
@@ -41,16 +45,18 @@ function createMockCanvasContext(): CanvasRenderingContext2D {
  */
 function createMockScheduler(
   metadataMap: Record<string, { getTitleInfo: GetTitleInfoFn }>,
-  activeMainIndicators?: string[]
+  activeMainIndicators?: string[],
 ): IndicatorScheduler {
   const activeSet = new Set((activeMainIndicators ?? ['ma']).map((i: string) => i.toLowerCase()))
   return {
     getIndicatorMetadata: vi.fn((id: string) => metadataMap[id.toLowerCase()] ?? null),
-    getMainIndicators: vi.fn(() => Object.entries(metadataMap).map(([id, meta]) => ({
-      name: id,
-      getTitleInfo: meta.getTitleInfo,
-      category: 'main',
-    }))),
+    getMainIndicators: vi.fn(() =>
+      Object.entries(metadataMap).map(([id, meta]) => ({
+        name: id,
+        getTitleInfo: meta.getTitleInfo,
+        category: 'main',
+      })),
+    ),
     isMainIndicatorActive: vi.fn((id: string) => activeSet.has(id.toLowerCase())),
     getMainIndicatorParams: vi.fn(() => ({})),
   } as unknown as IndicatorScheduler
@@ -88,9 +94,9 @@ function createSimpleGetTitleInfo(name: string): GetTitleInfoFn {
     name,
     params: [20, 2],
     values: [
-      { label: 'MID', value: 100.00, color: '#FF0000' },
-      { label: 'UP', value: 120.00, color: '#00FF00' },
-      { label: 'DN', value: 80.00, color: '#0000FF' },
+      { label: 'MID', value: 100.0, color: '#FF0000' },
+      { label: 'UP', value: 120.0, color: '#00FF00' },
+      { label: 'DN', value: 80.0, color: '#0000FF' },
     ],
   })
 }
@@ -98,10 +104,7 @@ function createSimpleGetTitleInfo(name: string): GetTitleInfoFn {
 /**
  * 创建 mock PluginHost
  */
-function createMockPluginHost(
-  state?: MARenderState,
-  scheduler?: IndicatorScheduler
-): PluginHost {
+function createMockPluginHost(state?: MARenderState, scheduler?: IndicatorScheduler): PluginHost {
   return {
     setSharedState: vi.fn(),
     getSharedState: vi.fn(<T>(key: string): T | undefined => {
@@ -136,7 +139,7 @@ function createMockPluginHost(
  */
 function createMockRenderContext(
   ctx: CanvasRenderingContext2D,
-  overrides: Partial<RenderContext> = {}
+  overrides: Partial<RenderContext> = {},
 ): RenderContext {
   const mockPane = {
     yAxis: {
@@ -176,9 +179,7 @@ function createMockRenderContext(
 /**
  * 创建测试用的 MARenderState
  */
-function createTestMARenderState(
-  overrides: Partial<MARenderState> = {}
-): MARenderState {
+function createTestMARenderState(overrides: Partial<MARenderState> = {}): MARenderState {
   const series: Record<number, (number | undefined)[]> = {
     5: Array.from({ length: 100 }, () => 105),
     10: Array.from({ length: 100 }, () => 110),
@@ -245,7 +246,7 @@ describe('MainIndicatorLegend draw', () => {
 
     // Should not draw any MA legend text
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
-    const maLabelCalls = fillTextCalls.filter(call => call[0] === 'MA')
+    const maLabelCalls = fillTextCalls.filter((call) => call[0] === 'MA')
     expect(maLabelCalls).toHaveLength(0)
   })
 
@@ -262,11 +263,11 @@ describe('MainIndicatorLegend draw', () => {
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
 
     // Should have drawn 'MA' label
-    const maLabelCalls = fillTextCalls.filter(call => call[0] === 'MA')
+    const maLabelCalls = fillTextCalls.filter((call) => call[0] === 'MA')
     expect(maLabelCalls).toHaveLength(1)
 
     // Should have drawn MA5, MA10, etc. labels
-    const ma5Calls = fillTextCalls.filter(call => String(call[0]).includes('MA5'))
+    const ma5Calls = fillTextCalls.filter((call) => String(call[0]).includes('MA5'))
     expect(ma5Calls.length).toBeGreaterThan(0)
   })
 
@@ -289,9 +290,7 @@ describe('MainIndicatorLegend draw', () => {
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
 
     // Should show value 150 at index 50 (100 + 50)
-    const maValueCalls = fillTextCalls.filter(call =>
-      String(call[0]).includes('150.000')
-    )
+    const maValueCalls = fillTextCalls.filter((call) => String(call[0]).includes('150.000'))
     expect(maValueCalls.length).toBeGreaterThan(0)
   })
 
@@ -324,9 +323,7 @@ describe('MainIndicatorLegend draw', () => {
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
 
     // Should show last value (109) at index 9
-    const maValueCalls = fillTextCalls.filter(call =>
-      String(call[0]).includes('109.000')
-    )
+    const maValueCalls = fillTextCalls.filter((call) => String(call[0]).includes('109.000'))
     expect(maValueCalls.length).toBeGreaterThan(0)
   })
 
@@ -357,7 +354,7 @@ describe('MainIndicatorLegend draw', () => {
 
     // Should not draw any MA period values (name 'MA' may still appear but no period texts)
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
-    const ma5Calls = fillTextCalls.filter(call => String(call[0]).includes('MA5'))
+    const ma5Calls = fillTextCalls.filter((call) => String(call[0]).includes('MA5'))
     expect(ma5Calls).toHaveLength(0)
   })
 
@@ -379,9 +376,7 @@ describe('MainIndicatorLegend draw', () => {
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
 
     // Should show formatted value
-    const formattedValueCalls = fillTextCalls.filter(call =>
-      String(call[0]).includes('123.457')
-    )
+    const formattedValueCalls = fillTextCalls.filter((call) => String(call[0]).includes('123.457'))
     expect(formattedValueCalls.length).toBeGreaterThan(0)
   })
 
@@ -397,7 +392,7 @@ describe('MainIndicatorLegend draw', () => {
 
     // Should have drawn MA period values with proper colors
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
-    const ma5Calls = fillTextCalls.filter(call => String(call[0]).includes('MA5'))
+    const ma5Calls = fillTextCalls.filter((call) => String(call[0]).includes('MA5'))
     expect(ma5Calls.length).toBeGreaterThan(0)
   })
 
@@ -452,9 +447,7 @@ describe('MainIndicatorLegend MA data source', () => {
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
 
     // Should show the value from StateStore (999.99), not a calculated value
-    const valueCalls = fillTextCalls.filter(call =>
-      String(call[0]).includes('999.99')
-    )
+    const valueCalls = fillTextCalls.filter((call) => String(call[0]).includes('999.99'))
     expect(valueCalls.length).toBeGreaterThan(0)
   })
 })
@@ -482,7 +475,7 @@ describe('MainIndicatorLegend with other indicators', () => {
   it('should draw BOLL when active', () => {
     const scheduler = createMockScheduler(
       { boll: { getTitleInfo: createSimpleGetTitleInfo('BOLL') } },
-      ['boll']
+      ['boll'],
     )
     const mockHost = createMockPluginHost(undefined, scheduler)
     const plugin = createMainIndicatorLegendRendererPlugin({ yPaddingPx: 20 })
@@ -495,16 +488,14 @@ describe('MainIndicatorLegend with other indicators', () => {
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
 
     // Should have drawn BOLL label
-    const bollLabelCalls = fillTextCalls.filter(call =>
-      String(call[0]).includes('BOLL')
-    )
+    const bollLabelCalls = fillTextCalls.filter((call) => String(call[0]).includes('BOLL'))
     expect(bollLabelCalls.length).toBeGreaterThan(0)
   })
 
   it('should draw EXPMA when active', () => {
     const scheduler = createMockScheduler(
       { expma: { getTitleInfo: createSimpleGetTitleInfo('EXPMA') } },
-      ['expma']
+      ['expma'],
     )
     const mockHost = createMockPluginHost(undefined, scheduler)
     const plugin = createMainIndicatorLegendRendererPlugin({ yPaddingPx: 20 })
@@ -517,16 +508,14 @@ describe('MainIndicatorLegend with other indicators', () => {
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
 
     // Should have drawn EXPMA label
-    const expmaLabelCalls = fillTextCalls.filter(call =>
-      String(call[0]).includes('EXPMA')
-    )
+    const expmaLabelCalls = fillTextCalls.filter((call) => String(call[0]).includes('EXPMA'))
     expect(expmaLabelCalls.length).toBeGreaterThan(0)
   })
 
   it('should draw ENE when active', () => {
     const scheduler = createMockScheduler(
       { ene: { getTitleInfo: createSimpleGetTitleInfo('ENE') } },
-      ['ene']
+      ['ene'],
     )
     const mockHost = createMockPluginHost(undefined, scheduler)
     const plugin = createMainIndicatorLegendRendererPlugin({ yPaddingPx: 20 })
@@ -539,16 +528,14 @@ describe('MainIndicatorLegend with other indicators', () => {
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
 
     // Should have drawn ENE label
-    const eneLabelCalls = fillTextCalls.filter(call =>
-      String(call[0]).includes('ENE')
-    )
+    const eneLabelCalls = fillTextCalls.filter((call) => String(call[0]).includes('ENE'))
     expect(eneLabelCalls.length).toBeGreaterThan(0)
   })
 
   it('should draw any registered main indicator when active (WMA example)', () => {
     const scheduler = createMockScheduler(
       { wma: { getTitleInfo: createSimpleGetTitleInfo('WMA') } },
-      ['wma']
+      ['wma'],
     )
     const mockHost = createMockPluginHost(undefined, scheduler)
     const plugin = createMainIndicatorLegendRendererPlugin({ yPaddingPx: 20 })
@@ -559,7 +546,7 @@ describe('MainIndicatorLegend with other indicators', () => {
     plugin.draw(context)
 
     const fillTextCalls = vi.mocked(ctx.fillText).mock.calls
-    const wmaLabelCalls = fillTextCalls.filter(call => String(call[0]).includes('WMA'))
+    const wmaLabelCalls = fillTextCalls.filter((call) => String(call[0]).includes('WMA'))
     expect(wmaLabelCalls.length).toBeGreaterThan(0)
   })
 })

@@ -14,11 +14,7 @@ export interface ChartBridgeOptions {
   wsImpl?: new (url: string) => WebSocket
 }
 
-export type ChartBridgeEvent =
-  | 'connected'
-  | 'disconnected'
-  | 'error'
-  | 'stateChanged'
+export type ChartBridgeEvent = 'connected' | 'disconnected' | 'error' | 'stateChanged'
 
 type MessageHandler = (...args: unknown[]) => void
 
@@ -91,9 +87,7 @@ export class ChartBridge {
             }
 
             ws.onclose = () => {
-              console.warn(
-                `[ChartBridge] WS closed, autoReconnect=${this.autoReconnect}`,
-              )
+              console.warn(`[ChartBridge] WS closed, autoReconnect=${this.autoReconnect}`)
               this.ws = null
               this.stopHeartbeat()
               this.onDisconnected?.()
@@ -176,9 +170,7 @@ export class ChartBridge {
     )
   }
 
-  sendStateUpdate(
-    descriptions: Record<string, ControllerDescription>,
-  ): void {
+  sendStateUpdate(descriptions: Record<string, ControllerDescription>): void {
     this.ws?.send(
       JSON.stringify({
         type: 'state:update',

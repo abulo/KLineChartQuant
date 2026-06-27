@@ -38,20 +38,30 @@ export class KLineMode implements ChartModeHandler {
     pane.updateRange(dm.getInternalData(), range, mergedIndicatorRange)
   }
 
-  onActivate(_chart: {
-    enableMainIndicator: (id: string, params?: Record<string, number | boolean | string>) => boolean
-    disableMainIndicator: (id: string) => boolean
-    setRendererEnabled: (name: string, enabled: boolean) => void
-    dataManager: ChartDataManager
-    currentPeriod: string
-  }, _prev: ChartModeHandler | null): void {
-  }
+  onActivate(
+    _chart: {
+      enableMainIndicator: (
+        id: string,
+        params?: Record<string, number | boolean | string>,
+      ) => boolean
+      disableMainIndicator: (id: string) => boolean
+      setRendererEnabled: (name: string, enabled: boolean) => void
+      dataManager: ChartDataManager
+      currentPeriod: string
+    },
+    _prev: ChartModeHandler | null,
+  ): void {}
 
-  onDeactivate(_chart: {
-    enableMainIndicator: (id: string, params?: Record<string, number | boolean | string>) => boolean
-    disableMainIndicator: (id: string) => boolean
-    setRendererEnabled: (name: string, enabled: boolean) => void
-    dataManager: ChartDataManager
-  }, _next: ChartModeHandler | null): void {
-  }
+  onDeactivate(
+    _chart: {
+      enableMainIndicator: (
+        id: string,
+        params?: Record<string, number | boolean | string>,
+      ) => boolean
+      disableMainIndicator: (id: string) => boolean
+      setRendererEnabled: (name: string, enabled: boolean) => void
+      dataManager: ChartDataManager
+    },
+    _next: ChartModeHandler | null,
+  ): void {}
 }

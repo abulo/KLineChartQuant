@@ -28,7 +28,10 @@ async function fetchBaoStock(
   try {
     const res = await fetch(url)
     if (!res.ok) {
-      throw new KLineChartError('FETCH_FAILED', `[baostock] fetch failed: ${res.status} ${res.statusText}`)
+      throw new KLineChartError(
+        'FETCH_FAILED',
+        `[baostock] fetch failed: ${res.status} ${res.statusText}`,
+      )
     }
     const json = await res.json()
     return (json.data ?? json).map(

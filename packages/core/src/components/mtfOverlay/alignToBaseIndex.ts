@@ -40,69 +40,69 @@ import { KLineChartError } from '../../errors'
  *   for stable user code. Closes API audit BLOCKER-002.
  */
 export function alignToBaseIndex<TValue>(
-    baseBars: ReadonlyArray<{ timestamp: number }>,
-    higherTfBars: ReadonlyArray<{ timestamp: number }>,
-    higherTfValues: ReadonlyArray<TValue>,
-    targetIntervalMs: number,
+  baseBars: ReadonlyArray<{ timestamp: number }>,
+  higherTfBars: ReadonlyArray<{ timestamp: number }>,
+  higherTfValues: ReadonlyArray<TValue>,
+  targetIntervalMs: number,
 ): ReadonlyArray<TValue | null> {
-    if (!Number.isFinite(targetIntervalMs) || targetIntervalMs <= 0) {
-        throw new KLineChartError(
-            'MTF_CONFIG_INVALID',
-            'alignToBaseIndex: targetIntervalMs must be a positive finite number',
-        )
-    }
-    if (higherTfBars.length !== higherTfValues.length) {
-        throw new KLineChartError(
-            'MTF_CONFIG_INVALID',
-            `alignToBaseIndex: higherTfBars.length (${higherTfBars.length}) must ` +
-                `equal higherTfValues.length (${higherTfValues.length})`,
-        )
-    }
+  if (!Number.isFinite(targetIntervalMs) || targetIntervalMs <= 0) {
+    throw new KLineChartError(
+      'MTF_CONFIG_INVALID',
+      'alignToBaseIndex: targetIntervalMs must be a positive finite number',
+    )
+  }
+  if (higherTfBars.length !== higherTfValues.length) {
+    throw new KLineChartError(
+      'MTF_CONFIG_INVALID',
+      `alignToBaseIndex: higherTfBars.length (${higherTfBars.length}) must ` +
+        `equal higherTfValues.length (${higherTfValues.length})`,
+    )
+  }
 
-    const B = baseBars.length
-    const H = higherTfBars.length
-    const out: (TValue | null)[] = new Array(B)
+  const B = baseBars.length
+  const H = higherTfBars.length
+  const out: (TValue | null)[] = new Array(B)
 
-    if (B === 0) return out
-    if (H === 0) {
-        for (let i = 0; i < B; i++) out[i] = null
-        return out
-    }
-
-    // Two-pointer walk. `h` is the index of the higher-tf bar that COULD
-    // cover the current base bar — meaning `higherTfBars[h].timestamp <= t`.
-    // We advance `h` greedily as base bars march forward.
-    let h = -1 // -1 ≡ "no higher-tf bar has opened yet"
-
-    for (let i = 0; i < B; i++) {
-        const t = baseBars[i].timestamp
-
-        // Advance `h` to the latest higher-tf bar whose open is ≤ t. This is
-        // the "no lookahead" gate: a bar whose open > t is invisible to us.
-        while (h + 1 < H && higherTfBars[h + 1].timestamp <= t) {
-            h++
-        }
-
-        if (h < 0) {
-            // No higher-tf bar has opened at or before t → leading null.
-            out[i] = null
-            continue
-        }
-
-        // We have a candidate bar `h`. Final check: is t still inside its
-        // half-open interval? If `higherTfBars[h+1]` exists and its open is
-        // ≤ t, the while loop above would have advanced — so we only need to
-        // check the upper bound for the last bar, or in a gap.
-        const bucketStart = higherTfBars[h].timestamp
-        if (t < bucketStart + targetIntervalMs) {
-            out[i] = higherTfValues[h]
-        } else {
-            // t falls into a gap after bar h's closed interval and before
-            // the next bar opens (or after the end of the series). Forward
-            // fill: keep bar h's value visible.
-            out[i] = higherTfValues[h]
-        }
-    }
-
+  if (B === 0) return out
+  if (H === 0) {
+    for (let i = 0; i < B; i++) out[i] = null
     return out
+  }
+
+  // Two-pointer walk. `h` is the index of the higher-tf bar that COULD
+  // cover the current base bar — meaning `higherTfBars[h].timestamp <= t`.
+  // We advance `h` greedily as base bars march forward.
+  let h = -1 // -1 ≡ "no higher-tf bar has opened yet"
+
+  for (let i = 0; i < B; i++) {
+    const t = baseBars[i].timestamp
+
+    // Advance `h` to the latest higher-tf bar whose open is ≤ t. This is
+    // the "no lookahead" gate: a bar whose open > t is invisible to us.
+    while (h + 1 < H && higherTfBars[h + 1].timestamp <= t) {
+      h++
+    }
+
+    if (h < 0) {
+      // No higher-tf bar has opened at or before t → leading null.
+      out[i] = null
+      continue
+    }
+
+    // We have a candidate bar `h`. Final check: is t still inside its
+    // half-open interval? If `higherTfBars[h+1]` exists and its open is
+    // ≤ t, the while loop above would have advanced — so we only need to
+    // check the upper bound for the last bar, or in a gap.
+    const bucketStart = higherTfBars[h].timestamp
+    if (t < bucketStart + targetIntervalMs) {
+      out[i] = higherTfValues[h]
+    } else {
+      // t falls into a gap after bar h's closed interval and before
+      // the next bar opens (or after the end of the series). Forward
+      // fill: keep bar h's value visible.
+      out[i] = higherTfValues[h]
+    }
+  }
+
+  return out
 }

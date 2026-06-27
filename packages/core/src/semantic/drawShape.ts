@@ -24,7 +24,7 @@ export function drawShape(
   x: number,
   y: number,
   size: number,
-  style: MarkerStyle
+  style: MarkerStyle,
 ): void {
   const fillColor = style.fillColor || '#000000'
   const strokeColor = style.strokeColor || fillColor
@@ -78,7 +78,7 @@ export function drawLabel(
   y: number,
   markerSize: number,
   style: MarkerStyle,
-  isAboveMarker: boolean = false
+  isAboveMarker: boolean = false,
 ): void {
   const fontSize = label.fontSize || 12
   const textColor = style.textColor || '#333333'
@@ -238,7 +238,7 @@ export function hitTestShape(
   shape: MarkerShapeType,
   x: number,
   y: number,
-  size: number
+  size: number,
 ): boolean {
   const half = size / 2
 

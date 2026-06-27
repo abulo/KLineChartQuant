@@ -1,4 +1,5 @@
 High-performance financial chart library with a single-frame generation time of just 2ms, stable scrolling at 190–200fps in a 200Hz environment, native support for AI Agent control, full-link ResizeObserver-driven crisp rendering, and a pluggable architecture.
+
 <div align="center">
 
 English | [简体中文](README_CN.md)
@@ -84,60 +85,36 @@ npm install @363045841yyt/klinechart
 
 ```vue
 <script setup lang="ts">
-import KLineChart from '@363045841yyt/klinechart';
-import type { SemanticChartConfig } from '@363045841yyt/klinechart';
+  import '@363045841yyt/klinechart/style.css'
+  import { ref } from 'vue'
+  import { KLineChart, type CustomDataSource } from '@363045841yyt/klinechart'
 
-const config: SemanticChartConfig = {
-  version: '1.0.0',
-  data: {
-    source: 'baostock',
-    code: 'sh.000001',
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
-    frequency: 'day'
-  },
-  indicators: {
-    main: [{ type: 'MA', params: [5, 10, 20] }],
-    sub: [{ type: 'MACD' }]
+  const currentTheme = ref<'light' | 'dark'>('dark')
+
+  const customData: CustomDataSource = {
+    symbol: 'MY.STOCK',
+    period: 'daily',
+    data: [
+      { timestamp: 1748736000000, open: 30, high: 32, low: 30, close: 31.5, volume: 1500000 },
+      { timestamp: 1748822400000, open: 31.5, high: 33.2, low: 31.2, close: 33, volume: 2100000 },
+    ],
+    comparisons: {
+      'COMP.A': [
+        /* comparison KLineData[] */
+      ],
+      'COMP.B': [
+        /* comparison KLineData[] */
+      ],
+    },
   }
-};
 </script>
 
 <template>
-  <KLineChart
-    :semanticConfig="config"
-    :yPaddingPx="24"
-  />
+  <KLineChart v-model:theme="currentTheme" :custom-data="customData" />
 </template>
 ```
 
-### Inject Custom Data Directly (Without Fetcher)
-
-```vue
-<script setup lang="ts">
-import KLineChart from '@363045841yyt/klinechart'
-import type { CustomDataSource, KLineData } from '@363045841yyt/klinechart'
-
-const myData: KLineData[] = [
-  { timestamp: 1748736000000, date: '2025-06-01', open: 30, high: 32, low: 30, close: 31.5, volume: 1500000 },
-  { timestamp: 1748822400000, date: '2025-06-02', open: 31.5, high: 33.2, low: 31.2, close: 33, volume: 2100000 },
-]
-
-const customDataSource: CustomDataSource = {
-  symbol: 'MY.STOCK',
-  period: 'daily',
-  data: myData,
-  comparisons: {
-    'COMP.A': [ /* comparison KLineData[] */ ],
-    'COMP.B': [ /* comparison KLineData[] */ ],
-  },
-}
-</script>
-
-<template>
-  <KLineChart :customData="customDataSource" />
-</template>
-```
+Omit `customData` to use the built-in data fetcher which connects to your stock data backend automatically.
 
 ## 📖 More Documentation
 
@@ -147,18 +124,25 @@ const customDataSource: CustomDataSource = {
 
 ## 📋 Component Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| semanticConfig | `SemanticChartConfig` | **required** | Semantic configuration, the only control source for chart data and indicators |
-| yPaddingPx | `number` | 0 | Y-axis padding in pixels |
-| minKWidth | `number` | 2 | Minimum K-line width (logical pixels) |
-| maxKWidth | `number` | 50 | Maximum K-line width (logical pixels) |
-| rightAxisWidth | `number` | 0 | Right price axis width |
-| bottomAxisHeight | `number` | 24 | Bottom time axis height |
-| priceLabelWidth | `number` | 60 | Price label extra width for showing change percentage |
-| zoomLevels | `number` | 20 | Total number of zoom levels |
-| initialZoomLevel | `number` | 3 | Initial zoom level (1 ~ zoomLevels) |
-| customData | `CustomDataSource` | — | Inline data bundle: `{ symbol?, period?, data, comparisons? }`. Bypasses the fetcher pipeline entirely |
+| Prop              | Type                    | Default           | Description                                                                                                |
+| ----------------- | ----------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| semanticConfig    | `SemanticChartConfig`   | —                 | Semantic configuration (optional). When provided, drives chart data, indicators, markers and chart options |
+| dataFetcher       | `DataFetcher`           | built-in          | Data fetching function. Defaults to an internal fetcher that proxies `/api/stock`                          |
+| theme             | `'light' \| 'dark'`     | —                 | Chart theme. Use `v-model:theme` for two-way binding                                                       |
+| isFullscreen      | `boolean`               | —                 | Controlled fullscreen state. Leave unbound for internal (non-controlled) mode                              |
+| timezone          | `string`                | `'Asia/Shanghai'` | Time zone for date/time display                                                                            |
+| yPaddingPx        | `number`                | 20                | Y-axis padding in pixels                                                                                   |
+| minKWidth         | `number`                | 1                 | Minimum K-line width (logical pixels)                                                                      |
+| maxKWidth         | `number`                | 50                | Maximum K-line width (logical pixels)                                                                      |
+| rightAxisWidth    | `number`                | 0                 | Right price axis width                                                                                     |
+| leftAxisWidth     | `number`                | 0                 | Left price axis width (0 = hidden)                                                                         |
+| bottomAxisHeight  | `number`                | 24                | Bottom time axis height                                                                                    |
+| priceLabelWidth   | `number`                | 60                | Price label extra width for showing change percentage                                                      |
+| zoomLevels        | `number`                | 20                | Total number of zoom levels                                                                                |
+| initialZoomLevel  | `number`                | 3                 | Initial zoom level (1 ~ zoomLevels)                                                                        |
+| customData        | `CustomDataSource`      | —                 | Inline data bundle: `{ symbol?, period?, data, comparisons? }`. Bypasses the fetcher pipeline entirely     |
+| teleportContainer | `string \| HTMLElement` | —                 | Teleport target for dropdowns/modals (CSS selector or element). Defaults to internal `.chart-wrapper`      |
+| mcp               | `McpConfig`             | —                 | MCP/AI runtime bridge config: `{ wsUrl?, autoReconnect?, onToolCall? }`                                    |
 
 ## 🗺️ Roadmap
 

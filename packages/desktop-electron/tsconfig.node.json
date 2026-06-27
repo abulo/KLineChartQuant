@@ -7,8 +7,5 @@
     "moduleResolution": "bundler",
     "types": ["electron-vite/node"]
   },
-  "include": [
-    "electron/**/*.ts",
-    "vite.config.ts"
-  ]
+  "include": ["electron/**/*.ts", "vite.config.ts"]
 }

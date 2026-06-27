@@ -14,14 +14,12 @@ export function describeVolumeProfileState(
   if (state === null) {
     return {
       controllerId: 'volumeProfile',
-      summary:
-        'Volume Profile has not been computed yet — no bars have been ingested.',
+      summary: 'Volume Profile has not been computed yet — no bars have been ingested.',
       facts: { ready: false },
     }
   }
 
-  const vaPercent =
-    state.totalVolume > 0 ? (state.vaVolume / state.totalVolume) * 100 : 0
+  const vaPercent = state.totalVolume > 0 ? (state.vaVolume / state.totalVolume) * 100 : 0
   const vaSpan = state.vah - state.val
 
   return {
@@ -81,10 +79,7 @@ export function describeAnchoredVwap(
 
   return {
     controllerId: 'anchoredVwap',
-    summary:
-      `${activeAnchors.length} Anchored VWAP series active. ` +
-      lines.join('; ') +
-      '.',
+    summary: `${activeAnchors.length} Anchored VWAP series active. ` + lines.join('; ') + '.',
     facts: {
       count: activeAnchors.length,
       anchors: lines.join(' | '),
@@ -112,12 +107,7 @@ export function describeFootprintLatestBar(
     }
   }
 
-  const tone =
-    bar.delta > 0
-      ? 'buy-dominated'
-      : bar.delta < 0
-        ? 'sell-dominated'
-        : 'balanced'
+  const tone = bar.delta > 0 ? 'buy-dominated' : bar.delta < 0 ? 'sell-dominated' : 'balanced'
 
   const imbalance =
     bar.imbalanceCount > 0

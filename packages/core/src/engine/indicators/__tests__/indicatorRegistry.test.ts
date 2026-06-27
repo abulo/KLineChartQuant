@@ -38,8 +38,12 @@ describe('IndicatorRegistry', () => {
     const registry = new IndicatorRegistry(false)
 
     expect(() => registry.register(createMeta({ name: '' }))).toThrow('Indicator name is required')
-    expect(() => registry.register(createMeta({ displayName: '' }))).toThrow("displayName is required")
-    expect(() => registry.register(createMeta({ rendererFactory: undefined as any }))).toThrow('rendererFactory is required')
+    expect(() => registry.register(createMeta({ displayName: '' }))).toThrow(
+      'displayName is required',
+    )
+    expect(() => registry.register(createMeta({ rendererFactory: undefined as any }))).toThrow(
+      'rendererFactory is required',
+    )
   })
 
   it('replaces old aliases when unregistering', () => {

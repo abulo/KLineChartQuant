@@ -26,88 +26,85 @@ import type { DeltaArchive, DeltaArchiveOptions, OrderBookDelta } from './types'
 const CHUNK_SIZE = 10_000
 
 export function createDeltaArchive(opts?: DeltaArchiveOptions): DeltaArchive {
-    const chunks: OrderBookDelta[][] = [[]]
-    let total = 0
-    let maxSize = opts?.maxSize !== undefined ? Math.max(0, opts.maxSize) : Infinity
+  const chunks: OrderBookDelta[][] = [[]]
+  let total = 0
+  let maxSize = opts?.maxSize !== undefined ? Math.max(0, opts.maxSize) : Infinity
 
-    function append(delta: OrderBookDelta): void {
-        let last = chunks[chunks.length - 1]
-        if (last.length >= CHUNK_SIZE) {
-            last = []
-            chunks.push(last)
+  function append(delta: OrderBookDelta): void {
+    let last = chunks[chunks.length - 1]
+    if (last.length >= CHUNK_SIZE) {
+      last = []
+      chunks.push(last)
+    }
+    last.push(delta)
+    total++
+    if (Number.isFinite(maxSize) && total > maxSize) {
+      trim(maxSize)
+    }
+  }
+
+  function range(fromTimestamp: number, toTimestamp: number): ReadonlyArray<OrderBookDelta> {
+    if (total === 0) return []
+    if (fromTimestamp > toTimestamp) return []
+    const out: OrderBookDelta[] = []
+    // Linear scan with early-exit per chunk on chunk-min timestamp.
+    // Cheaper than maintaining per-chunk indices and good enough since
+    // chunks are bounded; full scan worst-case is O(total) which the
+    // contract allows.
+    for (const chunk of chunks) {
+      if (chunk.length === 0) continue
+      // Find min/max timestamps in chunk by scanning the ends —
+      // because appends are mostly monotonic, ends are reliable
+      // bounds in the vast majority of cases. Wider safety: scan all.
+      for (const d of chunk) {
+        if (d.timestamp >= fromTimestamp && d.timestamp <= toTimestamp) {
+          out.push(d)
         }
-        last.push(delta)
-        total++
-        if (Number.isFinite(maxSize) && total > maxSize) {
-            trim(maxSize)
-        }
+      }
     }
+    return out
+  }
 
-    function range(
-        fromTimestamp: number,
-        toTimestamp: number,
-    ): ReadonlyArray<OrderBookDelta> {
-        if (total === 0) return []
-        if (fromTimestamp > toTimestamp) return []
-        const out: OrderBookDelta[] = []
-        // Linear scan with early-exit per chunk on chunk-min timestamp.
-        // Cheaper than maintaining per-chunk indices and good enough since
-        // chunks are bounded; full scan worst-case is O(total) which the
-        // contract allows.
-        for (const chunk of chunks) {
-            if (chunk.length === 0) continue
-            // Find min/max timestamps in chunk by scanning the ends —
-            // because appends are mostly monotonic, ends are reliable
-            // bounds in the vast majority of cases. Wider safety: scan all.
-            for (const d of chunk) {
-                if (d.timestamp >= fromTimestamp && d.timestamp <= toTimestamp) {
-                    out.push(d)
-                }
-            }
-        }
-        return out
+  function size(): number {
+    return total
+  }
+
+  function clear(): void {
+    chunks.length = 0
+    chunks.push([])
+    total = 0
+  }
+
+  function trim(maxKeep: number): void {
+    const target = Math.max(0, Math.floor(maxKeep))
+    if (total <= target) return
+    let toDrop = total - target
+
+    // Drop whole oldest chunks first.
+    while (toDrop > 0 && chunks.length > 1 && chunks[0].length <= toDrop) {
+      toDrop -= chunks[0].length
+      total -= chunks[0].length
+      chunks.shift()
     }
-
-    function size(): number {
-        return total
+    // Then drop from the head of the first surviving chunk.
+    if (toDrop > 0 && chunks.length > 0) {
+      const head = chunks[0]
+      if (toDrop >= head.length) {
+        total -= head.length
+        head.length = 0
+      } else {
+        head.splice(0, toDrop)
+        total -= toDrop
+      }
     }
+    if (chunks.length === 0) chunks.push([])
+  }
 
-    function clear(): void {
-        chunks.length = 0
-        chunks.push([])
-        total = 0
-    }
-
-    function trim(maxKeep: number): void {
-        const target = Math.max(0, Math.floor(maxKeep))
-        if (total <= target) return
-        let toDrop = total - target
-
-        // Drop whole oldest chunks first.
-        while (toDrop > 0 && chunks.length > 1 && chunks[0].length <= toDrop) {
-            toDrop -= chunks[0].length
-            total -= chunks[0].length
-            chunks.shift()
-        }
-        // Then drop from the head of the first surviving chunk.
-        if (toDrop > 0 && chunks.length > 0) {
-            const head = chunks[0]
-            if (toDrop >= head.length) {
-                total -= head.length
-                head.length = 0
-            } else {
-                head.splice(0, toDrop)
-                total -= toDrop
-            }
-        }
-        if (chunks.length === 0) chunks.push([])
-    }
-
-    return {
-        append,
-        range,
-        size,
-        clear,
-        trim,
-    }
+  return {
+    append,
+    range,
+    size,
+    clear,
+    trim,
+  }
 }

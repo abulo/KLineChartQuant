@@ -14,11 +14,11 @@
  */
 
 export type {
-    BaseBar,
-    ResampledBar,
-    MtfSeriesDefinition,
-    ActiveMtfSeries,
-    MtfController,
+  BaseBar,
+  ResampledBar,
+  MtfSeriesDefinition,
+  ActiveMtfSeries,
+  MtfController,
 } from './types'
 
 export { resampleBars } from './resampleBars'

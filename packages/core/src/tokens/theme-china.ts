@@ -32,80 +32,80 @@ import { applyColorPresetOverrides, type ColorPresetSettings } from './colorPres
  * @returns a **new** Theme object; the original is not mutated.
  */
 export function withAsiaMarketColors(theme: Theme): Theme {
-    return {
-        ...theme,
-        colors: {
-            ...theme.colors,
+  return {
+    ...theme,
+    colors: {
+      ...theme.colors,
 
-            // ── Candle / OHLC ──
-            candleUpBody: theme.colors.candleDownBody,
-            candleDownBody: theme.colors.candleUpBody,
-            candleUpBorder: theme.colors.candleDownBorder,
-            candleDownBorder: theme.colors.candleUpBorder,
-            candleUpWick: theme.colors.candleDownWick,
-            candleDownWick: theme.colors.candleUpWick,
+      // ── Candle / OHLC ──
+      candleUpBody: theme.colors.candleDownBody,
+      candleDownBody: theme.colors.candleUpBody,
+      candleUpBorder: theme.colors.candleDownBorder,
+      candleDownBorder: theme.colors.candleUpBorder,
+      candleUpWick: theme.colors.candleDownWick,
+      candleDownWick: theme.colors.candleUpWick,
 
-            // ── Time-share area fill ──
-            timeShareAreaUp: theme.colors.timeShareAreaDown,
-            timeShareAreaDown: theme.colors.timeShareAreaUp,
+      // ── Time-share area fill ──
+      timeShareAreaUp: theme.colors.timeShareAreaDown,
+      timeShareAreaDown: theme.colors.timeShareAreaUp,
 
-            // ── Volume bars ──
-            volumeUp: theme.colors.volumeDown,
-            volumeDown: theme.colors.volumeUp,
+      // ── Volume bars ──
+      volumeUp: theme.colors.volumeDown,
+      volumeDown: theme.colors.volumeUp,
 
-            // ── Footprint (ask = buy = bull, bid = sell = bear) ──
-            footprintAsk: theme.colors.footprintBid,
-            footprintBid: theme.colors.footprintAsk,
+      // ── Footprint (ask = buy = bull, bid = sell = bear) ──
+      footprintAsk: theme.colors.footprintBid,
+      footprintBid: theme.colors.footprintAsk,
 
-            // ── Nested: price accents ──
-            price: {
-                ...theme.colors.price,
-            },
+      // ── Nested: price accents ──
+      price: {
+        ...theme.colors.price,
+      },
 
-            // ── Nested: MACD histogram bars ──
-            macd: {
-                ...theme.colors.macd,
-                barUp: theme.colors.macd.barDown,
-                barDown: theme.colors.macd.barUp,
-                barUpLight: theme.colors.macd.barDownLight,
-                barDownLight: theme.colors.macd.barUpLight,
-            },
+      // ── Nested: MACD histogram bars ──
+      macd: {
+        ...theme.colors.macd,
+        barUp: theme.colors.macd.barDown,
+        barDown: theme.colors.macd.barUp,
+        barUpLight: theme.colors.macd.barDownLight,
+        barDownLight: theme.colors.macd.barUpLight,
+      },
 
-            // ── Nested: SMC structure (HH/HL = bull, LH/LL = bear) ──
-            structure: {
-                ...theme.colors.structure,
-                hh: theme.colors.structure.ll,
-                ll: theme.colors.structure.hh,
-                hl: theme.colors.structure.lh,
-                lh: theme.colors.structure.hl,
-            },
+      // ── Nested: SMC structure (HH/HL = bull, LH/LL = bear) ──
+      structure: {
+        ...theme.colors.structure,
+        hh: theme.colors.structure.ll,
+        ll: theme.colors.structure.hh,
+        hl: theme.colors.structure.lh,
+        lh: theme.colors.structure.hl,
+      },
 
-            // ── Nested: Zones / FVG / Order Block ──
-            zones: {
-                ...theme.colors.zones,
-                fvgBullFill: theme.colors.zones.fvgBearFill,
-                fvgBearFill: theme.colors.zones.fvgBullFill,
-                fvgBullBorder: theme.colors.zones.fvgBearBorder,
-                fvgBearBorder: theme.colors.zones.fvgBullBorder,
-                obBullFill: theme.colors.zones.obBearFill,
-                obBearFill: theme.colors.zones.obBullFill,
-            },
+      // ── Nested: Zones / FVG / Order Block ──
+      zones: {
+        ...theme.colors.zones,
+        fvgBullFill: theme.colors.zones.fvgBearFill,
+        fvgBearFill: theme.colors.zones.fvgBullFill,
+        fvgBullBorder: theme.colors.zones.fvgBearBorder,
+        fvgBearBorder: theme.colors.zones.fvgBullBorder,
+        obBullFill: theme.colors.zones.obBearFill,
+        obBearFill: theme.colors.zones.obBullFill,
+      },
 
-            // ── Nested: CCI overbought (bull) / oversold (bear) ──
-            cci: {
-                ...theme.colors.cci,
-                overbought: theme.colors.cci.oversold,
-                oversold: theme.colors.cci.overbought,
-            },
+      // ── Nested: CCI overbought (bull) / oversold (bear) ──
+      cci: {
+        ...theme.colors.cci,
+        overbought: theme.colors.cci.oversold,
+        oversold: theme.colors.cci.overbought,
+      },
 
-            // ── Nested: WMSR overbought / oversold ──
-            wmsr: {
-                ...theme.colors.wmsr,
-                overbought: theme.colors.wmsr.oversold,
-                oversold: theme.colors.wmsr.overbought,
-            },
-        },
-    }
+      // ── Nested: WMSR overbought / oversold ──
+      wmsr: {
+        ...theme.colors.wmsr,
+        overbought: theme.colors.wmsr.oversold,
+        oversold: theme.colors.wmsr.overbought,
+      },
+    },
+  }
 }
 
 /**
@@ -122,11 +122,11 @@ export function withAsiaMarketColors(theme: Theme): Theme {
  * ```
  */
 export function resolveThemeColors(
-    themeName: 'light' | 'dark',
-    isAsiaMarket?: boolean,
-    colorPresetSettings?: ColorPresetSettings,
+  themeName: 'light' | 'dark',
+  isAsiaMarket?: boolean,
+  colorPresetSettings?: ColorPresetSettings,
 ): ColorTokens {
-    const base = themeName === 'dark' ? darkTheme : lightTheme
-    const active = isAsiaMarket ? withAsiaMarketColors(base) : base
-    return applyColorPresetOverrides(active.colors, themeName, colorPresetSettings)
+  const base = themeName === 'dark' ? darkTheme : lightTheme
+  const active = isAsiaMarket ? withAsiaMarketColors(base) : base
+  return applyColorPresetOverrides(active.colors, themeName, colorPresetSettings)
 }

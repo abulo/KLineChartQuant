@@ -12,23 +12,20 @@ const repoSrc = fileURLToPath(new URL('../../src', import.meta.url))
 const corePkg = JSON.parse(readFileSync(new URL('../core/package.json', import.meta.url), 'utf-8'))
 const coreAliases: Array<{ find: string; replacement: string }> = []
 for (const [key, value] of Object.entries(corePkg.exports)) {
-    if (key === '.') continue
-    const subpath = `@363045841yyt/klinechart-core${key.slice(1)}`
-    const importPath = (value as any).import as string
-    const sourcePath = importPath.replace('./dist/', '').replace(/\.js$/, '.ts')
-    coreAliases.push({ find: subpath, replacement: `${coreSrc}/${sourcePath}` })
+  if (key === '.') continue
+  const subpath = `@363045841yyt/klinechart-core${key.slice(1)}`
+  const importPath = (value as any).import as string
+  const sourcePath = importPath.replace('./dist/', '').replace(/\.js$/, '.ts')
+  coreAliases.push({ find: subpath, replacement: `${coreSrc}/${sourcePath}` })
 }
 
 export default defineConfig({
-    test: {
-        environment: 'node',
-        include: ['src/**/*.test.ts'],
-        setupFiles: ['./src/__tests__/_setup.ts'],
-    },
-    resolve: {
-        alias: [
-            ...coreAliases,
-            { find: /^@\//, replacement: `${repoSrc}/` },
-        ],
-    },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+    setupFiles: ['./src/__tests__/_setup.ts'],
+  },
+  resolve: {
+    alias: [...coreAliases, { find: /^@\//, replacement: `${repoSrc}/` }],
+  },
 })

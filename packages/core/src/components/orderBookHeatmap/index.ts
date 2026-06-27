@@ -11,15 +11,15 @@ export { createDeltaArchive } from './deltaArchive'
 export { createLogColorScale } from './logColorScale'
 export { createHeatmapController } from './createHeatmapController'
 export type {
-    BookSnapshot,
-    DeltaArchive,
-    DeltaArchiveOptions,
-    HeatmapController,
-    HeatmapControllerConfig,
-    HeatmapState,
-    LogColorScale,
-    OrderBookDelta,
-    OrderBookState,
-    OrderBookStateOptions,
-    SnapshotRing,
+  BookSnapshot,
+  DeltaArchive,
+  DeltaArchiveOptions,
+  HeatmapController,
+  HeatmapControllerConfig,
+  HeatmapState,
+  LogColorScale,
+  OrderBookDelta,
+  OrderBookState,
+  OrderBookStateOptions,
+  SnapshotRing,
 } from './types'

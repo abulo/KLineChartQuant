@@ -12,8 +12,8 @@ work.
 
 Logically a 2-D grid `intensity[col][row]` where:
 
-- `col`  ∈ `[0, snapshotRingCapacity)` — time axis (oldest → newest)
-- `row`  ∈ `[0, priceRowCount)` — price axis (low → high)
+- `col` ∈ `[0, snapshotRingCapacity)` — time axis (oldest → newest)
+- `row` ∈ `[0, priceRowCount)` — price axis (low → high)
 
 CPU-side layout (one upload per render frame for simplicity in v0):
 
@@ -125,6 +125,6 @@ call and a divide — no change to the buffer shape is required.
 ## Composition with depth chart / order book ladder
 
 The same `ring` storage buffer is consumed by §3.4's depth chart, which only
-needs the *current* column (`ringHead - 1 mod N`) and a different fragment
+needs the _current_ column (`ringHead - 1 mod N`) and a different fragment
 shader that does a cumulative-sum sweep. We deliberately avoid duplicating
 state for the two visualizations.

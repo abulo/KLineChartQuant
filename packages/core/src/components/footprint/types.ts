@@ -52,8 +52,8 @@ export type AggressorSide = 'buy' | 'sell'
  * inferred — this is the explicit boundary mandated by ROADMAP §3.3.
  */
 export interface AggressorWithConfidence {
-    side: AggressorSide
-    inferred: boolean
+  side: AggressorSide
+  inferred: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -68,9 +68,9 @@ export interface AggressorWithConfidence {
  * not USD value).
  */
 export interface Trade {
-    timestamp: number
-    price: number
-    size: number
+  timestamp: number
+  price: number
+  size: number
 }
 
 /**
@@ -80,7 +80,7 @@ export interface Trade {
  * controller falls back to the configured heuristic classifier.
  */
 export interface TradeWithFlag extends Trade {
-    isBuyerMaker?: boolean
+  isBuyerMaker?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -94,12 +94,12 @@ export interface TradeWithFlag extends Trade {
  * (not net) — the delta is computed separately.
  */
 export interface FootprintBarCell {
-    /** representative price of the bin (quantised to tickSize). */
-    price: number
-    /** volume of trades classified as `buy` (aggressor lifted the ASK). */
-    askVol: number
-    /** volume of trades classified as `sell` (aggressor hit the BID). */
-    bidVol: number
+  /** representative price of the bin (quantised to tickSize). */
+  price: number
+  /** volume of trades classified as `buy` (aggressor lifted the ASK). */
+  askVol: number
+  /** volume of trades classified as `sell` (aggressor hit the BID). */
+  bidVol: number
 }
 
 /**
@@ -116,9 +116,9 @@ export type ImbalanceDirection = 'buy-imbalance' | 'sell-imbalance'
  * when the weaker side is zero — see `computeDiagonalImbalances`).
  */
 export interface FootprintImbalance {
-    priceIndex: number
-    direction: ImbalanceDirection
-    ratio: number
+  priceIndex: number
+  direction: ImbalanceDirection
+  ratio: number
 }
 
 /**
@@ -128,20 +128,20 @@ export interface FootprintImbalance {
  * `cells` and `imbalances` are recomputed lazily on `bars` signal read.
  */
 export interface FootprintBar {
-    /** stable index = `Math.floor(timestamp / barIntervalMs)`. */
-    barIndex: number
-    /** inclusive start of the bar window (epoch ms). */
-    startTime: number
-    /** exclusive end of the bar window (epoch ms). */
-    endTime: number
-    /** per-price-level cells, ascending by `price`. */
-    cells: ReadonlyArray<FootprintBarCell>
-    /** Σ(askVol − bidVol) across cells. Positive ⇒ buyers led. */
-    delta: number
-    /** Σ(askVol + bidVol). */
-    totalVolume: number
-    /** diagonal imbalance flags; usually 0–5 per bar. */
-    imbalances: ReadonlyArray<FootprintImbalance>
+  /** stable index = `Math.floor(timestamp / barIntervalMs)`. */
+  barIndex: number
+  /** inclusive start of the bar window (epoch ms). */
+  startTime: number
+  /** exclusive end of the bar window (epoch ms). */
+  endTime: number
+  /** per-price-level cells, ascending by `price`. */
+  cells: ReadonlyArray<FootprintBarCell>
+  /** Σ(askVol − bidVol) across cells. Positive ⇒ buyers led. */
+  delta: number
+  /** Σ(askVol + bidVol). */
+  totalVolume: number
+  /** diagonal imbalance flags; usually 0–5 per bar. */
+  imbalances: ReadonlyArray<FootprintImbalance>
 }
 
 // ---------------------------------------------------------------------------
@@ -154,24 +154,24 @@ export interface FootprintBar {
  * a partial.
  */
 export interface FootprintConfig {
-    /** quantise trade prices to this tick size (e.g. 0.01 for BTCUSDT). */
-    tickSize: number
-    /** ms per bar (e.g. 60_000 for 1m). */
-    barIntervalMs: number
-    /**
-     * Diagonal imbalance threshold. Default 3 — i.e. a cell must have at
-     * least 3× the volume of its diagonal counterpart to flag.
-     */
-    imbalanceRatio: number
-    /**
-     * Classifier to fall back to when a trade has no explicit
-     * `isBuyerMaker` flag.
-     *
-     *   - 'tick-rule' — price-change rule; default. Doesn't need bid/ask.
-     *   - 'lee-ready' — uses bid/ask; controller's `ingestTrade` must
-     *                   receive `bid` and `ask` for this path.
-     */
-    fallbackClassifier: 'tick-rule' | 'lee-ready'
+  /** quantise trade prices to this tick size (e.g. 0.01 for BTCUSDT). */
+  tickSize: number
+  /** ms per bar (e.g. 60_000 for 1m). */
+  barIntervalMs: number
+  /**
+   * Diagonal imbalance threshold. Default 3 — i.e. a cell must have at
+   * least 3× the volume of its diagonal counterpart to flag.
+   */
+  imbalanceRatio: number
+  /**
+   * Classifier to fall back to when a trade has no explicit
+   * `isBuyerMaker` flag.
+   *
+   *   - 'tick-rule' — price-change rule; default. Doesn't need bid/ask.
+   *   - 'lee-ready' — uses bid/ask; controller's `ingestTrade` must
+   *                   receive `bid` and `ask` for this path.
+   */
+  fallbackClassifier: 'tick-rule' | 'lee-ready'
 }
 
 // ---------------------------------------------------------------------------
@@ -184,49 +184,49 @@ export interface FootprintConfig {
  * `dispose`).
  */
 export interface FootprintController {
-    /** Current config; re-emits when `setConfig` is called. */
-    readonly config: Signal<FootprintConfig>
-    /** Materialised bars, ascending by `barIndex`. Empty before first trade. */
-    readonly bars: Signal<ReadonlyArray<FootprintBar>>
-    /**
-     * Cumulative delta series, parallel to `bars`. `cumulativeDelta[i]`
-     * corresponds to `bars[i]`.
-     */
-    readonly cumulativeDelta: Signal<ReadonlyArray<number>>
+  /** Current config; re-emits when `setConfig` is called. */
+  readonly config: Signal<FootprintConfig>
+  /** Materialised bars, ascending by `barIndex`. Empty before first trade. */
+  readonly bars: Signal<ReadonlyArray<FootprintBar>>
+  /**
+   * Cumulative delta series, parallel to `bars`. `cumulativeDelta[i]`
+   * corresponds to `bars[i]`.
+   */
+  readonly cumulativeDelta: Signal<ReadonlyArray<number>>
 
-    /**
-     * Ingest one trade — canonical method, aligned with the cross-controller
-     * `ingest()` convention (VolumeProfile, OrderBookHeatmap). `bid`/`ask` are
-     * optional and only consulted when the trade lacks an explicit
-     * `isBuyerMaker` flag AND the configured fallback is `lee-ready`.
-     *
-     * Closes API-audit BLOCKER-001 (5-verb intake proliferation) by
-     * harmonising on `ingest` as the stream-accumulator verb across
-     * `VolumeProfile`, `OrderBookHeatmap`, and `Footprint`.
-     */
-    ingest(trade: TradeWithFlag, bid?: number, ask?: number): void
+  /**
+   * Ingest one trade — canonical method, aligned with the cross-controller
+   * `ingest()` convention (VolumeProfile, OrderBookHeatmap). `bid`/`ask` are
+   * optional and only consulted when the trade lacks an explicit
+   * `isBuyerMaker` flag AND the configured fallback is `lee-ready`.
+   *
+   * Closes API-audit BLOCKER-001 (5-verb intake proliferation) by
+   * harmonising on `ingest` as the stream-accumulator verb across
+   * `VolumeProfile`, `OrderBookHeatmap`, and `Footprint`.
+   */
+  ingest(trade: TradeWithFlag, bid?: number, ask?: number): void
 
-    /**
-     * @deprecated since 0.1.0-alpha.1 — use {@link FootprintController.ingest}.
-     * Kept as a non-removing alias for at least 6 months for migration. Will
-     * be removed in 0.2.0.
-     */
-    ingestTrade(trade: TradeWithFlag, bid?: number, ask?: number): void
+  /**
+   * @deprecated since 0.1.0-alpha.1 — use {@link FootprintController.ingest}.
+   * Kept as a non-removing alias for at least 6 months for migration. Will
+   * be removed in 0.2.0.
+   */
+  ingestTrade(trade: TradeWithFlag, bid?: number, ask?: number): void
 
-    /**
-     * Patch the config. Changing `barIntervalMs` or `tickSize` invalidates
-     * the buckets so the state is cleared. Changing only `imbalanceRatio`
-     * just re-materialises on the next read.
-     */
-    setConfig(next: Partial<FootprintConfig>): void
+  /**
+   * Patch the config. Changing `barIntervalMs` or `tickSize` invalidates
+   * the buckets so the state is cleared. Changing only `imbalanceRatio`
+   * just re-materialises on the next read.
+   */
+  setConfig(next: Partial<FootprintConfig>): void
 
-    /** Clear all bars and cumulative delta. Does not change config. */
-    reset(): void
+  /** Clear all bars and cumulative delta. Does not change config. */
+  reset(): void
 
-    /**
-     * Stop emitting. Subsequent calls to ingest/setConfig/reset are silent
-     * no-ops; previously-attached subscribers receive no further
-     * notifications. Idempotent.
-     */
-    dispose(): void
+  /**
+   * Stop emitting. Subsequent calls to ingest/setConfig/reset are silent
+   * no-ops; previously-attached subscribers receive no further
+   * notifications. Idempotent.
+   */
+  dispose(): void
 }

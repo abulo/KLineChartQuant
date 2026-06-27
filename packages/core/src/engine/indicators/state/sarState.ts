@@ -6,36 +6,35 @@ import { createIndicatorStateKey } from '../../../plugin/stateKeys'
  * 'down' 表示 SAR 在 K 线上方（空头止损）。
  */
 export interface SARPoint {
-    value: number
-    trend: 'up' | 'down'
+  value: number
+  trend: 'up' | 'down'
 }
 
 export interface SARRenderState extends BaseIndicatorState {
-    timestamp: number
-    series: (SARPoint | undefined)[]
-    params: { step: number; maxStep: number; showSAR: boolean }
-    valueMin: number
-    valueMax: number
-    visibleMin: number
-    visibleMax: number
+  timestamp: number
+  series: (SARPoint | undefined)[]
+  params: { step: number; maxStep: number; showSAR: boolean }
+  valueMin: number
+  valueMax: number
+  visibleMin: number
+  visibleMax: number
 }
 
-export const createSARStateKey = (paneId: string) =>
-    createIndicatorStateKey('sar', paneId)
+export const createSARStateKey = (paneId: string) => createIndicatorStateKey('sar', paneId)
 
 export const DEFAULT_SAR_STEP = 0.02
 export const DEFAULT_SAR_MAX_STEP = 0.2
 
 export const EMPTY_SAR_STATE: SARRenderState = {
-    timestamp: 0,
-    series: [],
-    params: {
-        step: DEFAULT_SAR_STEP,
-        maxStep: DEFAULT_SAR_MAX_STEP,
-        showSAR: true,
-    },
-    valueMin: 0,
-    valueMax: 1,
-    visibleMin: Infinity,
-    visibleMax: -Infinity,
+  timestamp: 0,
+  series: [],
+  params: {
+    step: DEFAULT_SAR_STEP,
+    maxStep: DEFAULT_SAR_MAX_STEP,
+    showSAR: true,
+  },
+  valueMin: 0,
+  valueMax: 1,
+  visibleMin: Infinity,
+  visibleMax: -Infinity,
 }

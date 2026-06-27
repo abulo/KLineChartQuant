@@ -89,7 +89,7 @@ export class DrawingState {
   /** 更新图元样式（合并到已有样式） */
   updateDrawingStyle(drawingId: string, style: Partial<DrawingStyle>): void {
     this.drawings = this.drawings.map((d) =>
-      d.id === drawingId ? { ...d, style: { ...d.style, ...style } } : d
+      d.id === drawingId ? { ...d, style: { ...d.style, ...style } } : d,
     )
     this.adapter.setDrawings(this.drawings)
   }

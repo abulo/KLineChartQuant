@@ -2,7 +2,15 @@
  * 插件宿主 - 核心管理类
  */
 import { KLineChartError } from '../errors'
-import type { Plugin, PluginConfig, PluginHost, PluginState, BaseIndicatorState, PluginLogger, HookCallOptions } from './types'
+import type {
+  Plugin,
+  PluginConfig,
+  PluginHost,
+  PluginState,
+  BaseIndicatorState,
+  PluginLogger,
+  HookCallOptions,
+} from './types'
 import { PluginRegistry } from './PluginRegistry'
 import { EventBus } from './EventBus'
 import { HookSystem } from './HookSystem'
@@ -48,17 +56,25 @@ export class PluginHostImpl implements PluginHost {
     tap: <T = unknown, R = unknown>(
       hookName: string,
       fn: (context: T) => R | Promise<R>,
-      priority = 0
+      priority = 0,
     ) => {
       this.hookSystem.tap(hookName, fn, priority)
     },
     untap: (hookName: string, fn: (context: unknown) => unknown) => {
       this.hookSystem.untap(hookName, fn)
     },
-    call: async <T = unknown, R = unknown>(hookName: string, context: T, options?: HookCallOptions) => {
+    call: async <T = unknown, R = unknown>(
+      hookName: string,
+      context: T,
+      options?: HookCallOptions,
+    ) => {
       return this.hookSystem.call<T, R>(hookName, context, options)
     },
-    callSync: <T = unknown, R = unknown>(hookName: string, context: T, options?: HookCallOptions) => {
+    callSync: <T = unknown, R = unknown>(
+      hookName: string,
+      context: T,
+      options?: HookCallOptions,
+    ) => {
       return this.hookSystem.callSync<T, R>(hookName, context, options)
     },
   }
@@ -83,7 +99,11 @@ export class PluginHostImpl implements PluginHost {
 
   // ============ 状态存储 API ============
 
-  setSharedState<T extends BaseIndicatorState>(namespace: string, state: T, ownerId?: string): void {
+  setSharedState<T extends BaseIndicatorState>(
+    namespace: string,
+    state: T,
+    ownerId?: string,
+  ): void {
     this.stateStore.setState(namespace, state, ownerId)
   }
 
@@ -147,7 +167,7 @@ export class PluginHostImpl implements PluginHost {
       this.registry.updateState(
         plugin.name,
         'error' as PluginState,
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       )
       this.log('error', `Failed to install plugin "${plugin.name}":`, error)
       throw error

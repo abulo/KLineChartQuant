@@ -6,9 +6,7 @@ import type {
   ChartController,
 } from '@363045841yyt/klinechart-core'
 
-export function useAlerts(
-  controllerSource: MaybeRefOrGetter<ChartController | null>,
-) {
+export function useAlerts(controllerSource: MaybeRefOrGetter<ChartController | null>) {
   const controller = toRef(controllerSource)
 
   const rules = ref<ReadonlyArray<AlertRule>>([]) as Ref<ReadonlyArray<AlertRule>>

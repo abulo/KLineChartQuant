@@ -17,42 +17,43 @@ import { KLineChartError } from '../errors'
  */
 
 export interface LsmaOptions {
-    period: number
+  period: number
 }
 
 export function computeLSMA(prices: ReadonlyArray<number>, opts: LsmaOptions): Float64Array {
-    const { period } = opts
-    if (period < 2 || !Number.isFinite(period)) throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeLSMA: period must be >= 2')
+  const { period } = opts
+  if (period < 2 || !Number.isFinite(period))
+    throw new KLineChartError('INDICATOR_INVALID_PARAM', 'computeLSMA: period must be >= 2')
 
-    const out = new Float64Array(prices.length)
-    const xbar = (period - 1) / 2
-    // sum((x - x̄)^2) for x = 0..period-1 is a constant; precompute.
-    let xxSum = 0
+  const out = new Float64Array(prices.length)
+  const xbar = (period - 1) / 2
+  // sum((x - x̄)^2) for x = 0..period-1 is a constant; precompute.
+  let xxSum = 0
+  for (let k = 0; k < period; k++) {
+    const d = k - xbar
+    xxSum += d * d
+  }
+
+  for (let i = 0; i < prices.length; i++) {
+    if (i < period - 1) {
+      out[i] = Number.NaN
+      continue
+    }
+    // Window covers indices i - period + 1 .. i, mapped to x = 0..period-1.
+    let ysum = 0
     for (let k = 0; k < period; k++) {
-        const d = k - xbar
-        xxSum += d * d
+      ysum += prices[i - period + 1 + k] as number
     }
-
-    for (let i = 0; i < prices.length; i++) {
-        if (i < period - 1) {
-            out[i] = Number.NaN
-            continue
-        }
-        // Window covers indices i - period + 1 .. i, mapped to x = 0..period-1.
-        let ysum = 0
-        for (let k = 0; k < period; k++) {
-            ysum += prices[i - period + 1 + k] as number
-        }
-        const ybar = ysum / period
-        let xy = 0
-        for (let k = 0; k < period; k++) {
-            const xd = k - xbar
-            const yd = (prices[i - period + 1 + k] as number) - ybar
-            xy += xd * yd
-        }
-        const b = xy / xxSum
-        const a = ybar - b * xbar
-        out[i] = a + b * (period - 1)
+    const ybar = ysum / period
+    let xy = 0
+    for (let k = 0; k < period; k++) {
+      const xd = k - xbar
+      const yd = (prices[i - period + 1 + k] as number) - ybar
+      xy += xd * yd
     }
-    return out
+    const b = xy / xxSum
+    const a = ybar - b * xbar
+    out[i] = a + b * (period - 1)
+  }
+  return out
 }

@@ -14,7 +14,7 @@ export function toOpaqueRgba(color: string): string {
 export function compositeLineSurface(
   context: RenderContext,
   surface: NonNullable<RenderContext['lineWebGLSurface']>,
-  alpha = 1
+  alpha = 1,
 ): void {
   surface.compositeTo(context.ctx, {
     alpha,

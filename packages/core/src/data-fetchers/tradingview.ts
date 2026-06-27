@@ -35,7 +35,10 @@ async function fetchTradingview(
   try {
     const res = await fetch(url)
     if (!res.ok) {
-      throw new KLineChartError('FETCH_FAILED', `[tradingview] fetch failed: ${res.status} ${res.statusText}`)
+      throw new KLineChartError(
+        'FETCH_FAILED',
+        `[tradingview] fetch failed: ${res.status} ${res.statusText}`,
+      )
     }
     const json = await res.json()
     if (!json.success) {

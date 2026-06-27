@@ -19,7 +19,10 @@ export type SemanticEventType = 'config:loading' | 'config:ready' | 'config:erro
 export type { DataFetcher, SymbolSpec } from '../controllers/types'
 
 function normalizeIndicatorId(id: string): string {
-  return id.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+  return id
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
 }
 
 function getSemanticIndicatorDefinition(type: string): IndicatorMetadata | undefined {
@@ -37,12 +40,23 @@ export interface SemanticChartAdapter {
   setSymbols(specs: ReadonlyArray<SymbolSpec>): void
   updateData(data: ReadonlyArray<KLineData>): void
   updateRendererConfig(name: string, config: Record<string, unknown>): void
-  addIndicator?(definitionId: string, role: 'main' | 'sub', params?: Record<string, unknown>): string | null
+  addIndicator?(
+    definitionId: string,
+    role: 'main' | 'sub',
+    params?: Record<string, unknown>,
+  ): string | null
   removeIndicator?(instanceId: string): boolean
-  enableMainIndicator?(indicatorId: string, params?: Record<string, number | boolean | string>): boolean
+  enableMainIndicator?(
+    indicatorId: string,
+    params?: Record<string, number | boolean | string>,
+  ): boolean
   disableMainIndicator?(indicatorId: string): boolean
   clearSubPanes(): void
-  createSubPane(paneId: string, indicatorId: CoreSubIndicatorType, params?: Record<string, unknown>): boolean
+  createSubPane(
+    paneId: string,
+    indicatorId: CoreSubIndicatorType,
+    params?: Record<string, unknown>,
+  ): boolean
   clearCustomMarkers(): void
   updateCustomMarkers(markers: ReadonlyArray<CustomMarkerEntity>): void
 }
@@ -97,15 +111,17 @@ export class SemanticChartController {
       this.applyIndicators(config.indicators.main, config.indicators.sub)
     }
 
-    this.chart.setSymbols([{
-      symbol: config.data.symbol,
-      exchange: config.data.exchange,
-      period: config.data.period,
-      adjust: config.data.adjust,
-      source: config.data.source,
-      startDate: config.data.startDate,
-      endDate: config.data.endDate,
-    }])
+    this.chart.setSymbols([
+      {
+        symbol: config.data.symbol,
+        exchange: config.data.exchange,
+        period: config.data.period,
+        adjust: config.data.adjust,
+        source: config.data.source,
+        startDate: config.data.startDate,
+        endDate: config.data.endDate,
+      },
+    ])
 
     if (config.markers) {
       this.applyMarkers(config.markers.customMarkers, config.data.period)
@@ -125,14 +141,18 @@ export class SemanticChartController {
           }
           continue
         }
-        const added = this.chart.addIndicator?.(indicator.type, 'main', indicator.params as Record<string, unknown>)
+        const added = this.chart.addIndicator?.(
+          indicator.type,
+          'main',
+          indicator.params as Record<string, unknown>,
+        )
         if (added) {
           continue
         }
         const enabled = this.chart.enableMainIndicator?.(
-            indicator.type,
-            indicator.params as Record<string, number | boolean | string>,
-          )
+          indicator.type,
+          indicator.params as Record<string, number | boolean | string>,
+        )
         if (enabled) {
           continue
         }
@@ -179,7 +199,11 @@ export class SemanticChartController {
     this.chart.updateCustomMarkers(entities)
   }
 
-  private applyChartOptions(options: { kWidth?: number; kGap?: number; autoScrollToRight?: boolean }): void {
+  private applyChartOptions(options: {
+    kWidth?: number
+    kGap?: number
+    autoScrollToRight?: boolean
+  }): void {
     if (options.autoScrollToRight !== undefined) {
     }
   }

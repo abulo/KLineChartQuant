@@ -15,10 +15,7 @@ export class WsSessionHandle implements SessionHandle {
     this.ws = ws
   }
 
-  async executeTool(call: {
-    name: string
-    input: Record<string, unknown>
-  }): Promise<ToolResult> {
+  async executeTool(call: { name: string; input: Record<string, unknown> }): Promise<ToolResult> {
     const requestId = `${this.sessionId}:${++this.msgSeq}`
 
     // 整体流程：创建 Deferred → 发送 WS → 等待结果（含超时）
@@ -31,14 +28,15 @@ export class WsSessionHandle implements SessionHandle {
           }
           return pipe(
             Deferred.make<ToolResult, Error>(), // 创建一个可外部完成的一次性变量
-            Effect.tap((deferred) => // defered 请求逻辑
-              Effect.sync(() => {
-                // 存储 deffered
-                this.pending.set(requestId, deferred)
-                this.ws.send(
-                  JSON.stringify({ type: 'tool:call', requestId, call }),
-                )
-              }),
+            Effect.tap(
+              (
+                deferred, // defered 请求逻辑
+              ) =>
+                Effect.sync(() => {
+                  // 存储 deffered
+                  this.pending.set(requestId, deferred)
+                  this.ws.send(JSON.stringify({ type: 'tool:call', requestId, call }))
+                }),
             ),
           )
         }),

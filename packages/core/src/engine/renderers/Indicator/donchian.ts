@@ -4,7 +4,11 @@ import type { KLineData } from '../../../types/price'
 import type { DonchianRenderState } from '../../indicators/state/donchianState'
 import { createDonchianStateKey, EMPTY_DONCHIAN_STATE } from '../../indicators/state/donchianState'
 import { Indicator } from '../../indicators/indicatorDefinitionRegistry'
-import { resolveStateKey, type TitleInfo, type GetTitleInfoFn } from '../../indicators/indicatorMetadata'
+import {
+  resolveStateKey,
+  type TitleInfo,
+  type GetTitleInfoFn,
+} from '../../indicators/indicatorMetadata'
 import type { IndicatorScheduler, DonchianSchedulerConfig } from '../../indicators/scheduler'
 import { calcDonchianData } from '../../indicators/calculators'
 import { createBandVisibleStateComposer } from '../../indicators/visibleStateComposers'
@@ -15,150 +19,176 @@ const DONCHIAN_LOWER_COLOR = '#0891b2'
 
 type Point = { x: number; y: number }
 
-interface DonchianRendererOptions { paneId?: string }
-
-function getDonchianStateKey(host: PluginHost | null, paneId: string): string | null {
-    const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
-    if (!scheduler) {
-        console.warn('[DonchianRenderer] Scheduler not available via service locator')
-        return null
-    }
-    const meta = scheduler.getIndicatorMetadata('donchian')
-    if (!meta) {
-        console.warn('[DonchianRenderer] Indicator metadata for \'donchian\' not found, skip rendering')
-        return null
-    }
-    return resolveStateKey(meta.stateKey, paneId)
+interface DonchianRendererOptions {
+  paneId?: string
 }
 
-function createDonchianRendererPlugin(options: DonchianRendererOptions = {}): RendererPluginWithHost {
-    const { paneId = 'main' } = options
-    let pluginHost: PluginHost | null = null
+function getDonchianStateKey(host: PluginHost | null, paneId: string): string | null {
+  const scheduler = host?.getService<IndicatorScheduler>('indicatorScheduler')
+  if (!scheduler) {
+    console.warn('[DonchianRenderer] Scheduler not available via service locator')
+    return null
+  }
+  const meta = scheduler.getIndicatorMetadata('donchian')
+  if (!meta) {
+    console.warn("[DonchianRenderer] Indicator metadata for 'donchian' not found, skip rendering")
+    return null
+  }
+  return resolveStateKey(meta.stateKey, paneId)
+}
 
-    function resolveKey(): string | null {
-        return getDonchianStateKey(pluginHost, paneId)
-    }
+function createDonchianRendererPlugin(
+  options: DonchianRendererOptions = {},
+): RendererPluginWithHost {
+  const { paneId = 'main' } = options
+  let pluginHost: PluginHost | null = null
 
-    return {
-        name: `donchian_${paneId}`,
-        version: '1.1.0',
-        description: 'Donchian Channel 渲染器（WebGL + Canvas2D 回退）',
-        debugName: 'Donchian',
-        paneId,
-        priority: RENDERER_PRIORITY.MAIN,
+  function resolveKey(): string | null {
+    return getDonchianStateKey(pluginHost, paneId)
+  }
 
-        onInstall(host: PluginHost) { pluginHost = host },
-        getDeclaredNamespaces() { const key = resolveKey(); return key ? [key] : [] },
+  return {
+    name: `donchian_${paneId}`,
+    version: '1.1.0',
+    description: 'Donchian Channel 渲染器（WebGL + Canvas2D 回退）',
+    debugName: 'Donchian',
+    paneId,
+    priority: RENDERER_PRIORITY.MAIN,
 
-        draw(context: RenderContext) {
-            const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
-            const stateKey = resolveKey()
-            if (!stateKey) return
-            const state = pluginHost?.getSharedState<DonchianRenderState>(stateKey)
-            if (!state || state.visibleMin > state.visibleMax) return
-            const { showUpper, showMiddle, showLower } = state.params
-            if (!showUpper && !showMiddle && !showLower) return
+    onInstall(host: PluginHost) {
+      pluginHost = host
+    },
+    getDeclaredNamespaces() {
+      const key = resolveKey()
+      return key ? [key] : []
+    },
 
-            const { series } = state
-            const toY = (v: number) => pane.yAxis.priceToY(v)
-            const rangeStart = range.start
+    draw(context: RenderContext) {
+      const { ctx, pane, range, scrollLeft, kLineCenters, lineWebGLSurface } = context
+      const stateKey = resolveKey()
+      if (!stateKey) return
+      const state = pluginHost?.getSharedState<DonchianRenderState>(stateKey)
+      if (!state || state.visibleMin > state.visibleMax) return
+      const { showUpper, showMiddle, showLower } = state.params
+      if (!showUpper && !showMiddle && !showLower) return
 
-            const upperPts: Point[] = []
-            const middlePts: Point[] = []
-            const lowerPts: Point[] = []
-            const drawEnd = Math.min(range.end, series.length)
-            for (let i = range.start; i < drawEnd; i++) {
-                const point = series[i]
-                if (!point) continue
-                const centerX = kLineCenters[i - rangeStart]
-                if (centerX === undefined) continue
-                if (showUpper) upperPts.push({ x: centerX, y: toY(point.upper) })
-                if (showMiddle) middlePts.push({ x: centerX, y: toY(point.middle) })
-                if (showLower) lowerPts.push({ x: centerX, y: toY(point.lower) })
-            }
+      const { series } = state
+      const toY = (v: number) => pane.yAxis.priceToY(v)
+      const rangeStart = range.start
 
-            const lines: Array<{ points: Point[]; width: number; color: string }> = []
-            if (upperPts.length >= 2) lines.push({ points: upperPts, width: 1, color: DONCHIAN_UPPER_COLOR })
-            if (middlePts.length >= 2) lines.push({ points: middlePts, width: 1, color: DONCHIAN_MIDDLE_COLOR })
-            if (lowerPts.length >= 2) lines.push({ points: lowerPts, width: 1, color: DONCHIAN_LOWER_COLOR })
+      const upperPts: Point[] = []
+      const middlePts: Point[] = []
+      const lowerPts: Point[] = []
+      const drawEnd = Math.min(range.end, series.length)
+      for (let i = range.start; i < drawEnd; i++) {
+        const point = series[i]
+        if (!point) continue
+        const centerX = kLineCenters[i - rangeStart]
+        if (centerX === undefined) continue
+        if (showUpper) upperPts.push({ x: centerX, y: toY(point.upper) })
+        if (showMiddle) middlePts.push({ x: centerX, y: toY(point.middle) })
+        if (showLower) lowerPts.push({ x: centerX, y: toY(point.lower) })
+      }
 
-            const enableWebGL = context.settings?.enableWebGLRendering !== false
-            let usedWebGL = false
-            if (enableWebGL && lineWebGLSurface?.isAvailable()) {
-                const allOk = lines.length > 0 && lineWebGLSurface.drawLineStrips(lines, scrollLeft)
-                if (allOk) {
-                    usedWebGL = true
-                    lineWebGLSurface.compositeTo(ctx, { imageSmoothingEnabled: false })
-                }
-            }
+      const lines: Array<{ points: Point[]; width: number; color: string }> = []
+      if (upperPts.length >= 2)
+        lines.push({ points: upperPts, width: 1, color: DONCHIAN_UPPER_COLOR })
+      if (middlePts.length >= 2)
+        lines.push({ points: middlePts, width: 1, color: DONCHIAN_MIDDLE_COLOR })
+      if (lowerPts.length >= 2)
+        lines.push({ points: lowerPts, width: 1, color: DONCHIAN_LOWER_COLOR })
 
-            if (usedWebGL) return
+      const enableWebGL = context.settings?.enableWebGLRendering !== false
+      let usedWebGL = false
+      if (enableWebGL && lineWebGLSurface?.isAvailable()) {
+        const allOk = lines.length > 0 && lineWebGLSurface.drawLineStrips(lines, scrollLeft)
+        if (allOk) {
+          usedWebGL = true
+          lineWebGLSurface.compositeTo(ctx, { imageSmoothingEnabled: false })
+        }
+      }
 
-            ctx.save()
-            ctx.translate(-scrollLeft, 0)
-            ctx.lineWidth = 1
-            ctx.lineJoin = 'round'
-            ctx.lineCap = 'round'
-            drawLine(ctx, upperPts, DONCHIAN_UPPER_COLOR)
-            drawLine(ctx, middlePts, DONCHIAN_MIDDLE_COLOR)
-            drawLine(ctx, lowerPts, DONCHIAN_LOWER_COLOR)
-            ctx.restore()
-        },
+      if (usedWebGL) return
 
-        getConfig() {
-            const stateKey = resolveKey()
-            if (!stateKey) return {}
-            const state = pluginHost?.getSharedState<DonchianRenderState>(stateKey)
-            return state?.params ?? {}
-        },
-        setConfig() {},
-    }
+      ctx.save()
+      ctx.translate(-scrollLeft, 0)
+      ctx.lineWidth = 1
+      ctx.lineJoin = 'round'
+      ctx.lineCap = 'round'
+      drawLine(ctx, upperPts, DONCHIAN_UPPER_COLOR)
+      drawLine(ctx, middlePts, DONCHIAN_MIDDLE_COLOR)
+      drawLine(ctx, lowerPts, DONCHIAN_LOWER_COLOR)
+      ctx.restore()
+    },
+
+    getConfig() {
+      const stateKey = resolveKey()
+      if (!stateKey) return {}
+      const state = pluginHost?.getSharedState<DonchianRenderState>(stateKey)
+      return state?.params ?? {}
+    },
+    setConfig() {},
+  }
 }
 
 function drawLine(ctx: CanvasRenderingContext2D, pts: Point[], color: string): void {
-    if (pts.length < 2) return
-    ctx.strokeStyle = color
-    ctx.beginPath()
-    ctx.moveTo(pts[0]!.x, pts[0]!.y)
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]!.x, pts[i]!.y)
-    ctx.stroke()
+  if (pts.length < 2) return
+  ctx.strokeStyle = color
+  ctx.beginPath()
+  ctx.moveTo(pts[0]!.x, pts[0]!.y)
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]!.x, pts[i]!.y)
+  ctx.stroke()
 }
 
 function getDonchianTitleInfo(
-    _data: KLineData[],
-    index: number | null,
-    params: Record<string, number | boolean | string>,
-    host: PluginHost,
-    paneId: string,
+  _data: KLineData[],
+  index: number | null,
+  params: Record<string, number | boolean | string>,
+  host: PluginHost,
+  paneId: string,
 ): TitleInfo | null {
-    if (index === null) return null
-    const state = host.getSharedState<DonchianRenderState>(createDonchianStateKey(paneId))
-    const p = state?.series[index]
-    if (!p) return null
+  if (index === null) return null
+  const state = host.getSharedState<DonchianRenderState>(createDonchianStateKey(paneId))
+  const p = state?.series[index]
+  if (!p) return null
 
-    return {
-        name: 'Donchian',
-        params: [(params.period as number) ?? 20],
-        values: [
-            { label: 'Upper', value: p.upper, color: '#0891b2' },
-            { label: 'Mid', value: p.middle, color: '#94a3b8' },
-            { label: 'Lower', value: p.lower, color: '#0891b2' },
-        ],
-    }
+  return {
+    name: 'Donchian',
+    params: [(params.period as number) ?? 20],
+    values: [
+      { label: 'Upper', value: p.upper, color: '#0891b2' },
+      { label: 'Mid', value: p.middle, color: '#94a3b8' },
+      { label: 'Lower', value: p.lower, color: '#0891b2' },
+    ],
+  }
 }
 
 @Indicator({
-    name: 'donchian',
-    displayName: 'Donchian',
-    getTitleInfo: getDonchianTitleInfo,
-    category: 'main',
-    defaultPaneId: 'main',
-    allowMainPane: true,
-    mainPane: { rendererName: 'donchian_main', toActiveConfig: (params, active) => ({ ...params, showUpper: active, showMiddle: active, showLower: active }) },
-    scale: { indicatorKey: 'donchian', label: 'Donchian', decimals: 2 },
-    visibleState: { compose: createBandVisibleStateComposer('donchian', EMPTY_DONCHIAN_STATE, 'lower', 'upper') },
-    runtime: { defaultConfig:{period:20,showUpper:true,showMiddle:true,showLower:true}, computeKey:'calcDonchianData', compute:(data,c)=>calcDonchianData(data,c.period) },
+  name: 'donchian',
+  displayName: 'Donchian',
+  getTitleInfo: getDonchianTitleInfo,
+  category: 'main',
+  defaultPaneId: 'main',
+  allowMainPane: true,
+  mainPane: {
+    rendererName: 'donchian_main',
+    toActiveConfig: (params, active) => ({
+      ...params,
+      showUpper: active,
+      showMiddle: active,
+      showLower: active,
+    }),
+  },
+  scale: { indicatorKey: 'donchian', label: 'Donchian', decimals: 2 },
+  visibleState: {
+    compose: createBandVisibleStateComposer('donchian', EMPTY_DONCHIAN_STATE, 'lower', 'upper'),
+  },
+  runtime: {
+    defaultConfig: { period: 20, showUpper: true, showMiddle: true, showLower: true },
+    computeKey: 'calcDonchianData',
+    compute: (data, c) => calcDonchianData(data, c.period),
+  },
 })
 class DonchianDefinition {
-    static rendererFactory = createDonchianRendererPlugin
+  static rendererFactory = createDonchianRendererPlugin
 }

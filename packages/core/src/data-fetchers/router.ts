@@ -1,16 +1,18 @@
 import type { DataFetcher } from '../controllers/types'
 import type { TimeShareFetcherFn } from './types'
 import { KLineChartError } from '../errors'
-import { getRegisteredFetcher, fetcherSupportsPeriod, getTimeShareFetcher } from './fetcherDefinitionRegistry'
+import {
+  getRegisteredFetcher,
+  fetcherSupportsPeriod,
+  getTimeShareFetcher,
+} from './fetcherDefinitionRegistry'
 
 const FALLBACK_SOURCE = 'baostock'
 
 export const routerDataFetcher: DataFetcher = (source, config) => {
   const def = getRegisteredFetcher(source)
   if (!def) {
-    console.warn(
-      `[DataFetcher] unknown source "${source}", falling back to "${FALLBACK_SOURCE}"`,
-    )
+    console.warn(`[DataFetcher] unknown source "${source}", falling back to "${FALLBACK_SOURCE}"`)
     const fallback = getRegisteredFetcher(FALLBACK_SOURCE)
     if (!fallback) {
       return Promise.reject(
@@ -39,7 +41,10 @@ export const routerTimeShareFetcher: TimeShareFetcherFn = (source, config) => {
   const fetcher = getTimeShareFetcher(source)
   if (!fetcher) {
     return Promise.reject(
-      new KLineChartError('FETCH_FAILED', `[DataFetcher] "${source}" does not support timeshare data fetching`),
+      new KLineChartError(
+        'FETCH_FAILED',
+        `[DataFetcher] "${source}" does not support timeshare data fetching`,
+      ),
     )
   }
   return fetcher(source, config)

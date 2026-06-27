@@ -34,7 +34,7 @@ export function findNearestKLineIndex(
   const { low, high } = binarySearch(data, timestamp)
   if (low === high) return low
   if (direction === 'left') {
-    return high >= 0 ? high : (low < data.length ? low : null)
+    return high >= 0 ? high : low < data.length ? low : null
   }
   return low < data.length ? low : high
 }

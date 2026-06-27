@@ -10,18 +10,18 @@ export const DEFAULT_EXPMA_SLOW_PERIOD = 50
  * 包含全量 EXPMA 数组、计算参数、以及视口极值
  */
 export interface EXPMARenderState extends BaseIndicatorState {
-    timestamp: number
-    /** 全量 EXPMA 数组（密集：从 index 0 开始） */
-    series: EXPMAPoint[]
-    /** 计算参数 */
-    params: {
-        fastPeriod: number
-        slowPeriod: number
-    }
-    /** 视口内所有 EXPMA 线的最低价 */
-    visibleMin: number
-    /** 视口内所有 EXPMA 线的最高价 */
-    visibleMax: number
+  timestamp: number
+  /** 全量 EXPMA 数组（密集：从 index 0 开始） */
+  series: EXPMAPoint[]
+  /** 计算参数 */
+  params: {
+    fastPeriod: number
+    slowPeriod: number
+  }
+  /** 视口内所有 EXPMA 线的最低价 */
+  visibleMin: number
+  /** 视口内所有 EXPMA 线的最高价 */
+  visibleMax: number
 }
 
 /**
@@ -35,12 +35,12 @@ export const EXPMA_STATE_KEY = createIndicatorStateKey('expma', 'main')
  * 消费者应检查 visibleMin > visibleMax 判断"无有效数据"
  */
 export const EMPTY_EXPMA_STATE: EXPMARenderState = {
-    timestamp: 0,
-    series: [],
-    params: {
-        fastPeriod: DEFAULT_EXPMA_FAST_PERIOD,
-        slowPeriod: DEFAULT_EXPMA_SLOW_PERIOD,
-    },
-    visibleMin: Infinity,
-    visibleMax: -Infinity,
+  timestamp: 0,
+  series: [],
+  params: {
+    fastPeriod: DEFAULT_EXPMA_FAST_PERIOD,
+    slowPeriod: DEFAULT_EXPMA_SLOW_PERIOD,
+  },
+  visibleMin: Infinity,
+  visibleMax: -Infinity,
 }

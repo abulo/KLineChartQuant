@@ -28,119 +28,115 @@ import type { ToolbarController, ToolDefinition, ToolId } from './types'
 // ---------------------------------------------------------------------------
 
 export interface ToolbarInit {
-    tools: ReadonlyArray<ToolDefinition>
-    initialActiveTool?: ToolId | null
+  tools: ReadonlyArray<ToolDefinition>
+  initialActiveTool?: ToolId | null
 }
 
 export function createToolbarController(init: ToolbarInit): ToolbarController {
-    // -------------------------------------------------------------------
-    // Signals (state)
-    // -------------------------------------------------------------------
-    const tools: Signal<ReadonlyArray<ToolDefinition>> = createSignal<
-        ReadonlyArray<ToolDefinition>
-    >(init.tools)
-    const activeTool: Signal<ToolId | null> = createSignal<ToolId | null>(
-        init.initialActiveTool ?? null,
-    )
-    const disabledTools: Signal<ReadonlySet<ToolId>> = createSignal<
-        ReadonlySet<ToolId>
-    >(new Set<ToolId>())
+  // -------------------------------------------------------------------
+  // Signals (state)
+  // -------------------------------------------------------------------
+  const tools: Signal<ReadonlyArray<ToolDefinition>> = createSignal<ReadonlyArray<ToolDefinition>>(
+    init.tools,
+  )
+  const activeTool: Signal<ToolId | null> = createSignal<ToolId | null>(
+    init.initialActiveTool ?? null,
+  )
+  const disabledTools: Signal<ReadonlySet<ToolId>> = createSignal<ReadonlySet<ToolId>>(
+    new Set<ToolId>(),
+  )
 
-    // -------------------------------------------------------------------
-    // Lookups (use peek — mutations must not track in `effect`)
-    // -------------------------------------------------------------------
-    function findTool(id: ToolId): ToolDefinition | null {
-        const list = tools.peek()
-        for (const t of list) {
-            if (t.id === id) return t
-        }
-        return null
+  // -------------------------------------------------------------------
+  // Lookups (use peek — mutations must not track in `effect`)
+  // -------------------------------------------------------------------
+  function findTool(id: ToolId): ToolDefinition | null {
+    const list = tools.peek()
+    for (const t of list) {
+      if (t.id === id) return t
+    }
+    return null
+  }
+
+  function isDisabled(id: ToolId): boolean {
+    return disabledTools.peek().has(id)
+  }
+
+  // -------------------------------------------------------------------
+  // Mutations
+  // -------------------------------------------------------------------
+  function selectTool(id: ToolId): void {
+    const tool = findTool(id)
+    if (tool === null) return // unknown id — no-op
+    if (isDisabled(id)) return // disabled — no-op
+
+    // Group-based mutual exclusion: when the requested tool belongs to a
+    // `group`, deselect any currently-active tool that shares the group.
+    // (Group membership is metadata on the definition; the controller
+    // does not infer groups from parent/child relations — adapters that
+    // model nested groups should flatten them with a shared group key.)
+    const currentActive = activeTool.peek()
+    if (currentActive !== null && tool.group !== undefined) {
+      const currentTool = findTool(currentActive)
+      if (currentTool !== null && currentTool.group === tool.group && currentTool.id !== tool.id) {
+        // Replace: writing the new id covers both "deselect old" and
+        // "select new" in a single notification.
+      }
     }
 
-    function isDisabled(id: ToolId): boolean {
-        return disabledTools.peek().has(id)
+    activeTool.set(id)
+  }
+
+  function clearSelection(): void {
+    activeTool.set(null)
+  }
+
+  function setDisabled(id: ToolId, disabled: boolean): void {
+    const current = disabledTools.peek()
+    const has = current.has(id)
+    if (disabled === has) return // no change
+
+    // Immutable update — never mutate the existing Set in place.
+    const next = new Set(current)
+    if (disabled) {
+      next.add(id)
+    } else {
+      next.delete(id)
     }
+    disabledTools.set(next)
 
-    // -------------------------------------------------------------------
-    // Mutations
-    // -------------------------------------------------------------------
-    function selectTool(id: ToolId): void {
-        const tool = findTool(id)
-        if (tool === null) return // unknown id — no-op
-        if (isDisabled(id)) return // disabled — no-op
-
-        // Group-based mutual exclusion: when the requested tool belongs to a
-        // `group`, deselect any currently-active tool that shares the group.
-        // (Group membership is metadata on the definition; the controller
-        // does not infer groups from parent/child relations — adapters that
-        // model nested groups should flatten them with a shared group key.)
-        const currentActive = activeTool.peek()
-        if (currentActive !== null && tool.group !== undefined) {
-            const currentTool = findTool(currentActive)
-            if (
-                currentTool !== null &&
-                currentTool.group === tool.group &&
-                currentTool.id !== tool.id
-            ) {
-                // Replace: writing the new id covers both "deselect old" and
-                // "select new" in a single notification.
-            }
-        }
-
-        activeTool.set(id)
+    // If the disabled tool was the active one, clear the active signal
+    // so adapters re-render without an "active + disabled" state.
+    if (disabled && activeTool.peek() === id) {
+      activeTool.set(null)
     }
+  }
 
-    function clearSelection(): void {
-        activeTool.set(null)
-    }
+  // -------------------------------------------------------------------
+  // Disposal
+  // -------------------------------------------------------------------
+  // After dispose() the controller becomes inert: mutators silently no-op
+  // so previously-attached subscribers see no further notifications.
+  let disposed = false
 
-    function setDisabled(id: ToolId, disabled: boolean): void {
-        const current = disabledTools.peek()
-        const has = current.has(id)
-        if (disabled === has) return // no change
+  function dispose(): void {
+    if (disposed) return
+    disposed = true
+  }
 
-        // Immutable update — never mutate the existing Set in place.
-        const next = new Set(current)
-        if (disabled) {
-            next.add(id)
-        } else {
-            next.delete(id)
-        }
-        disabledTools.set(next)
+  function guard<T extends (...args: never[]) => unknown>(fn: T): T {
+    return ((...args: Parameters<T>): ReturnType<T> => {
+      if (disposed) return undefined as ReturnType<T>
+      return fn(...args) as ReturnType<T>
+    }) as T
+  }
 
-        // If the disabled tool was the active one, clear the active signal
-        // so adapters re-render without an "active + disabled" state.
-        if (disabled && activeTool.peek() === id) {
-            activeTool.set(null)
-        }
-    }
-
-    // -------------------------------------------------------------------
-    // Disposal
-    // -------------------------------------------------------------------
-    // After dispose() the controller becomes inert: mutators silently no-op
-    // so previously-attached subscribers see no further notifications.
-    let disposed = false
-
-    function dispose(): void {
-        if (disposed) return
-        disposed = true
-    }
-
-    function guard<T extends (...args: never[]) => unknown>(fn: T): T {
-        return ((...args: Parameters<T>): ReturnType<T> => {
-            if (disposed) return undefined as ReturnType<T>
-            return fn(...args) as ReturnType<T>
-        }) as T
-    }
-
-    return {
-        tools,
-        activeTool,
-        disabledTools,
-        selectTool: guard(selectTool),
-        clearSelection: guard(clearSelection),
-        setDisabled: guard(setDisabled),
-        dispose,
-    }
+  return {
+    tools,
+    activeTool,
+    disabledTools,
+    selectTool: guard(selectTool),
+    clearSelection: guard(clearSelection),
+    setDisabled: guard(setDisabled),
+    dispose,
+  }
 }

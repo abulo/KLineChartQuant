@@ -1,4 +1,13 @@
-import type { RendererPlugin, RenderContext, DrawingStyle, DrawingPrimitive, YAxisLabel, XAxisLabel, YAxisRange, XAxisRange } from '../../plugin'
+import type {
+  RendererPlugin,
+  RenderContext,
+  DrawingStyle,
+  DrawingPrimitive,
+  YAxisLabel,
+  XAxisLabel,
+  YAxisRange,
+  XAxisRange,
+} from '../../plugin'
 import { RENDERER_PRIORITY } from '../../plugin'
 import {
   DrawingStore,
@@ -14,16 +23,21 @@ type SafeViewport = { scrollLeft: number; plotWidth: number; plotHeight: number 
 type ToScreenFn = (anchor: { index: number; price: number }) => { x: number; y: number }
 
 function resolveViewport(context: RenderContext, paneHeight: number): SafeViewport {
-  return context.viewport ?? {
-    scrollLeft: context.scrollLeft,
-    plotWidth: context.paneWidth,
-    plotHeight: paneHeight,
-  }
+  return (
+    context.viewport ?? {
+      scrollLeft: context.scrollLeft,
+      plotWidth: context.paneWidth,
+      plotHeight: paneHeight,
+    }
+  )
 }
 
 function createToScreen(
-  kWidth: number, kGap: number, dpr: number,
-  pane: RenderContext['pane'], viewport: SafeViewport
+  kWidth: number,
+  kGap: number,
+  dpr: number,
+  pane: RenderContext['pane'],
+  viewport: SafeViewport,
 ): ToScreenFn {
   const { startXPx, unitPx } = getPhysicalKLineConfig(kWidth, kGap, dpr)
   return (anchor) => {
@@ -40,7 +54,7 @@ function renderPrimitives(
   primitives: DrawingPrimitive[],
   renderers: PrimitiveRendererSet,
   viewportClip: { left: number; top: number; right: number; bottom: number },
-  dpr: number
+  dpr: number,
 ): void {
   for (const primitive of primitives) {
     if (primitive.kind === 'point') {
@@ -73,13 +87,14 @@ function findSelectedAnchorDrawing(
   kGap: number,
   dpr: number,
   viewport: SafeViewport,
-  toScreen: ToScreenFn
+  toScreen: ToScreenFn,
 ) {
   const selectedId = store.getSelectedId()
   if (!selectedId) return null
 
-  const selectedDrawing = store.getAll().find(d => d.id === selectedId)
-  if (!selectedDrawing || !selectedDrawing.visible || selectedDrawing.paneId !== pane.id) return null
+  const selectedDrawing = store.getAll().find((d) => d.id === selectedId)
+  if (!selectedDrawing || !selectedDrawing.visible || selectedDrawing.paneId !== pane.id)
+    return null
 
   const geometry = definitions.compute(selectedDrawing, {
     pane,
@@ -114,12 +129,14 @@ function pushAnchorBands(
   style: DrawingStyle | undefined,
   startXPx: number,
   unitPx: number,
-  dpr: number
+  dpr: number,
 ): void {
   if (allAnchors.length < 2) return
 
-  let minP = Infinity, maxP = -Infinity
-  let minIdx = Infinity, maxIdx = -Infinity
+  let minP = Infinity,
+    maxP = -Infinity
+  let minIdx = Infinity,
+    maxIdx = -Infinity
 
   for (const a of allAnchors) {
     if (Number.isFinite(a.price)) {
@@ -170,7 +187,7 @@ function pushAnchorLabels(
   seriesData: KLineData[],
   startXPx: number,
   unitPx: number,
-  dpr: number
+  dpr: number,
 ): void {
   if (pane.role !== 'price') return
 
@@ -212,13 +229,15 @@ function pushAnchorLabels(
           bgColor: strokeColor,
           borderColor: strokeColor,
           textColor: '#ffffff',
-        }
+        },
       })
     }
 
     if (screenPoint.x >= -kWidth && screenPoint.x <= viewport.plotWidth + kWidth) {
       const timestamp = anchor.time
-        ? (typeof anchor.time === 'string' ? new Date(anchor.time).getTime() : anchor.time)
+        ? typeof anchor.time === 'string'
+          ? new Date(anchor.time).getTime()
+          : anchor.time
         : getTimestampForIndex(Math.round(anchor.index))
       if (!timestamp) continue
 
@@ -230,7 +249,7 @@ function pushAnchorLabels(
         style: {
           bgColor: strokeColor,
           textColor: '#ffffff',
-        }
+        },
       })
     }
   }
@@ -252,14 +271,37 @@ function pushSelectedDrawingLabels(
   dpr: number,
   viewport: SafeViewport,
   startXPx: number,
-  unitPx: number
+  unitPx: number,
 ): void {
   const toScreen = createToScreen(kWidth, kGap, dpr, pane, viewport)
-  const found = findSelectedAnchorDrawing(store, definitions, pane, seriesData, range, context, kWidth, kGap, dpr, viewport, toScreen)
+  const found = findSelectedAnchorDrawing(
+    store,
+    definitions,
+    pane,
+    seriesData,
+    range,
+    context,
+    kWidth,
+    kGap,
+    dpr,
+    viewport,
+    toScreen,
+  )
   if (!found) return
 
   pushAnchorBands(found.allAnchors, context, pane, found.drawing.style, startXPx, unitPx, dpr)
-  pushAnchorLabels(found.allAnchors, context, pane, viewport, kWidth, found.drawing.style, seriesData, startXPx, unitPx, dpr)
+  pushAnchorLabels(
+    found.allAnchors,
+    context,
+    pane,
+    viewport,
+    kWidth,
+    found.drawing.style,
+    seriesData,
+    startXPx,
+    unitPx,
+    dpr,
+  )
 }
 
 /**
@@ -285,7 +327,19 @@ export function createDrawingRendererPlugin(options: {
     paneId: options.paneId ?? 'main',
     priority: 55,
     draw(context: RenderContext) {
-      const { ctx, pane, data, range, dpr, paneWidth, kLinePositions, kLineCenters, kBarRects, kWidth, kGap } = context
+      const {
+        ctx,
+        pane,
+        data,
+        range,
+        dpr,
+        paneWidth,
+        kLinePositions,
+        kLineCenters,
+        kBarRects,
+        kWidth,
+        kGap,
+      } = context
       const viewport = resolveViewport(context, pane.height)
       const seriesData = data as KLineData[]
       const visibleData = seriesData.slice(range.start, range.end)
@@ -338,11 +392,11 @@ export function createDrawingRendererPlugin(options: {
 
 /**
  * 创建绘图标签 Overlay 插件
- * 
+ *
  * ⚠️ 警告：此插件必须在 All 和 Overlay 更新级别运行
  * 当前代码库中没有 UpdateLevel.Main 的触发点，因此此插件设置为 layer: 'overlay' 是安全的
  * 如果将来添加 Main 级别的更新，此插件会被跳过，导致选中绘图的轴标签消失
- * 
+ *
  * 解决方案：如果将来需要使用 Main 级别，请将此插件改为同时在 main 和 overlay 层注册，
  * 或移除分层过滤让此插件在所有级别运行
  */
@@ -381,26 +435,42 @@ export function createDrawingLabelOverlayPlugin(options: {
         dpr,
         viewport,
         startXPx,
-        unitPx
+        unitPx,
       )
     },
   }
 }
 
-function applySelectedStyle(primitive: DrawingPrimitive, baseStyle: DrawingStyle): DrawingPrimitive {
+function applySelectedStyle(
+  primitive: DrawingPrimitive,
+  baseStyle: DrawingStyle,
+): DrawingPrimitive {
   const selectedStroke = baseStyle.stroke ?? '#2962ff'
   const selectedWidth = (baseStyle.strokeWidth ?? 1) + 1
   const selectedPointRadius = (baseStyle.pointRadius ?? 4) + 2
 
   if (primitive.kind === 'point') {
-    return { ...primitive, style: { ...primitive.style, stroke: selectedStroke, pointRadius: selectedPointRadius } }
+    return {
+      ...primitive,
+      style: { ...primitive.style, stroke: selectedStroke, pointRadius: selectedPointRadius },
+    }
   }
   if (primitive.kind === 'line') {
-    return { ...primitive, style: { ...primitive.style, stroke: selectedStroke, strokeWidth: selectedWidth } }
+    return {
+      ...primitive,
+      style: { ...primitive.style, stroke: selectedStroke, strokeWidth: selectedWidth },
+    }
   }
   if (primitive.kind === 'area') {
     return { ...primitive, style: { ...primitive.style, stroke: selectedStroke } }
   }
   // text
-  return { ...primitive, style: { ...primitive.style, textColor: selectedStroke, fontSize: (primitive.style?.fontSize ?? 12) + 1 } }
+  return {
+    ...primitive,
+    style: {
+      ...primitive.style,
+      textColor: selectedStroke,
+      fontSize: (primitive.style?.fontSize ?? 12) + 1,
+    },
+  }
 }

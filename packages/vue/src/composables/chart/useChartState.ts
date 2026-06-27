@@ -1,8 +1,5 @@
 import { ref } from 'vue'
-import {
-  zoomLevelToKWidth,
-  kGapFromKWidth,
-} from '@363045841yyt/klinechart-core/controllers'
+import { zoomLevelToKWidth, kGapFromKWidth } from '@363045841yyt/klinechart-core/controllers'
 
 export interface ChartStateOptions {
   minKWidth?: number

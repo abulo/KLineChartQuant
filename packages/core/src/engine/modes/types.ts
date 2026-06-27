@@ -45,19 +45,31 @@ export interface ChartModeHandler {
   ): void
 
   /** 激活时调用 */
-  onActivate(chart: {
-    enableMainIndicator: (id: string, params?: Record<string, number | boolean | string>) => boolean
-    disableMainIndicator: (id: string) => boolean
-    setRendererEnabled: (name: string, enabled: boolean) => void
-    dataManager: ChartDataManager
-    currentPeriod: string
-  }, prev: ChartModeHandler | null): void
+  onActivate(
+    chart: {
+      enableMainIndicator: (
+        id: string,
+        params?: Record<string, number | boolean | string>,
+      ) => boolean
+      disableMainIndicator: (id: string) => boolean
+      setRendererEnabled: (name: string, enabled: boolean) => void
+      dataManager: ChartDataManager
+      currentPeriod: string
+    },
+    prev: ChartModeHandler | null,
+  ): void
 
   /** 停用时调用 */
-  onDeactivate(chart: {
-    enableMainIndicator: (id: string, params?: Record<string, number | boolean | string>) => boolean
-    disableMainIndicator: (id: string) => boolean
-    setRendererEnabled: (name: string, enabled: boolean) => void
-    dataManager: ChartDataManager
-  }, next: ChartModeHandler | null): void
+  onDeactivate(
+    chart: {
+      enableMainIndicator: (
+        id: string,
+        params?: Record<string, number | boolean | string>,
+      ) => boolean
+      disableMainIndicator: (id: string) => boolean
+      setRendererEnabled: (name: string, enabled: boolean) => void
+      dataManager: ChartDataManager
+    },
+    next: ChartModeHandler | null,
+  ): void
 }

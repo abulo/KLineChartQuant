@@ -23,7 +23,7 @@ export function createLeftYAxisRendererPlugin(options: {
       const { leftAxisCtx, pane, dpr, period } = context
       if (!leftAxisCtx) return
 
-      const axisWidth = leftAxisCtx.canvas ? (leftAxisCtx.canvas.width / dpr) : 0
+      const axisWidth = leftAxisCtx.canvas ? leftAxisCtx.canvas.width / dpr : 0
       if (axisWidth <= 0) return
 
       // 分时模式始终显示左轴（线性），不受设置约束
@@ -32,11 +32,18 @@ export function createLeftYAxisRendererPlugin(options: {
         if (!leftType || leftType === 'none') return
       }
 
-      const tokenColors = resolveThemeColors(context.theme, context.isAsiaMarket, context.colorPresetSettings)
+      const tokenColors = resolveThemeColors(
+        context.theme,
+        context.isAsiaMarket,
+        context.colorPresetSettings,
+      )
 
       if (!pane.capabilities.showPriceAxisTicks) return
 
-      const scaleType: ScaleType = period === 'timeshare' ? 'linear' : ((context.settings?.leftAxisType as ScaleType) ?? 'linear')
+      const scaleType: ScaleType =
+        period === 'timeshare'
+          ? 'linear'
+          : ((context.settings?.leftAxisType as ScaleType) ?? 'linear')
       const paneScaleType = pane.yAxis.getScaleType()
 
       if (!context.yAxisTicks) return
@@ -54,12 +61,13 @@ export function createLeftYAxisRendererPlugin(options: {
       const needsOwnValues = scaleType !== paneScaleType
       const crosshairPriceRange = pane.yAxis.getDisplayRange()
 
-      const formatTick = scaleType === 'percent'
-        ? (v: number) => {
-            const sign = v >= 0 ? '+' : ''
-            return sign + v.toFixed(2) + '%'
-          }
-        : (v: number) => v.toFixed(2)
+      const formatTick =
+        scaleType === 'percent'
+          ? (v: number) => {
+              const sign = v >= 0 ? '+' : ''
+              return sign + v.toFixed(2) + '%'
+            }
+          : (v: number) => v.toFixed(2)
 
       for (const tick of context.yAxisTicks) {
         let displayValue: number
@@ -69,8 +77,13 @@ export function createLeftYAxisRendererPlugin(options: {
           } else {
             const { minPrice, maxPrice } = crosshairPriceRange
             displayValue = priceAtYForScaleType(
-              tick.y, minPrice, maxPrice, scaleType,
-              pane.height, pane.yAxis.getPaddingTop(), pane.yAxis.getPaddingBottom(),
+              tick.y,
+              minPrice,
+              maxPrice,
+              scaleType,
+              pane.height,
+              pane.yAxis.getPaddingTop(),
+              pane.yAxis.getPaddingBottom(),
             )
           }
         } else {
@@ -83,7 +96,9 @@ export function createLeftYAxisRendererPlugin(options: {
       if (!crosshair || crosshair.activePaneId !== pane.id || crosshair.price === null) return
 
       const isCrosshairPercent = scaleType === 'percent'
-      const crosshairPrice = isCrosshairPercent ? pane.yAxis.toPercent(crosshair.price) : crosshair.price
+      const crosshairPrice = isCrosshairPercent
+        ? pane.yAxis.toPercent(crosshair.price)
+        : crosshair.price
       const crosshairLabelRange: { minPrice: number; maxPrice: number } = isCrosshairPercent
         ? (() => {
             const p = pane.yAxis.getDisplayPercentRange()
@@ -97,20 +112,26 @@ export function createLeftYAxisRendererPlugin(options: {
           }
         : undefined
 
-      drawCrosshairPriceLabel(leftAxisCtx, {
-        x: 0,
-        y: pane.top,
-        width: axisWidth,
-        height: pane.height,
-        crosshairY: crosshair.y,
-        priceRange: crosshairLabelRange,
-        yPaddingPx: options.yPaddingPx,
-        dpr,
-        fontSize: 12,
-        priceOffset: 0,
-        price: crosshairPrice,
-        formatPrice: formatCrosshairPrice,
-      }, context.theme, context.isAsiaMarket, context.colorPresetSettings)
+      drawCrosshairPriceLabel(
+        leftAxisCtx,
+        {
+          x: 0,
+          y: pane.top,
+          width: axisWidth,
+          height: pane.height,
+          crosshairY: crosshair.y,
+          priceRange: crosshairLabelRange,
+          yPaddingPx: options.yPaddingPx,
+          dpr,
+          fontSize: 12,
+          priceOffset: 0,
+          price: crosshairPrice,
+          formatPrice: formatCrosshairPrice,
+        },
+        context.theme,
+        context.isAsiaMarket,
+        context.colorPresetSettings,
+      )
     },
   }
 }

@@ -82,7 +82,10 @@ export class MarkerInteractionState {
     }
   }
 
-  private enterCustomMarkerHover(hitCustomMarker: CustomMarkerEntity, markerManager: MarkerManager): true {
+  private enterCustomMarkerHover(
+    hitCustomMarker: CustomMarkerEntity,
+    markerManager: MarkerManager,
+  ): true {
     if (this.hoveredCustomMarker?.id !== hitCustomMarker.id) {
       this.hoveredCustomMarker = hitCustomMarker
       this.onCustomMarkerHoverCallback?.(hitCustomMarker)

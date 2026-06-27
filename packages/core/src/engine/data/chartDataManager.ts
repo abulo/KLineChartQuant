@@ -53,9 +53,9 @@ export class ChartDataManager {
   private _activeBufferKey: string | null = null
   private _activeBufferUnsub: (() => void) | null = null
 
-private _dataSignal = createSignal<ReadonlyArray<unknown>>([])
-private _loadingSignal = createSignal<boolean>(false)
-private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
+  private _dataSignal = createSignal<ReadonlyArray<unknown>>([])
+  private _loadingSignal = createSignal<boolean>(false)
+  private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
 
   private _currentSpec: SymbolSpec | null = null
 
@@ -101,11 +101,11 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     this._activeBufferKey = key
     const buf = this._buffers.get(key) as DataBufferLike | undefined
     if (buf) {
-      this._dataSignal.set([...buf.data.peek() as unknown[]])
+      this._dataSignal.set([...(buf.data.peek() as unknown[])])
       this._loadingSignal.set(buf.loading.peek())
       const unsubData = buf.data.subscribe(() => {
         const prevDataLength = this._dataSignal.peek().length
-        this._dataSignal.set([...buf.data.peek() as unknown[]])
+        this._dataSignal.set([...(buf.data.peek() as unknown[])])
         this.onBufferDataChanged(key, prevDataLength)
       })
       const unsubLoading = buf.loading.subscribe(() => {
@@ -206,10 +206,15 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
 
     this.deps.resetInteraction()
 
-    if (this.lastVisibleRange.start === 0 && this.lastVisibleRange.end === 0 && bufferData.length > 0) {
-      const plotWidth = this.deps.getObservedSize().width > 0
-        ? this.deps.getObservedSize().width
-        : Math.max(1, Math.round(this.deps.getDom().container?.clientWidth ?? 800))
+    if (
+      this.lastVisibleRange.start === 0 &&
+      this.lastVisibleRange.end === 0 &&
+      bufferData.length > 0
+    ) {
+      const plotWidth =
+        this.deps.getObservedSize().width > 0
+          ? this.deps.getObservedSize().width
+          : Math.max(1, Math.round(this.deps.getDom().container?.clientWidth ?? 800))
       const dpr = this.deps.getEffectiveDpr()
       const opt = this.deps.getOption()
       const { start, end } = getVisibleRange(
@@ -256,9 +261,10 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     const buf = this.getActiveDataBuffer()
     const dataLength = buf ? buf.getRawData().length : 0
     if (dataLength === 0) return 0
-    const plotWidth = this.deps.getViewport()?.plotWidth
-      ?? (this.deps.getObservedSize().width > 0 ? this.deps.getObservedSize().width : undefined)
-      ?? Math.round(this.deps.getDom().container?.clientWidth ?? 0)
+    const plotWidth =
+      this.deps.getViewport()?.plotWidth ??
+      (this.deps.getObservedSize().width > 0 ? this.deps.getObservedSize().width : undefined) ??
+      Math.round(this.deps.getDom().container?.clientWidth ?? 0)
     return Math.max(0, plotWidth)
   }
 
@@ -274,21 +280,12 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     const vp = this.deps.getViewport()
     if (!vp) return null
     const opt = this.deps.getOption()
-    return getVisibleRange(
-      vp.scrollLeft,
-      vp.plotWidth,
-      opt.kWidth,
-      opt.kGap,
-      dataLength,
-      vp.dpr,
-    )
+    return getVisibleRange(vp.scrollLeft, vp.plotWidth, opt.kWidth, opt.kGap, dataLength, vp.dpr)
   }
 
   private getTrailingSlotCount(): number {
     return 24
   }
-
-
 
   private clearIncrementalLoadHintTimer(): void {
     if (this.incrementalLoadHintTimer !== null) {
@@ -399,7 +396,9 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
 
   getTimeShareSignal(): Signal<ReadonlyArray<TimeShareData>> {
     const buf = this.getActiveTimeShareBuffer()
-    return (buf?.data ?? createSignal<ReadonlyArray<TimeShareData>>([])) as Signal<ReadonlyArray<TimeShareData>>
+    return (buf?.data ?? createSignal<ReadonlyArray<TimeShareData>>([])) as Signal<
+      ReadonlyArray<TimeShareData>
+    >
   }
 
   getTimeShareLoadingSignal(): Signal<boolean> {
@@ -664,7 +663,9 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
 
     this._comparisonSpecs.push(spec)
 
-    const color = COMPARISON_PALETTE[this._comparisonColors.size % COMPARISON_PALETTE.length] ?? DEFAULT_COMPARISON_COLOR
+    const color =
+      COMPARISON_PALETTE[this._comparisonColors.size % COMPARISON_PALETTE.length] ??
+      DEFAULT_COMPARISON_COLOR
     this._comparisonColors.set(symbol, color)
     this._comparisonColorsSignal.set(new Map(this._comparisonColors))
 
@@ -716,7 +717,9 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
       const spec: SymbolSpec = { symbol, period }
       this._comparisonSpecs.push(spec)
       const mainSpec = this._symbolsSignal.peek()[0]
-      this._symbolsSignal.set(mainSpec ? [mainSpec, ...this._comparisonSpecs] : [...this._comparisonSpecs])
+      this._symbolsSignal.set(
+        mainSpec ? [mainSpec, ...this._comparisonSpecs] : [...this._comparisonSpecs],
+      )
 
       buffer.setInlineData(data)
       return
@@ -805,7 +808,10 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
         if (!source.comparisons[key]) this.removeComparisonSymbol(key)
       }
       for (const [symbol, data] of Object.entries(source.comparisons)) {
-        this.setComparisonData(symbol, data.map((d) => ({ ...d })))
+        this.setComparisonData(
+          symbol,
+          data.map((d) => ({ ...d })),
+        )
       }
     }
   }
@@ -916,9 +922,10 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     const { unitPx, startXPx } = getPhysicalKLineConfig(opt.kWidth, opt.kGap, dpr)
     const lastKLineEndPx = (startXPx + dataLength * unitPx) / dpr
     const viewport = this.deps.getViewport()
-    const clientWidth = viewport?.viewWidth
-      ?? (this.deps.getObservedSize().width > 0 ? this.deps.getObservedSize().width : undefined)
-      ?? Math.round(this.deps.getDom().container?.clientWidth ?? 0)
+    const clientWidth =
+      viewport?.viewWidth ??
+      (this.deps.getObservedSize().width > 0 ? this.deps.getObservedSize().width : undefined) ??
+      Math.round(this.deps.getDom().container?.clientWidth ?? 0)
     if (clientWidth <= 0) return
     const leftBuffer = this.getLeftLoadBufferWidth()
     let target: number
@@ -1038,14 +1045,20 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
   }
 }
 
-function findComparisonBaselineByDate(data: ReadonlyArray<KLineData>, date: string): KLineData | null {
+function findComparisonBaselineByDate(
+  data: ReadonlyArray<KLineData>,
+  date: string,
+): KLineData | null {
   for (const item of data) {
     if (item.date && item.date >= date) return item
   }
   return null
 }
 
-function findComparisonBaselineByTimestamp(data: ReadonlyArray<KLineData>, timestamp: number): KLineData | null {
+function findComparisonBaselineByTimestamp(
+  data: ReadonlyArray<KLineData>,
+  timestamp: number,
+): KLineData | null {
   for (const item of data) {
     if (item.timestamp >= timestamp) return item
   }

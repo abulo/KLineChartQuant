@@ -10,18 +10,18 @@ export const DEFAULT_ENE_DEVIATION = 11
  * 包含全量 ENE 数组、计算参数、以及视口极值
  */
 export interface ENERenderState extends BaseIndicatorState {
-    timestamp: number
-    /** 全量 ENE 数组（稀疏：前 period-1 个为 undefined） */
-    series: ENEPoint[]
-    /** 计算参数 */
-    params: {
-        period: number
-        deviation: number
-    }
-    /** 视口内所有 ENE 线的最低价 */
-    visibleMin: number
-    /** 视口内所有 ENE 线的最高价 */
-    visibleMax: number
+  timestamp: number
+  /** 全量 ENE 数组（稀疏：前 period-1 个为 undefined） */
+  series: ENEPoint[]
+  /** 计算参数 */
+  params: {
+    period: number
+    deviation: number
+  }
+  /** 视口内所有 ENE 线的最低价 */
+  visibleMin: number
+  /** 视口内所有 ENE 线的最高价 */
+  visibleMax: number
 }
 
 /**
@@ -35,12 +35,12 @@ export const ENE_STATE_KEY = createIndicatorStateKey('ene', 'main')
  * 消费者应检查 visibleMin > visibleMax 判断"无有效数据"
  */
 export const EMPTY_ENE_STATE: ENERenderState = {
-    timestamp: 0,
-    series: [],
-    params: {
-        period: DEFAULT_ENE_PERIOD,
-        deviation: DEFAULT_ENE_DEVIATION,
-    },
-    visibleMin: Infinity,
-    visibleMax: -Infinity,
+  timestamp: 0,
+  series: [],
+  params: {
+    period: DEFAULT_ENE_PERIOD,
+    deviation: DEFAULT_ENE_DEVIATION,
+  },
+  visibleMin: Infinity,
+  visibleMax: -Infinity,
 }

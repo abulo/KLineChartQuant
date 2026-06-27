@@ -15,8 +15,7 @@ export const spacing: SpacingTokens = {
 export const typography: TypographyTokens = {
   fontFamily:
     "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-  fontFamilyMono:
-    "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace",
+  fontFamilyMono: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace",
   fontSizeSm: '10px',
   fontSizeMd: '12px',
   fontSizeLg: '14px',

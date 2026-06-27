@@ -11,7 +11,7 @@ export enum VolumePriceRelation {
   /** 量缩价跌 - 价格下跌且成交量萎缩 */
   FALL_WITHOUT_VOLUME = 'fall_without_volume',
   /** 中性状态 - 其他情况 */
-  OTHERS = 'others'
+  OTHERS = 'others',
 }
 
 /** 量价关系计算配置 */
@@ -30,4 +30,3 @@ export const DEFAULT_VOLUME_PRICE_CONFIG: VolumePriceConfig = {
   volumeShrinkThreshold: 0.8,
   avgPeriod: 20,
 }
-

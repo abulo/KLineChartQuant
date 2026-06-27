@@ -92,10 +92,7 @@ export class SharedKLineBuffer {
    * @param preferShared 是否优先使用 SharedArrayBuffer（默认 true）
    * @returns SoA 布局对象
    */
-  static fromKLineData(
-    data: KLineData[],
-    preferShared: boolean = true
-  ): KLineSoALayout {
+  static fromKLineData(data: KLineData[], preferShared: boolean = true): KLineSoALayout {
     const length = data.length
     const byteLength = SharedKLineBuffer.calculateByteLength(length)
     const useShared = preferShared && SharedKLineBuffer.detectSupport()
@@ -114,18 +111,24 @@ export class SharedKLineBuffer {
     }
 
     // 创建缓冲区
-    const buffer = useShared
-      ? new SharedArrayBuffer(byteLength)
-      : new ArrayBuffer(byteLength)
+    const buffer = useShared ? new SharedArrayBuffer(byteLength) : new ArrayBuffer(byteLength)
 
     // 创建列视图
-    const timestamps = new Float64Array(buffer, length * BYTES_PER_COLUMN * ColumnIndex.TIMESTAMP, length)
+    const timestamps = new Float64Array(
+      buffer,
+      length * BYTES_PER_COLUMN * ColumnIndex.TIMESTAMP,
+      length,
+    )
     const opens = new Float64Array(buffer, length * BYTES_PER_COLUMN * ColumnIndex.OPEN, length)
     const highs = new Float64Array(buffer, length * BYTES_PER_COLUMN * ColumnIndex.HIGH, length)
     const lows = new Float64Array(buffer, length * BYTES_PER_COLUMN * ColumnIndex.LOW, length)
     const closes = new Float64Array(buffer, length * BYTES_PER_COLUMN * ColumnIndex.CLOSE, length)
     const volumes = new Float64Array(buffer, length * BYTES_PER_COLUMN * ColumnIndex.VOLUME, length)
-    const turnovers = new Float64Array(buffer, length * BYTES_PER_COLUMN * ColumnIndex.TURNOVER, length)
+    const turnovers = new Float64Array(
+      buffer,
+      length * BYTES_PER_COLUMN * ColumnIndex.TURNOVER,
+      length,
+    )
 
     // 填充数据
     for (let i = 0; i < length; i++) {
@@ -213,7 +216,8 @@ export class SharedKLineBuffer {
    */
   static toKLineData(layout: KLineSoALayout): KLineData[] {
     const result: KLineData[] = new Array(layout.length)
-    const { timestamps, opens, highs, lows, closes, volumes, turnovers, hasVolume, hasTurnover } = layout
+    const { timestamps, opens, highs, lows, closes, volumes, turnovers, hasVolume, hasTurnover } =
+      layout
 
     for (let i = 0; i < layout.length; i++) {
       const item: KLineData = {
@@ -250,7 +254,10 @@ export class SharedKLineBuffer {
     if (start < 0) start = 0
     if (end > layout.length) end = layout.length
     if (start >= end) {
-      throw new KLineChartError('INDICATOR_INVALID_PARAM', `Invalid subview range: [${start}, ${end})`)
+      throw new KLineChartError(
+        'INDICATOR_INVALID_PARAM',
+        `Invalid subview range: [${start}, ${end})`,
+      )
     }
 
     const length = end - start
@@ -266,37 +273,37 @@ export class SharedKLineBuffer {
       timestamps: new Float64Array(
         layout.buffer,
         start * BYTES_PER_COLUMN + columnByteLength * ColumnIndex.TIMESTAMP,
-        length
+        length,
       ),
       opens: new Float64Array(
         layout.buffer,
         start * BYTES_PER_COLUMN + columnByteLength * ColumnIndex.OPEN,
-        length
+        length,
       ),
       highs: new Float64Array(
         layout.buffer,
         start * BYTES_PER_COLUMN + columnByteLength * ColumnIndex.HIGH,
-        length
+        length,
       ),
       lows: new Float64Array(
         layout.buffer,
         start * BYTES_PER_COLUMN + columnByteLength * ColumnIndex.LOW,
-        length
+        length,
       ),
       closes: new Float64Array(
         layout.buffer,
         start * BYTES_PER_COLUMN + columnByteLength * ColumnIndex.CLOSE,
-        length
+        length,
       ),
       volumes: new Float64Array(
         layout.buffer,
         start * BYTES_PER_COLUMN + columnByteLength * ColumnIndex.VOLUME,
-        length
+        length,
       ),
       turnovers: new Float64Array(
         layout.buffer,
         start * BYTES_PER_COLUMN + columnByteLength * ColumnIndex.TURNOVER,
-        length
+        length,
       ),
     }
   }
@@ -331,7 +338,10 @@ export function getClosesView(layout: KLineSoALayout): Float64Array {
  * 获取 SoA 布局中 highs/lows 列的视图
  * 用于需要高低价的指标（如 BOLL、STOCH、WMSR）
  */
-export function getHighsLowsViews(layout: KLineSoALayout): { highs: Float64Array; lows: Float64Array } {
+export function getHighsLowsViews(layout: KLineSoALayout): {
+  highs: Float64Array
+  lows: Float64Array
+} {
   return { highs: layout.highs, lows: layout.lows }
 }
 

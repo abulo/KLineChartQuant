@@ -16,16 +16,19 @@ export class KLineFetchService extends Context.Tag('@klc/KLineFetchService')<
       endTs: number,
     ) => EffectType<ReadonlyArray<KLineData>, unknown>
   }
->() { }
+>() {}
 
 // ── TimeShare fetch service tag ──
 
 export class TimeShareFetchService extends Context.Tag('@klc/TimeShareFetchService')<
   TimeShareFetchService,
   {
-    readonly fetch: (spec: SymbolSpec, date?: number) => EffectType<ReadonlyArray<TimeShareData>, unknown>
+    readonly fetch: (
+      spec: SymbolSpec,
+      date?: number,
+    ) => EffectType<ReadonlyArray<TimeShareData>, unknown>
   }
->() { }
+>() {}
 
 // ── Constants ──
 
@@ -78,10 +81,7 @@ export const fetchKLine = (
   pipe(
     Effect.gen(function* () {
       const { fetch } = yield* KLineFetchService // 获取 Service 实例
-      const data = yield* pipe(
-        fetch(spec, startTs, endTs),
-        Effect.timeout(REQUEST_TIMEOUT),
-      )
+      const data = yield* pipe(fetch(spec, startTs, endTs), Effect.timeout(REQUEST_TIMEOUT))
       if (data.length === 0) {
         return yield* Effect.fail(
           new KLineChartError(
@@ -107,10 +107,7 @@ export const fetchTimeShare = (
   pipe(
     Effect.gen(function* () {
       const { fetch } = yield* TimeShareFetchService // 获取服务实例
-      const data = yield* pipe(
-        fetch(spec, date),
-        Effect.timeout(REQUEST_TIMEOUT),
-      )
+      const data = yield* pipe(fetch(spec, date), Effect.timeout(REQUEST_TIMEOUT))
       return data
     }),
     Effect.retry(retrySchedule),
