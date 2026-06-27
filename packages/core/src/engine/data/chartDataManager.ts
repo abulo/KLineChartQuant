@@ -229,6 +229,7 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     if (indicatorsReady) {
       this.pendingIndicatorDataUpdate = false
       this.deps.scheduleDraw()
+      // Alert 管线入口：Chart 构造时绑定 → evaluateAlerts()
       this.deps.onDataProcessed?.(bufferData, this.lastVisibleRange)
     } else {
       this.pendingIndicatorDataUpdate = true

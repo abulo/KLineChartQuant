@@ -234,7 +234,7 @@ export class Chart {
                     }
                 }
             },
-            onDataProcessed: (data, range) => this.evaluateAlerts(data, range),
+            onDataProcessed: (data, range) => this.evaluateAlerts(data, range), // Alert 管线绑定
         })
 
         this.zoomController = new ChartZoomController({
@@ -282,6 +282,12 @@ export class Chart {
             getActivePaneId: () => this.interaction.activePaneId,
             scheduleDraw: (level) => this.scheduleDraw(level),
             setPendingIndicatorDataUpdate: (v) => { this.dataManager.pendingIndicatorDataUpdate = v },
+        })
+
+        // Worker 异步结果就绪后串联 Alert 管线
+        this.indicatorManager.indicatorSchedulerAccessor.setOnResultsApplied(() => {
+            const data = this.dataManager.getInternalData()
+            this.evaluateAlerts(data, this.dataManager.lastVisibleRange)
         })
 
         // 初始化渲染器
