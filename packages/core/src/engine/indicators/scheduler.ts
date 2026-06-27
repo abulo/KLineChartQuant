@@ -141,6 +141,9 @@ export class IndicatorScheduler {
     // 重绘回调
     private invalidateCallback: (() => void) | null = null
 
+    // Worker 异步结果应用完毕回调（用于串联其他管线，如 Alert）
+    private onResultsAppliedCallback: (() => void) | null = null
+
     /** 从 Chart 获取活跃副图 paneId 列表的回调 */
     private getActiveSubPaneIds: (() => string[]) | null = null
 
@@ -230,6 +233,14 @@ export class IndicatorScheduler {
     }
 
     /**
+     * 设置 Worker 异步结果应用完毕回调
+     * 当 Worker 返回计算结果并写入 StateStore 后触发，用于串联 Alert 等管线
+     */
+    setOnResultsApplied(callback: () => void): void {
+        this.onResultsAppliedCallback = callback
+    }
+
+    /**
      * 副图增删后通知 scheduler 刷新 active mask
      */
     onSubPaneChanged(): void {
@@ -251,6 +262,7 @@ export class IndicatorScheduler {
         this.inlineRuntime = null
         this.latestResult = null
         this.invalidateCallback = null
+        this.onResultsAppliedCallback = null
     }
 
     // ============================================================================
@@ -402,6 +414,9 @@ export class IndicatorScheduler {
 
         // 触发重绘
         this.invalidateCallback?.()
+
+        // 通知外部（Alert 等管线）指标结果已就绪
+        this.onResultsAppliedCallback?.()
     }
 
     // ============================================================================

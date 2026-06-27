@@ -43,7 +43,7 @@
     "prepublishOnly": "pnpm build",
     "start": "tsx scripts/dev.ts",
     "test": "vitest run",
-    "inspect": "npx @modelcontextprotocol/inspector npx tsx scripts/dev.ts"
+    "inspect": "npx @modelcontextprotocol/inspector node --import tsx scripts/dev.ts"
   },
   "peerDependencies": {
     "@363045841yyt/klinechart-core": "workspace:*"

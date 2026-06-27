@@ -1,3 +1,4 @@
+import { KLineChartError } from '../../errors'
 import type { KLineData } from '../../types/price'
 import { createSignal, computed, type Signal, type Computed } from '../../reactivity/signal'
 import type { IndicatorInstance, SubPaneInfo, PaneSpec, ChartOptions } from '../chartTypes'
@@ -375,7 +376,7 @@ export class ChartIndicatorManager {
 
         const definition = this.indicatorScheduler.getIndicatorMetadata(indicatorId)
         if (!definition) {
-            throw new Error(`[Chart] Unknown indicator: ${indicatorId}`)
+            throw new KLineChartError('NOT_REGISTERED', `[Chart] Unknown indicator: ${indicatorId}`)
         }
         const renderer = createSubIndicatorRenderer({ indicatorId, paneId, definition, params })
         const rendererName = renderer.name

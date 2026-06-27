@@ -1,3 +1,5 @@
+import { KLineChartError } from '../errors'
+
 /**
  * Theme → CSS custom-property emitter.
  *
@@ -103,7 +105,7 @@ export function themeToCssVars(
     if (!prefix.startsWith('--')) {
         // Misuse caught here is much friendlier than the silent no-op CSS
         // would give downstream.
-        throw new Error(
+        throw new KLineChartError('INVALID_PARAM',
             `themeToCssVars: prefix must start with '--', got ${JSON.stringify(prefix)}`,
         )
     }

@@ -1,4 +1,5 @@
 import type { KLineData, TimeShareData } from '../controllers/types'
+import { KLineChartError } from '../errors'
 import { DataFetcher } from './fetcherDefinitionRegistry'
 import type { FetchConfig, TimeShareFetchConfig } from './types'
 
@@ -60,7 +61,7 @@ async function fetchGotdxHistoryTick(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error(`[gotdx] history-tick failed: ${res.status} ${res.statusText}`)
+  if (!res.ok) throw new KLineChartError('FETCH_FAILED', `[gotdx] history-tick failed: ${res.status} ${res.statusText}`)
   const list: Array<{ timestamp: string; Price: number; Avg: number; Vol: number }> = await res.json()
   return list.map((item) => ({
     timestamp: new Date(item.timestamp).getTime(),
@@ -157,7 +158,7 @@ async function fetchGotdx(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    if (!res.ok) throw new Error(`[gotdx] ex/kline-by-date failed: ${res.status} ${res.statusText}`)
+    if (!res.ok) throw new KLineChartError('FETCH_FAILED', `[gotdx] ex/kline-by-date failed: ${res.status} ${res.statusText}`)
     const list: ExKLineItem[] = await res.json()
     return list.map((item) => mapExItem(item, config.symbol))
   }
@@ -179,7 +180,7 @@ async function fetchGotdx(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error(`[gotdx] stock/kline-by-date failed: ${res.status} ${res.statusText}`)
+  if (!res.ok) throw new KLineChartError('FETCH_FAILED', `[gotdx] stock/kline-by-date failed: ${res.status} ${res.statusText}`)
   const list: SecurityBar[] = await res.json()
   return list.map((item) => mapBar(item, config.symbol))
 }

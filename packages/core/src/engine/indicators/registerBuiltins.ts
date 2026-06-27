@@ -1,3 +1,4 @@
+import { KLineChartError } from '../../errors'
 import { getRegisteredIndicatorDefinitions } from './indicatorDefinitionRegistry'
 
 let loaded = false
@@ -52,7 +53,7 @@ export async function loadBuiltinIndicators(): Promise<void> {
 
 export function getBuiltinIndicatorDefinitions() {
   if (!loaded) {
-    throw new Error(
+    throw new KLineChartError('INVALID_STATE',
       'Builtin indicators not loaded yet. Call await loadBuiltinIndicators() first.',
     )
   }

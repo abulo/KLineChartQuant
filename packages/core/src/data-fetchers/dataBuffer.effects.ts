@@ -1,5 +1,6 @@
 import { Context, Effect, pipe, Schedule } from 'effect'
 import type { Effect as EffectType } from 'effect/Effect'
+import { KLineChartError } from '../errors'
 import type { KLineData, SymbolSpec } from '../controllers/types'
 import type { TimeShareData } from '../types/price'
 
@@ -83,7 +84,8 @@ export const fetchKLine = (
       )
       if (data.length === 0) {
         return yield* Effect.fail(
-          new Error(
+          new KLineChartError(
+            'FETCH_FAILED',
             `[DataBuffer] empty data for ${spec.symbol} ${formatDate(startTs)}~${formatDate(endTs)}`,
           ),
         )
