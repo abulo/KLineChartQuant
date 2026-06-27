@@ -488,14 +488,15 @@ onUnmounted(() => {
   position: absolute;
   top: -2px;
   right: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 14px;
   height: 14px;
   padding: 0 3px;
   background: #ef4444;
   color: #fff;
   font-size: 10px;
-  line-height: 14px;
-  text-align: center;
   border-radius: 999px;
   pointer-events: none;
 }

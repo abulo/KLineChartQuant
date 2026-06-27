@@ -95,6 +95,9 @@ export class Chart {
   /** 分时模式激活前的 pane Y 轴刻度类型（退出分时时恢复） */
   private _savedScaleTypes: Map<string, ScaleType> | undefined
 
+  /** 上次预警评估的最新 K 线时间戳（用于去重） */
+  private _lastAlertTimestamp: number | null = null
+
   /** 预警控制器 */
   readonly alertController: AlertController
 
@@ -720,6 +723,20 @@ export class Chart {
 
     /** 数据就绪时触发预警评估 */
     private evaluateAlerts(data: KLineData[], range: VisibleRange): void {
+        const latest = data[data.length - 1]
+        if (!latest) return
+        // 去重：同一根 K 线只评估一次（增量加载/Worker 重复回调时跳过）
+        if (latest.timestamp === this._lastAlertTimestamp) return
+        this._lastAlertTimestamp = latest.timestamp
+
+        // 推进滚动量滑窗（仅在新 K 线到达时）
+        let lookbacks = this._volumeLookbacks
+        if (!lookbacks) {
+            lookbacks = createVolumeLookbacks([5, 10, 20, 60])
+            this._volumeLookbacks = lookbacks
+        }
+        pushToVolumeLookbacks(lookbacks, latest.volume)
+
         const snapshot = this.buildMarketSnapshot(data)
         if (!snapshot) return
         const events = this.alertController.evaluate(snapshot, Date.now())
@@ -772,12 +789,13 @@ export class Chart {
             }
         }
 
-        let lookbacks = this._volumeLookbacks
-        if (!lookbacks) {
-            lookbacks = createVolumeLookbacks([5, 10, 20, 60])
-            this._volumeLookbacks = lookbacks
+        // 只读滚动量（由 evaluateAlerts 推进滑窗）
+        const rollingVolume: Record<number, number> = {}
+        if (this._volumeLookbacks) {
+            for (const [size, calc] of this._volumeLookbacks) {
+                rollingVolume[size] = calc.mean
+            }
         }
-        const rollingVolume = pushToVolumeLookbacks(lookbacks, latest.volume)
 
         return {
             bar,
@@ -999,6 +1017,8 @@ export class Chart {
     }
 
     setSymbols(specs: ReadonlyArray<SymbolSpec>): void {
+        // 品种/周期切换时重置最新 K 线时间戳，确保新数据触发预警
+        this._lastAlertTimestamp = null
         const primaryPeriod = specs[0]?.period
         if (primaryPeriod) {
             this.setActiveMode(primaryPeriod === 'timeshare' ? this._timeShareMode : this._kLineMode)
