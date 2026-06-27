@@ -488,17 +488,20 @@ onUnmounted(() => {
   position: absolute;
   top: -2px;
   right: -2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   min-width: 14px;
   height: 14px;
   padding: 0 3px;
   background: #ef4444;
   color: #fff;
-  font-size: 10px;
+  font:
+    10px / 1 system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
   border-radius: 999px;
   pointer-events: none;
+  transform: translateY(-1px), translateX(1px);
 }
 
 /* --- 响应式 --- */
