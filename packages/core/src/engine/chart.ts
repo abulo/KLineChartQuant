@@ -4,7 +4,7 @@ import { createSignal, type Signal, type Computed } from '../reactivity/signal'
 import type { SymbolSpec, CustomDataSource } from '../controllers/types'
 import { ChartDataManager } from './data/chartDataManager'
 import { ChartPaneLayout } from './layout/chartPaneLayout'
-import { UpdateLevel } from './layout/pane'
+import { UpdateLevel, type VisibleRange } from './layout/pane'
 import type { ScaleType } from './utils/tickPosition'
 import { InteractionController, type InteractionSnapshot } from './controller/interaction'
 export type { InteractionSnapshot }
@@ -32,6 +32,15 @@ import {
     wrapPaneInfo,
 } from '../plugin'
 import type { SubIndicatorType } from './renderers/Indicator'
+import type { AlertController, MarketSnapshot } from '../alerts/types'
+import { createAlertController } from '../alerts'
+import {
+  createVolumeLookbacks,
+  pushToVolumeLookbacks,
+  type VolumeLookbacks,
+} from '../alerts/rollingVolume'
+import { resolveStateKey } from './indicators/indicatorMetadata'
+import type { IndicatorMetadata } from './indicators/indicatorMetadata'
 
 
 // 重新导出以保持向后兼容
@@ -83,8 +92,17 @@ export class Chart {
     private _modeSavedKGap = 0
     private _modeSavedZoomLevel = 0
 
-    /** 分时模式激活前的 pane Y 轴刻度类型（退出分时时恢复） */
-    private _savedScaleTypes: Map<string, ScaleType> | undefined
+  /** 分时模式激活前的 pane Y 轴刻度类型（退出分时时恢复） */
+  private _savedScaleTypes: Map<string, ScaleType> | undefined
+
+  /** 上次预警评估的最新 K 线时间戳（用于去重） */
+  private _lastAlertTimestamp: number | null = null
+
+  /** 预警控制器 */
+  readonly alertController: AlertController
+
+  /** 滚动成交量窗口（惰性初始化） */
+  private _volumeLookbacks: VolumeLookbacks | null = null
 
     /**
      * 启用主图指标
@@ -189,6 +207,8 @@ export class Chart {
             },
         })
 
+        this.alertController = createAlertController()
+
         this.dataManager = new ChartDataManager({
             getOption: () => this.opt,
             getEffectiveDpr: () => this.viewportManager.getEffectiveDpr(),
@@ -217,12 +237,15 @@ export class Chart {
                     }
                 }
             },
+            onDataProcessed: (data, range) => this.evaluateAlerts(data, range), // Alert 管线绑定
         })
 
         this.zoomController = new ChartZoomController({
             getLogicalScrollLeft: () => this.viewportManager.getLogicalScrollLeft(),
             getCurrentDpr: () => this.viewportManager.getEffectiveDpr(),
             getLeftLoadBufferWidth: () => this.dataManager.getLeftLoadBufferWidth(),
+            getContentWidth: () => this.dataManager.getContentWidth(),
+            getClientWidth: () => this.viewportManager.getViewport()?.viewWidth ?? this.dom.container?.clientWidth ?? 0,
             setScrollLeft: (v) => { this.viewportManager.setScrollLeft(v) },
             onZoomCommitted: (result) => {
                 this.opt = { ...this.opt, kWidth: result.kWidth, kGap: result.kGap }
@@ -262,6 +285,12 @@ export class Chart {
             getActivePaneId: () => this.interaction.activePaneId,
             scheduleDraw: (level) => this.scheduleDraw(level),
             setPendingIndicatorDataUpdate: (v) => { this.dataManager.pendingIndicatorDataUpdate = v },
+        })
+
+        // Worker 异步结果就绪后串联 Alert 管线
+        this.indicatorManager.indicatorSchedulerAccessor.setOnResultsApplied(() => {
+            const data = this.dataManager.getInternalData()
+            this.evaluateAlerts(data, this.dataManager.lastVisibleRange)
         })
 
         // 初始化渲染器
@@ -687,6 +716,97 @@ export class Chart {
         return this.indicatorManager.indicatorSchedulerAccessor
     }
 
+    /** 获取预警控制器 */
+    getAlertController(): AlertController {
+        return this.alertController
+    }
+
+    /** 数据就绪时触发预警评估 */
+    private evaluateAlerts(data: KLineData[], range: VisibleRange): void {
+        const latest = data[data.length - 1]
+        if (!latest) return
+        // 去重：同一根 K 线只评估一次（增量加载/Worker 重复回调时跳过）
+        if (latest.timestamp === this._lastAlertTimestamp) return
+        this._lastAlertTimestamp = latest.timestamp
+
+        // 推进滚动量滑窗（仅在新 K 线到达时）
+        let lookbacks = this._volumeLookbacks
+        if (!lookbacks) {
+            lookbacks = createVolumeLookbacks([5, 10, 20, 60])
+            this._volumeLookbacks = lookbacks
+        }
+        pushToVolumeLookbacks(lookbacks, latest.volume ?? 0)
+
+        const snapshot = this.buildMarketSnapshot(data)
+        if (!snapshot) return
+        const events = this.alertController.evaluate(snapshot, Date.now())
+        if (events.length > 0) {
+            console.log('[Alerts] fired:', events)
+        }
+    }
+
+    /** 构建预警引擎所需的当前市场快照 */
+    private buildMarketSnapshot(data: KLineData[]): MarketSnapshot | null {
+        const latest = data[data.length - 1]
+        if (!latest) return null
+
+        if (latest.volume === undefined) return null
+
+        const bar = {
+            timestamp: latest.timestamp,
+            open: latest.open,
+            high: latest.high,
+            low: latest.low,
+            close: latest.close,
+            volume: latest.volume,
+        }
+
+        const indicators: Record<string, number> = {}
+        const scheduler = this.getIndicatorScheduler()
+        for (const meta of scheduler.getAllIndicators()) {
+            const paneId = meta.defaultPaneId === 'main' ? 'main' : meta.defaultPaneId
+            const stateKey = resolveStateKey(meta.stateKey, paneId)
+            const state = this.pluginHost.getSharedState<any>(stateKey)
+            if (!state?.series) continue
+            const series = state.series
+            if (Array.isArray(series)) {
+                const val = series[series.length - 1]
+                if (typeof val === 'number' && Number.isFinite(val)) {
+                    indicators[meta.name] = val
+                }
+            } else if (typeof series === 'object') {
+                const keys = Object.keys(series)
+                if (keys.length > 0) {
+                    const lastKey = keys[keys.length - 1]!
+                    const arr = series[lastKey]
+                    if (Array.isArray(arr)) {
+                        const val = arr[arr.length - 1]
+                        if (typeof val === 'number' && Number.isFinite(val)) {
+                            indicators[meta.name] = val
+                        }
+                    }
+                }
+            }
+        }
+
+        // 只读滚动量（由 evaluateAlerts 推进滑窗）
+        const rollingVolume: Record<number, number> = {}
+        if (this._volumeLookbacks) {
+            for (const [size, calc] of this._volumeLookbacks) {
+                rollingVolume[size] = calc.mean
+            }
+        }
+
+        return {
+            bar,
+            indicators,
+            rollingVolume,
+            volumeProfile: undefined,
+            orderBook: undefined,
+            footprint: undefined,
+        }
+    }
+
     getLogicalSlotCount(): number {
         return this.dataManager.getLogicalSlotCount()
     }
@@ -772,6 +892,7 @@ export class Chart {
         this.layoutManager.destroy()
         this.sharedWebGLSurface.destroy()
         this.indicatorManager.destroy()
+        this.alertController.dispose()
         await this.pluginHost.destroy()
     }
 
@@ -896,6 +1017,8 @@ export class Chart {
     }
 
     setSymbols(specs: ReadonlyArray<SymbolSpec>): void {
+        // 品种/周期切换时重置最新 K 线时间戳，确保新数据触发预警
+        this._lastAlertTimestamp = null
         const primaryPeriod = specs[0]?.period
         if (primaryPeriod) {
             this.setActiveMode(primaryPeriod === 'timeshare' ? this._timeShareMode : this._kLineMode)

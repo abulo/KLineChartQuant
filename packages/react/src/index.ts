@@ -271,7 +271,9 @@ export const KLineChart = forwardRef<KLineChartHandle, KLineChartProps>(
         }, [])
 
         useEffect(() => {
-            controllerRef.current?.setData(data)
+            if (data !== undefined) {
+                controllerRef.current?.setData(data)
+            }
         }, [data])
 
         useEffect(() => {

@@ -12,6 +12,7 @@ import type { Signal } from '../reactivity'
 import type { CustomMarkerEntity } from '../engine/marker/registry'
 import type { PaneSpec } from '../engine/chartTypes'
 import type { InteractionSnapshot } from '../engine/chart'
+import type { AlertController } from '../alerts/types'
 
 // Controller-owned public surface. Legacy engine types may mirror these
 // shapes internally, but adapters depend only on core-defined contracts.
@@ -215,7 +216,7 @@ export interface DrawingControllerCallbacks {
 
 export interface ChartMountOptions {
     container: HTMLElement
-    data: ReadonlyArray<KLineData>
+    data?: ReadonlyArray<KLineData>
     symbols?: ReadonlyArray<SymbolSpec>
     dataFetcher?: DataFetcher
     initialZoomLevel?: number
@@ -266,6 +267,9 @@ export interface ChartController extends DrawingChartAdapter {
 
     // indicator catalog (static — adapters use for picker UI)
     readonly catalog: ReadonlyArray<IndicatorDefinition>
+
+    // ---- Alerts ----
+    readonly alertController: AlertController
 
     // ---- Data ----
     setSymbols(next: ReadonlyArray<SymbolSpec>): void

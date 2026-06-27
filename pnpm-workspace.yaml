@@ -1,5 +1,10 @@
 packages:
   - 'packages/*'
+  - 'examples/*'
 allowBuilds:
+  '@parcel/watcher': true
   electron-winstaller: true
   esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+  sharp: true

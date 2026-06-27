@@ -1,3 +1,4 @@
+import { KLineChartError } from '../../errors'
 import type { DrawingKind } from '../../plugin'
 
 // ---- Tool ID type ----
@@ -63,7 +64,7 @@ export function getAnchorCountForTool(toolId: DrawingToolId): 1 | 2 | 3 | null {
 export function getDrawingKind(toolId: DrawingToolId): DrawingKind {
   switch (toolId) {
     case 'cursor':
-      throw new Error('cursor is not a drawing kind')
+      throw new KLineChartError('INVALID_PARAM', 'cursor is not a drawing kind')
     case 'h-line':
       return 'horizontal-line'
     case 'h-ray':

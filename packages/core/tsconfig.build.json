@@ -17,5 +17,5 @@
     "rootDir": "src"
   },
   "include": ["src/**/*"],
-  "exclude": ["src/**/__tests__/**", "dist", "node_modules"]
+  "exclude": ["src/**/__tests__/**", "src/**/__bench__/**", "dist", "node_modules"]
 }

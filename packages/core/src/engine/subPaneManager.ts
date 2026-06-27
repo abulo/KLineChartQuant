@@ -1,3 +1,4 @@
+import { KLineChartError } from '../errors'
 import type { SubIndicatorType } from './renderers/Indicator'
 import { createSignal, type Signal } from '../reactivity/signal'
 import { createSubIndicatorRenderer } from './renderers/Indicator'
@@ -157,7 +158,7 @@ export class SubPaneManager {
     ): RendererPlugin {
         const definition = ctx.getIndicatorScheduler().getIndicatorMetadata(indicatorId)
         if (!definition) {
-            throw new Error(`[SubPaneManager] Unknown indicator: ${indicatorId}`)
+            throw new KLineChartError('NOT_REGISTERED', `[SubPaneManager] Unknown indicator: ${indicatorId}`)
         }
         return createSubIndicatorRenderer({ indicatorId, paneId, definition, params })
     }

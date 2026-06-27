@@ -31,6 +31,7 @@ export interface DataDependencies {
   setPendingIndicatorDataUpdate: (v: boolean) => void
   isPointerDown: () => boolean
   onTimeShareDataReady: (dataLength: number) => void
+  onDataProcessed?: (data: KLineData[], range: VisibleRange) => void
 }
 
 const BUF_PRIMARY = 'main'
@@ -184,7 +185,19 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     this.pendingPrependedCount = 0
 
     if (prependedCount === 0 && this.deps.getCachedScrollLeft() < this.getLeftLoadBufferWidth()) {
-      this.deps.setScrollLeft(this.getLeftLoadBufferWidth())
+      const scrollLeft = this.deps.getCachedScrollLeft()
+      if (scrollLeft <= 0) {
+        this.deps.setScrollLeft(this.getLeftLoadBufferWidth())
+      } else {
+        const dpr = this.deps.getEffectiveDpr()
+        const opt = this.deps.getOption()
+        const { unitPx, startXPx } = getPhysicalKLineConfig(opt.kWidth, opt.kGap, dpr)
+        const totalDataWidth = (startXPx + bufferData.length * unitPx) / dpr
+        const leftBuffer = this.getLeftLoadBufferWidth()
+        if (scrollLeft >= leftBuffer + totalDataWidth) {
+          this.deps.setScrollLeft(leftBuffer)
+        }
+      }
     }
 
     if ((prevDataLength ?? this._dataSignal.peek().length) === 0 && bufferData.length > 0) {
@@ -216,6 +229,8 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     if (indicatorsReady) {
       this.pendingIndicatorDataUpdate = false
       this.deps.scheduleDraw()
+      // Alert 管线入口：Chart 构造时绑定 → evaluateAlerts()
+      this.deps.onDataProcessed?.(bufferData, this.lastVisibleRange)
     } else {
       this.pendingIndicatorDataUpdate = true
     }
@@ -899,16 +914,23 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     const dpr = this.deps.getEffectiveDpr()
     const opt = this.deps.getOption()
     const { unitPx, startXPx } = getPhysicalKLineConfig(opt.kWidth, opt.kGap, dpr)
-    const lastKLineEndPx = (startXPx + (dataLength + ChartDataManager.TRAILING_SLOTS) * unitPx) / dpr
+    const lastKLineEndPx = (startXPx + dataLength * unitPx) / dpr
     const viewport = this.deps.getViewport()
     const clientWidth = viewport?.viewWidth
       ?? (this.deps.getObservedSize().width > 0 ? this.deps.getObservedSize().width : undefined)
       ?? Math.round(this.deps.getDom().container?.clientWidth ?? 0)
     if (clientWidth <= 0) return
-    const target = this.getLeftLoadBufferWidth() + Math.max(0, lastKLineEndPx - clientWidth)
+    const leftBuffer = this.getLeftLoadBufferWidth()
+    let target: number
+    if (lastKLineEndPx <= clientWidth) {
+      // 数据不足以填满一屏 → 右对齐：最后一根 K 线固定在右侧
+      target = leftBuffer - (clientWidth - lastKLineEndPx)
+    } else {
+      target = leftBuffer + (lastKLineEndPx - clientWidth)
+    }
     const contentWidth = this.getContentWidth()
     const maxScroll = Math.max(0, contentWidth - clientWidth)
-    const scrollLeft = Math.round(Math.min(target, maxScroll) * dpr) / dpr
+    const scrollLeft = Math.round(Math.max(0, Math.min(target, maxScroll)) * dpr) / dpr
     this.deps.setScrollLeft(scrollLeft)
     this.deps.scheduleDraw()
   }

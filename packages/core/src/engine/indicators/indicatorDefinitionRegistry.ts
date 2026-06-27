@@ -1,3 +1,4 @@
+import { KLineChartError } from '../../errors'
 import type {
     IndicatorMetadata,
     IndicatorCategory,
@@ -73,7 +74,7 @@ export function Indicator(config: IndicatorDefinitionConfig) {
         context.addInitializer(function (this: T) {
             const rendererFactory = this.rendererFactory
             if (typeof rendererFactory !== 'function') {
-                throw new Error(`[Indicator] '${config.name}' definition must expose static rendererFactory`)
+                throw new KLineChartError('INVALID_PARAM', `[Indicator] '${config.name}' definition must expose static rendererFactory`)
             }
 
             const normalizedName = normalizeIndicatorId(config.name)

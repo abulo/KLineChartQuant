@@ -32,6 +32,7 @@
       <LeftToolbar
         ref="toolbarRef"
         :is-fullscreen="effectiveIsFullscreen"
+          :alert-controller="controller"
         @select-tool="handleSelectTool"
         @toggle-fullscreen="handleToggleFullscreen"
         @zoom-in="applyZoomToLevel(zoomLevel + 1)"

@@ -12,6 +12,7 @@
  *   - Tear down DOM + listeners on dispose().
  */
 
+import { KLineChartError } from '../errors'
 import { createSignal, type Signal } from '../reactivity'
 import type {
     ChartController,
@@ -223,7 +224,7 @@ function mapInteractionSnapshot(snapshot: LegacyInteractionSnapshot): Interactio
 function buildDom(container: HTMLElement): MountedDom {
     const ownerDoc = container.ownerDocument
     if (!ownerDoc) {
-        throw new Error(
+        throw new KLineChartError('CONTROLLER_CONFIG_INVALID',
             '[createChartController] container has no ownerDocument; cannot build DOM scaffold',
         )
     }
@@ -236,11 +237,11 @@ function buildDom(container: HTMLElement): MountedDom {
         chartContainer = ownerDoc.createElement('div')
         chartContainer.style.width = '100%'
         chartContainer.style.height = '100%'
-        chartContainer.style.position = 'relative'
-        chartContainer.style.overflow = 'auto'
         container.appendChild(chartContainer)
         containerCreatedByUs = true
     }
+    chartContainer.style.position = 'relative'
+    chartContainer.style.overflow = 'auto'
 
     const scrollContent = ownerDoc.createElement('div')
     scrollContent.className = 'klc-scroll-content'
@@ -296,10 +297,10 @@ function buildDom(container: HTMLElement): MountedDom {
 
 export async function createChartController(opts: ChartMountOptions): Promise<ChartController> {
     if (!opts) {
-        throw new Error('[createChartController] opts is required')
+        throw new KLineChartError('CONTROLLER_CONFIG_INVALID', '[createChartController] opts is required')
     }
     if (!opts.container) {
-        throw new Error('[createChartController] opts.container must be a non-null HTMLElement')
+        throw new KLineChartError('CONTROLLER_CONFIG_INVALID', '[createChartController] opts.container must be a non-null HTMLElement')
     }
 
     await loadBuiltinIndicators()
@@ -316,6 +317,15 @@ export async function createChartController(opts: ChartMountOptions): Promise<Ch
             cleanup: () => { /* DOM owned by caller */ },
         }
         : buildDom(opts.container)
+
+    // ── Fix 0×0 sizing for buildDom()-created right axis host ──
+    if (!hasExistingDom && mounted.rightAxisLayer) {
+        const hostWidth =
+            (opts.rightAxisWidth ?? DEFAULT_OPTS.rightAxisWidth) +
+            (opts.priceLabelWidth ?? DEFAULT_OPTS.priceLabelWidth)
+        mounted.rightAxisLayer.style.bottom = '0'
+        mounted.rightAxisLayer.style.width = hostWidth + 'px'
+    }
 
     const initialZoomLevel = opts.initialZoomLevel ?? DEFAULT_OPTS.initialZoomLevel
     const zoomLevelCount = opts.zoomLevels ?? DEFAULT_OPTS.zoomLevels
@@ -372,7 +382,7 @@ export async function createChartController(opts: ChartMountOptions): Promise<Ch
         kGap: currentKGap,
     })
 
-    const data: Signal<ReadonlyArray<KLineData>> = createSignal(opts.data)
+    const data: Signal<ReadonlyArray<KLineData>> = createSignal(opts.data ?? [])
     const dataLoading: Signal<boolean> = createSignal(false)
 
     const symbols: Signal<ReadonlyArray<SymbolSpec>> = chart.symbols
@@ -402,10 +412,12 @@ export async function createChartController(opts: ChartMountOptions): Promise<Ch
         /* tolerate jsdom */
     }
 
-    try {
-        chart.setData([...opts.data])
-    } catch {
-        /* tolerate first-paint racing */
+    if (opts.data) {
+        try {
+            chart.setData([...opts.data])
+        } catch {
+            /* tolerate first-paint racing */
+        }
     }
 
     // Apply initial DataFetcher
@@ -906,6 +918,7 @@ export async function createChartController(opts: ChartMountOptions): Promise<Ch
         comparisonColors,
         comparisonLoading,
         catalog: DEFAULT_INDICATOR_CATALOG,
+        alertController: chart.alertController,
         setSymbols,
         addComparisonSymbol,
         removeComparisonSymbol,

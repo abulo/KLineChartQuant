@@ -5,6 +5,7 @@
  * 每个指标通过 metadata 描述其状态 key、渲染器工厂等元信息
  */
 
+import { KLineChartError } from '../../errors'
 import type { PluginHost, RendererPluginWithHost } from '../../plugin'
 import type { IndicatorConfigSnapshot, IndicatorSeriesBundle } from './workerProtocol'
 import type { KLineData } from '../../types/price'
@@ -272,7 +273,7 @@ export interface IndicatorMetadata<T = unknown> {
 export function resolveStateKey(stateKey: StateKey, paneId?: string): string {
     if (typeof stateKey === 'function') {
         if (!paneId) {
-            throw new Error('[IndicatorMetadata] Pane ID required for dynamic state key')
+            throw new KLineChartError('INVALID_PARAM', '[IndicatorMetadata] Pane ID required for dynamic state key')
         }
         return stateKey(paneId)
     }

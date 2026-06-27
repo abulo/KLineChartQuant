@@ -1,6 +1,7 @@
 /**
  * 插件宿主 - 核心管理类
  */
+import { KLineChartError } from '../errors'
 import type { Plugin, PluginConfig, PluginHost, PluginState, BaseIndicatorState, PluginLogger, HookCallOptions } from './types'
 import { PluginRegistry } from './PluginRegistry'
 import { EventBus } from './EventBus'
@@ -117,7 +118,7 @@ export class PluginHostImpl implements PluginHost {
     this.ensureNotDestroyed()
 
     if (this.registry.has(plugin.name)) {
-      throw new Error(`Plugin "${plugin.name}" is already installed`)
+      throw new KLineChartError('INVALID_STATE', `Plugin "${plugin.name}" is already installed`)
     }
 
     try {
@@ -161,7 +162,7 @@ export class PluginHostImpl implements PluginHost {
 
     const descriptor = this.registry.get(name)
     if (!descriptor) {
-      throw new Error(`Plugin "${name}" is not installed`)
+      throw new KLineChartError('INVALID_STATE', `Plugin "${name}" is not installed`)
     }
 
     try {
@@ -232,7 +233,7 @@ export class PluginHostImpl implements PluginHost {
 
   private ensureNotDestroyed(): void {
     if (this.isDestroyed) {
-      throw new Error('PluginHost has been destroyed')
+      throw new KLineChartError('DISPOSED', 'PluginHost has been destroyed')
     }
   }
 }
