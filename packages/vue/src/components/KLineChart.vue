@@ -1,190 +1,182 @@
 <template>
-  <div
-    ref="embedContainerRef"
-    class="embed-container"
-    :class="{ 'is-fullscreen': effectiveIsFullscreen }"
-    :data-theme="chartTheme"
-  >
-    <div ref="chartWrapperRef" class="chart-wrapper" :style="themeCssVars">
-      <TopToolbar
-        :symbol="currentSymbol"
-        :k-line-level="kLineLevel"
-        :k-line-adjust="kLineAdjust"
-        :symbol-loading="symbolStatus === 'loading'"
-        :symbol-error="symbolStatus === 'error'"
-        :overlay-symbols="overlaySymbols"
-        :overlay-symbol-items="overlaySymbolItems"
-        :comparison-colors="comparisonColorsMap"
-        :comparison-loading="comparisonLoading"
-        :show-back-button="kLineLevel === 'timeshare'"
-        @add-overlay-symbol="onAddOverlaySymbol"
-        @remove-overlay-symbol="onRemoveOverlaySymbol"
-        @k-line-level-change="onKLineLevelChange"
-        @k-line-adjust-change="onKLineAdjustChange"
-        @toggle-indicator="onToggleIndicator"
-        @symbol-change="onSymbolChange"
-        @back="onBackFromTimeShare"
+  <div ref="chartWrapperRef" class="chart-wrapper" :data-theme="chartTheme" :style="themeCssVars">
+    <TopToolbar
+      :symbol="currentSymbol"
+      :k-line-level="kLineLevel"
+      :k-line-adjust="kLineAdjust"
+      :symbol-loading="symbolStatus === 'loading'"
+      :symbol-error="symbolStatus === 'error'"
+      :overlay-symbols="overlaySymbols"
+      :overlay-symbol-items="overlaySymbolItems"
+      :comparison-colors="comparisonColorsMap"
+      :comparison-loading="comparisonLoading"
+      :show-back-button="kLineLevel === 'timeshare'"
+      @add-overlay-symbol="onAddOverlaySymbol"
+      @remove-overlay-symbol="onRemoveOverlaySymbol"
+      @k-line-level-change="onKLineLevelChange"
+      @k-line-adjust-change="onKLineAdjustChange"
+      @toggle-indicator="onToggleIndicator"
+      @symbol-change="onSymbolChange"
+      @back="onBackFromTimeShare"
+    />
+    <div
+      class="chart-stage"
+      :class="{
+        'is-dragging': isDragging,
+        'is-resizing-pane': isResizingPane,
+        'is-hovering-pane-separator': isHoveringPaneSeparator,
+        'is-hovering-right-axis': isHoveringRightAxis,
+        'is-hovering-kline': hoveredIdx !== null,
+      }"
+    >
+      <LeftToolbar
+        ref="toolbarRef"
+        :is-fullscreen="effectiveIsFullscreen"
+        @select-tool="handleSelectTool"
+        @toggle-fullscreen="handleToggleFullscreen"
+        @zoom-in="applyZoomToLevel(zoomLevel + 1)"
+        @zoom-out="applyZoomToLevel(zoomLevel - 1)"
+        @settings-change="handleSettingsChange"
       />
-      <div
-        class="chart-stage"
-        :class="{
-          'is-dragging': isDragging,
-          'is-resizing-pane': isResizingPane,
-          'is-hovering-pane-separator': isHoveringPaneSeparator,
-          'is-hovering-right-axis': isHoveringRightAxis,
-          'is-hovering-kline': hoveredIdx !== null,
-        }"
-      >
-        <LeftToolbar
-          ref="toolbarRef"
-          :is-fullscreen="isFullscreen"
-          :alert-controller="controller"
-          @select-tool="handleSelectTool"
-          @toggle-fullscreen="handleToggleFullscreen"
-          @zoom-in="applyZoomToLevel(zoomLevel + 1)"
-          @zoom-out="applyZoomToLevel(zoomLevel - 1)"
-          @settings-change="handleSettingsChange"
-        />
-        <div class="chart-main" ref="chartMainRef">
-          <div class="pane-separator-layer" aria-hidden="true">
-            <div
-              v-for="line in paneSeparatorLines"
-              :key="line.id"
-              class="pane-separator-line"
-              :class="{ 'is-active': hoveredPaneBoundaryId === line.id }"
-              :style="{ top: `${line.top}px` }"
-            ></div>
-          </div>
-          <div ref="tooltipLayerRef" class="tooltip-layer"></div>
+      <div class="chart-main" ref="chartMainRef">
+        <div class="pane-separator-layer" aria-hidden="true">
           <div
-            v-if="computedLeftAxisWidth > 0"
-            class="left-axis-host"
-            ref="leftAxisLayerRef"
-            :style="leftAxisHostStyle"
-          ></div>
-          <div
-            class="chart-container"
-            :style="chartContainerStyle"
-            ref="containerRef"
-            @scroll.passive="onScroll"
-            @pointerdown="onPointerDown"
-            @pointermove="onPointerMove"
-            @pointerup="onPointerUp"
-            @pointerleave="onPointerLeave"
-            @dblclick="onDoubleClick"
-            @contextmenu.prevent
-          >
-            <div class="scroll-content">
-              <div class="canvas-layer" ref="canvasLayerRef">
-                <canvas class="x-axis-canvas" ref="xAxisCanvasRef"></canvas>
-
-                <CanvasToolbarStack>
-                  <RangeSelectionExport
-                    v-if="rangeSelectionReady"
-                    v-model:start-date="customStartDate"
-                    v-model:end-date="customEndDate"
-                    :start-label="rangeSelectionStartLabel"
-                    :end-label="rangeSelectionEndLabel"
-                    :count="rangeSelectionCount"
-                    @export="exportRangeToCsv"
-                    @clear="clearRangeSelection"
-                    @batch-setting="showBatchStockDialog = true"
-                  />
-                  <DrawingStyleToolbar
-                    v-if="selectedDrawing"
-                    :drawing="selectedDrawing"
-                    @update-style="onUpdateDrawingStyle"
-                    @delete="onDeleteDrawing"
-                  />
-                </CanvasToolbarStack>
-              </div>
-              <div
-                v-if="rangeSelectionOverlayStyle"
-                class="range-selection-overlay"
-                :class="{ 'is-dragging': rangeSelection.isDragging }"
-                :style="rangeSelectionOverlayStyle"
-                aria-label="已选择的 K 线区间"
-              >
-                <div
-                  v-if="rangeSelectionReady"
-                  class="range-selection-handle range-selection-handle--left"
-                  @pointerdown.stop="onEdgePointerDown('left', $event)"
-                  @pointermove.stop="onEdgePointerMove($event)"
-                  @pointerup.stop="onEdgePointerUp($event)"
-                />
-                <div
-                  v-if="rangeSelectionReady"
-                  class="range-selection-handle range-selection-handle--right"
-                  @pointerdown.stop="onEdgePointerDown('right', $event)"
-                  @pointermove.stop="onEdgePointerMove($event)"
-                  @pointerup.stop="onEdgePointerUp($event)"
-                />
-              </div>
-            </div>
-          </div>
-          <Teleport v-if="tooltipLayerRef" :to="tooltipLayerRef">
-            <div
-              v-if="hovered && !isMobile"
-              class="tooltip-anchor kline-tooltip-anchor"
-              :class="{ 'use-anchor': useAnchorPositioning }"
-              :style="klineTooltipAnchorStyle"
-            ></div>
-            <div
-              v-if="hoveredMarker || hoveredCustomMarker"
-              class="tooltip-anchor marker-tooltip-anchor"
-              :class="{ 'use-anchor': useAnchorPositioning }"
-              :style="markerTooltipAnchorStyle"
-            ></div>
-            <KLineTooltip
-              v-if="hovered && !isMobile"
-              :k="hovered"
-              :index="hoveredIndex"
-              :data="chartData"
-              :pos="teleportedTooltipPos"
-              :set-el="setTooltipEl"
-              :use-anchor="useAnchorPositioning"
-              :anchor-placement="tooltipAnchorPlacement"
-              :up-color="tooltipColors.upColor"
-              :down-color="tooltipColors.downColor"
-              :timezone="props.timezone"
-              :show-time="isIntraday"
-            />
-            <MarkerTooltip
-              v-if="hoveredMarker || hoveredCustomMarker"
-              :marker="hoveredMarker || hoveredCustomMarker"
-              :pos="teleportedMarkerTooltipPos"
-              :use-anchor="useAnchorPositioning"
-              :anchor-placement="markerTooltipAnchorPlacement"
-              :set-el="setMarkerTooltipEl"
-            />
-          </Teleport>
-          <div
-            class="right-axis-host"
-            ref="rightAxisLayerRef"
-            :style="{ width: axisHostWidth + 'px' }"
-            @pointerdown="onRightAxisPointerDown"
-            @pointermove="onRightAxisPointerMove"
-            @pointerup="onRightAxisPointerUp"
-            @pointerleave="onRightAxisPointerLeave"
-            @contextmenu.prevent
+            v-for="line in paneSeparatorLines"
+            :key="line.id"
+            class="pane-separator-line"
+            :class="{ 'is-active': hoveredPaneBoundaryId === line.id }"
+            :style="{ top: `${line.top}px` }"
           ></div>
         </div>
+        <div ref="tooltipLayerRef" class="tooltip-layer"></div>
+        <div
+          v-if="computedLeftAxisWidth > 0"
+          class="left-axis-host"
+          ref="leftAxisLayerRef"
+          :style="leftAxisHostStyle"
+        ></div>
+        <div
+          class="chart-container"
+          :style="chartContainerStyle"
+          ref="containerRef"
+          @scroll.passive="onScroll"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointerleave="onPointerLeave"
+          @dblclick="onDoubleClick"
+          @contextmenu.prevent
+        >
+          <div class="scroll-content">
+            <div class="canvas-layer" ref="canvasLayerRef">
+              <canvas class="x-axis-canvas" ref="xAxisCanvasRef"></canvas>
+
+              <CanvasToolbarStack>
+                <RangeSelectionExport
+                  v-if="rangeSelectionReady"
+                  v-model:start-date="customStartDate"
+                  v-model:end-date="customEndDate"
+                  :start-label="rangeSelectionStartLabel"
+                  :end-label="rangeSelectionEndLabel"
+                  :count="rangeSelectionCount"
+                  @export="exportRangeToCsv"
+                  @clear="clearRangeSelection"
+                  @batch-setting="showBatchStockDialog = true"
+                />
+                <DrawingStyleToolbar
+                  v-if="selectedDrawing"
+                  :drawing="selectedDrawing"
+                  @update-style="onUpdateDrawingStyle"
+                  @delete="onDeleteDrawing"
+                />
+              </CanvasToolbarStack>
+            </div>
+            <div
+              v-if="rangeSelectionOverlayStyle"
+              class="range-selection-overlay"
+              :class="{ 'is-dragging': rangeSelection.isDragging }"
+              :style="rangeSelectionOverlayStyle"
+              aria-label="已选择的 K 线区间"
+            >
+              <div
+                v-if="rangeSelectionReady"
+                class="range-selection-handle range-selection-handle--left"
+                @pointerdown.stop="onEdgePointerDown('left', $event)"
+                @pointermove.stop="onEdgePointerMove($event)"
+                @pointerup.stop="onEdgePointerUp($event)"
+              />
+              <div
+                v-if="rangeSelectionReady"
+                class="range-selection-handle range-selection-handle--right"
+                @pointerdown.stop="onEdgePointerDown('right', $event)"
+                @pointermove.stop="onEdgePointerMove($event)"
+                @pointerup.stop="onEdgePointerUp($event)"
+              />
+            </div>
+          </div>
+        </div>
+        <Teleport v-if="tooltipLayerRef" :to="tooltipLayerRef">
+          <div
+            v-if="hovered && !isMobile"
+            class="tooltip-anchor kline-tooltip-anchor"
+            :class="{ 'use-anchor': useAnchorPositioning }"
+            :style="klineTooltipAnchorStyle"
+          ></div>
+          <div
+            v-if="hoveredMarker || hoveredCustomMarker"
+            class="tooltip-anchor marker-tooltip-anchor"
+            :class="{ 'use-anchor': useAnchorPositioning }"
+            :style="markerTooltipAnchorStyle"
+          ></div>
+          <KLineTooltip
+            v-if="hovered && !isMobile"
+            :k="hovered"
+            :index="hoveredIndex"
+            :data="chartData"
+            :pos="teleportedTooltipPos"
+            :set-el="setTooltipEl"
+            :use-anchor="useAnchorPositioning"
+            :anchor-placement="tooltipAnchorPlacement"
+            :up-color="tooltipColors.upColor"
+            :down-color="tooltipColors.downColor"
+            :timezone="props.timezone"
+            :show-time="isIntraday"
+          />
+          <MarkerTooltip
+            v-if="hoveredMarker || hoveredCustomMarker"
+            :marker="hoveredMarker || hoveredCustomMarker"
+            :pos="teleportedMarkerTooltipPos"
+            :use-anchor="useAnchorPositioning"
+            :anchor-placement="markerTooltipAnchorPlacement"
+            :set-el="setMarkerTooltipEl"
+          />
+        </Teleport>
+        <div
+          class="right-axis-host"
+          ref="rightAxisLayerRef"
+          :style="{ width: axisHostWidth + 'px' }"
+          @pointerdown="onRightAxisPointerDown"
+          @pointermove="onRightAxisPointerMove"
+          @pointerup="onRightAxisPointerUp"
+          @pointerleave="onRightAxisPointerLeave"
+          @contextmenu.prevent
+        ></div>
       </div>
-      <ExportProgressDialog :progress="exportingProgress" @close="exportingProgress = null" />
-      <BatchStockDialog
-        :show="showBatchStockDialog"
-        @close="showBatchStockDialog = false"
-        @apply="onBatchApply"
-      />
-      <IndicatorSelector
-        ref="indicatorSelectorRef"
-        :active-indicators="activeIndicators"
-        :indicator-params="indicatorParams"
-        @toggle="handleIndicatorToggle"
-        @update-params="handleUpdateParams"
-        @reorder-sub-indicators="handleReorderSubIndicators"
-      />
     </div>
+    <ExportProgressDialog :progress="exportingProgress" @close="exportingProgress = null" />
+    <BatchStockDialog
+      :show="showBatchStockDialog"
+      @close="showBatchStockDialog = false"
+      @apply="onBatchApply"
+    />
+    <IndicatorSelector
+      ref="indicatorSelectorRef"
+      :active-indicators="activeIndicators"
+      :indicator-params="indicatorParams"
+      @toggle="handleIndicatorToggle"
+      @update-params="handleUpdateParams"
+      @reorder-sub-indicators="handleReorderSubIndicators"
+    />
   </div>
 </template>
 
@@ -256,11 +248,6 @@ const props = withDefaults(
     /** 用户自定义数据源（传入后 bypass fetcher，使用此数据） */
     customData?: CustomDataSource
 
-    /** 弹窗浮层（Dropdown/Modal）的 Teleport 目标容器（CSS 选择器或 DOM 元素）。
-     *  默认渲染到组件内部的 .chart-wrapper。当 KLineChart 嵌套在 Modal 中时，
-     *  传入外层容器元素或选择器，确保浮层不被 Modal 的 overflow:hidden 裁剪。 */
-    teleportContainer?: string | HTMLElement
-
     /** MCP / AI runtime bridge 配置。传入后自动连接 MCP WebSocket server */
     mcp?: {
       wsUrl?: string
@@ -293,7 +280,6 @@ const emit = defineEmits<{
   (e: 'zoomLevelChange', level: number, kWidth: number): void
   (e: 'toggleFullscreen'): void
   (e: 'update:isFullscreen', value: boolean): void
-  (e: 'update:theme', theme: 'light' | 'dark'): void
   (e: 'themeChange', theme: 'light' | 'dark'): void
   (e: 'kLineLevelChange', level: string): void
   (e: 'kLineAdjustChange', adjust: 'qfq' | 'hfq' | 'splits' | 'none'): void
@@ -387,36 +373,12 @@ function forcePercentAxis() {
 // ── DOM Template Refs ──
 const containerRef = ref<HTMLDivElement | null>(null)
 const chartMainRef = ref<HTMLDivElement | null>(null)
-const embedContainerRef = ref<HTMLDivElement | null>(null)
 const chartWrapperRef = ref<HTMLDivElement | null>(null)
 const tooltipLayerRef = ref<HTMLDivElement | null>(null)
 const toolbarRef = ref<InstanceType<typeof LeftToolbar> | null>(null)
 const indicatorSelectorRef = ref<InstanceType<typeof IndicatorSelector> | null>(null)
 const leftAxisLayerRef = ref<HTMLDivElement | null>(null)
-// ── Teleport 浮层容器 ──
-// 默认使用 chartWrapperRef；当使用者传入 teleportContainer prop 时优先使用。
-// CSS 选择器字符串在 onMounted 时解析，HTMLElement 直接使用。
-const teleportRef = ref<HTMLElement | null>(null)
-
-if (props.teleportContainer === undefined) {
-  watch(
-    chartWrapperRef,
-    (val) => {
-      teleportRef.value = val
-    },
-    { immediate: true },
-  )
-} else if (typeof props.teleportContainer === 'string') {
-  onMounted(() => {
-    teleportRef.value = document.querySelector(
-      props.teleportContainer as string,
-    ) as HTMLElement | null
-  })
-} else {
-  teleportRef.value = props.teleportContainer
-}
-
-provideFullscreenTeleportTarget(teleportRef)
+provideFullscreenTeleportTarget(chartWrapperRef)
 
 // ── DataFetcher 默认值（未绑定时回退到内置 routerDataFetcher）──
 // 用 computed 解析默认值，避免依赖 Vue 对「函数类型 prop 默认值」的特殊语义
@@ -437,7 +399,7 @@ function handleToggleFullscreen() {
 
   // 非受控模式：组件内部接管全屏 DOM 操作
   if (typeof document !== 'undefined') {
-    const el = embedContainerRef.value
+    const el = chartWrapperRef.value
     if (!document.fullscreenElement) {
       if (el && typeof el.requestFullscreen === 'function') {
         el.requestFullscreen().catch(() => {
@@ -955,7 +917,6 @@ function setupChartCallbacks(ctrl: ChartController): () => void {
     const newTheme = ctrl.theme.peek()
     chartTheme.value = newTheme
     emit('themeChange', newTheme)
-    emit('update:theme', newTheme)
   })
 
   const unsubscribeIndicators = setupIndicatorSubscriptions(ctrl)
@@ -1012,12 +973,6 @@ function applyInitialSettings(ctrl: ChartController): void {
   // 受控主题优先，否则交由设置项决定
   if (props.theme) {
     ctrl.setTheme(props.theme)
-    if (chartSettings.value.theme !== props.theme) {
-      chartSettings.value = { ...chartSettings.value, theme: props.theme }
-      try {
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(chartSettings.value))
-      } catch {}
-    }
   } else {
     applyThemeFromSettings(initialSettings.theme as string)
   }
@@ -1166,47 +1121,16 @@ watch(
   { deep: true },
 )
 
-// 受控主题：外部 theme 变化时同步到控制器，并写回 chartSettings 和 localStorage
+// 受控主题：外部 theme 变化时同步到控制器
 watch(
   () => props.theme,
   (t) => {
-    if (!t || !controller.value) return
-    if (chartTheme.value === t) return
-    controller.value.setTheme(t)
-    const nextSettings = { ...chartSettings.value, theme: t }
-    chartSettings.value = nextSettings
-    try {
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings))
-    } catch {}
+    if (t) controller.value?.setTheme(t)
   },
 )
 </script>
 
 <style scoped>
-.embed-container {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.embed-container.is-fullscreen,
-.embed-container:fullscreen {
-  border: none;
-  margin: 0;
-  outline: none;
-  width: 100vw !important;
-  height: 100vh !important;
-  background: #fff;
-}
-
-.embed-container[data-theme='dark'].is-fullscreen,
-.embed-container[data-theme='dark']:fullscreen {
-  background: #000;
-}
-
 .chart-wrapper {
   --kmap-height: var(--kmap-chart-height, 100%);
   --kmap-width: var(--kmap-chart-width, 100%);
