@@ -33,7 +33,8 @@
         "default": "./dist/kline-chart.js"
       }
     },
-    "./style.css": "./dist/index.css"
+    "./style.css": "./dist/index.css",
+    "./dist/index.css": "./dist/index.css"
   },
   "files": [
     "dist",

@@ -31,6 +31,7 @@ export interface DataDependencies {
   setPendingIndicatorDataUpdate: (v: boolean) => void
   isPointerDown: () => boolean
   onTimeShareDataReady: (dataLength: number) => void
+  onDataProcessed?: (data: KLineData[], range: VisibleRange) => void
 }
 
 const BUF_PRIMARY = 'main'
@@ -216,6 +217,7 @@ private _symbolsSignal = createSignal<ReadonlyArray<SymbolSpec>>([])
     if (indicatorsReady) {
       this.pendingIndicatorDataUpdate = false
       this.deps.scheduleDraw()
+      this.deps.onDataProcessed?.(bufferData, this.lastVisibleRange)
     } else {
       this.pendingIndicatorDataUpdate = true
     }

@@ -139,7 +139,7 @@ export function createFootprintController(
             // useful prevPrice/prevSide. We commit prevSide only for known
             // explicit sides.
             tickState.prevPrice = trade.price
-            tickState.prevSide = explicit.side
+            tickState.prevSide = explicit.side === 'unknown' ? null : explicit.side
             return explicit
         }
         // 2. Fall back to the configured heuristic.

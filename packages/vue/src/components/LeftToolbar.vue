@@ -111,12 +111,41 @@
         <IconTablerSettings class="tool-icon" aria-hidden="true" />
       </button>
     </div>
+
+    <template v-if="alertController">
+      <span class="left-toolbar__divider"></span>
+
+      <div class="left-toolbar__group">
+        <button
+          type="button"
+          class="left-toolbar__button"
+          :class="{ active: showAlerts }"
+          title="预警"
+          aria-label="预警"
+          @click="showAlerts = true"
+          @pointerdown.stop
+          @pointermove.stop
+          @pointerup.stop
+        >
+          <IconTablerBell class="tool-icon" aria-hidden="true" />
+          <span v-if="unreadCount > 0" class="alert-badge">{{
+            unreadCount > 99 ? '99+' : unreadCount
+          }}</span>
+        </button>
+      </div>
+    </template>
   </nav>
 
   <ChartSettingsDialog
     :show="showSettings"
     @close="showSettings = false"
     @confirm="handleConfirmSettings"
+  />
+
+  <AlertDialog
+    :show="showAlerts"
+    :chart-controller="alertController ?? null"
+    @close="showAlerts = false"
   />
 </template>
 
@@ -135,6 +164,7 @@ import IconTablerZoomOut from '~icons/tabler/zoom-out'
 import IconTablerMaximize from '~icons/tabler/maximize'
 import IconTablerMinimize from '~icons/tabler/minimize'
 import IconTablerSettings from '~icons/tabler/settings'
+import IconTablerBell from '~icons/tabler/bell'
 import IconTablerShape from '~icons/tabler/shape'
 import IconTablerChartDots3 from '~icons/tabler/chart-dots-3'
 import IconTablerCaretUpDown from '~icons/tabler/caret-up-down'
@@ -147,6 +177,9 @@ import {
 } from '@363045841yyt/klinechart-core/config'
 import { setCanvasProfilerEnabled } from '../debug/canvasProfiler'
 import ChartSettingsDialog from './ChartSettingsDialog.vue'
+import AlertDialog from './alert/AlertDialog.vue'
+import { useAlerts } from '../composables/useAlerts'
+import type { ChartController } from '@363045841yyt/klinechart-core'
 
 export interface ToolDef {
   id: string
@@ -184,11 +217,6 @@ const primaryTools: ToolDef[] = [
   },
   { id: 'range-select', title: '导出区间数据', icon: IconTablerArrowsHorizontal },
 ]
-
-defineProps<{
-  isFullscreen?: boolean
-}>()
-
 const emit = defineEmits<{
   (e: 'selectTool', toolId: string): void
   (e: 'toggleFullscreen'): void
@@ -197,9 +225,17 @@ const emit = defineEmits<{
   (e: 'settingsChange', settings: ChartSettings): void
 }>()
 
+const props = defineProps<{
+  isFullscreen?: boolean
+  alertController?: ChartController | null
+}>()
+
+const { unreadCount } = useAlerts(() => props.alertController ?? null)
+
 const selectedToolId = ref('cursor')
 const openGroupId = ref<string | null>(null)
 const showSettings = ref(false)
+const showAlerts = ref(false)
 
 function loadSettings(): ChartSettings {
   try {
@@ -445,6 +481,23 @@ onUnmounted(() => {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-50%) translateX(-6px);
+}
+
+/* --- 预警按钮徽标 --- */
+.alert-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  border-radius: 999px;
+  pointer-events: none;
 }
 
 /* --- 响应式 --- */

@@ -89,10 +89,18 @@ export function createMtfController(init: CreateMtfControllerInit = {}): MtfCont
         }
     }
 
-    const inner: MtfController = {
+    const inner: {
+        series: Signal<ReadonlyArray<ActiveMtfSeries>>
+        setBaseBars(bars: ReadonlyArray<BaseBar>, intervalMs: number): void
+        addSeries(def: MtfSeriesDefinition): string
+        removeSeries(id: string): boolean
+        updateSeries(id: string, patch: Partial<Omit<MtfSeriesDefinition, 'id'>>): boolean
+        appendBaseBar(bar: BaseBar): void
+        dispose(): void
+    } = {
         series: seriesSignal,
 
-        setBaseBars(bars, intervalMs): void {
+        setBaseBars(bars: ReadonlyArray<BaseBar>, intervalMs: number): void {
             if (!guard()) return
             if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
                 throw new KLineChartError('MTF_CONFIG_INVALID', 'MtfController.setBaseBars: baseIntervalMs must be > 0')

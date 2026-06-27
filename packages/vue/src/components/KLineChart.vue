@@ -248,6 +248,11 @@ const props = withDefaults(
     /** 用户自定义数据源（传入后 bypass fetcher，使用此数据） */
     customData?: CustomDataSource
 
+    /** 弹窗浮层（Dropdown/Modal）的 Teleport 目标容器（CSS 选择器或 DOM 元素）。
+     *  默认渲染到组件内部的 .chart-wrapper。当 KLineChart 嵌套在 Modal 中时，
+     *  传入外层容器元素或选择器，确保浮层不被 Modal 的 overflow:hidden 裁剪。 */
+    teleportContainer?: string | HTMLElement
+
     /** MCP / AI runtime bridge 配置。传入后自动连接 MCP WebSocket server */
     mcp?: {
       wsUrl?: string
@@ -280,6 +285,7 @@ const emit = defineEmits<{
   (e: 'zoomLevelChange', level: number, kWidth: number): void
   (e: 'toggleFullscreen'): void
   (e: 'update:isFullscreen', value: boolean): void
+  (e: 'update:theme', theme: 'light' | 'dark'): void
   (e: 'themeChange', theme: 'light' | 'dark'): void
   (e: 'kLineLevelChange', level: string): void
   (e: 'kLineAdjustChange', adjust: 'qfq' | 'hfq' | 'splits' | 'none'): void
@@ -378,7 +384,22 @@ const tooltipLayerRef = ref<HTMLDivElement | null>(null)
 const toolbarRef = ref<InstanceType<typeof LeftToolbar> | null>(null)
 const indicatorSelectorRef = ref<InstanceType<typeof IndicatorSelector> | null>(null)
 const leftAxisLayerRef = ref<HTMLDivElement | null>(null)
-provideFullscreenTeleportTarget(chartWrapperRef)
+// ── Teleport 浮层容器 ──
+// 默认使用 chartWrapperRef；当使用者传入 teleportContainer prop 时优先使用。
+// CSS 选择器字符串在 onMounted 时解析，HTMLElement 直接使用。
+const teleportRef = ref<HTMLElement | null>(null)
+
+if (props.teleportContainer === undefined) {
+  watch(chartWrapperRef, (val) => { teleportRef.value = val }, { immediate: true })
+} else if (typeof props.teleportContainer === 'string') {
+  onMounted(() => {
+    teleportRef.value = document.querySelector(props.teleportContainer as string) as HTMLElement | null
+  })
+} else {
+  teleportRef.value = props.teleportContainer
+}
+
+provideFullscreenTeleportTarget(teleportRef)
 
 // ── DataFetcher 默认值（未绑定时回退到内置 routerDataFetcher）──
 // 用 computed 解析默认值，避免依赖 Vue 对「函数类型 prop 默认值」的特殊语义
@@ -917,6 +938,7 @@ function setupChartCallbacks(ctrl: ChartController): () => void {
     const newTheme = ctrl.theme.peek()
     chartTheme.value = newTheme
     emit('themeChange', newTheme)
+    emit('update:theme', newTheme)
   })
 
   const unsubscribeIndicators = setupIndicatorSubscriptions(ctrl)
