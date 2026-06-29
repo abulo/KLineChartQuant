@@ -673,7 +673,9 @@
       depthController = createHeatmapController({ tickSize: 0.01 })
       depthConnector = new DepthConnector(source)
       depthConnector.addController(depthController)
-      depthUnsubState = depthController.state.on((s) => {
+      const ctrl = depthController
+      depthUnsubState = ctrl.state.subscribe(() => {
+        const s = ctrl.state.peek()
         if (s.latestSnapshot) {
           depthStatusText.value = `depth: ${s.snapshotCount} snapshots · ${s.deltaCount} deltas`
           depthStatusClass.value = 'depth-connected'

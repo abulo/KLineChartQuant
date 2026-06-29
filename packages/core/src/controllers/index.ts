@@ -68,6 +68,16 @@ export {
 } from '../data-fetchers'
 export type { DataWindow, DepthSource, DepthDelta, DepthSnapshot, DepthSourceStatus } from '../data-fetchers'
 
+// Heatmap controller (depth pipeline rendering half)
+export { createHeatmapController } from '../components/orderBookHeatmap'
+export type {
+  HeatmapController,
+  HeatmapControllerConfig,
+  HeatmapState,
+  BookSnapshot,
+  OrderBookDelta,
+} from '../components/orderBookHeatmap'
+
 // Drawing
 export { DrawingInteractionController } from '../engine/drawing'
 export type { DrawingToolId } from '../engine/drawing'
